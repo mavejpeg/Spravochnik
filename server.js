@@ -1,9 +1,10 @@
-// server.js - исправленное удаление
+// server.js - с Cloudinary облаком
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
 const cors = require('cors');
 const multer = require('multer');
+const { v2: cloudinary } = require('cloudinary');
 require('dotenv').config();
 
 const app = express();
@@ -15,18 +16,30 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// Multer setup
+// Cloudinary configuration
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+  console.log('✅ Cloudinary configured');
+} else {
+  console.log('⚠️ Cloudinary not configured, using base64 mode');
+}
+
+// Multer setup (memory storage for Cloudinary)
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|webp/;
     const mimetype = allowedTypes.test(file.mimetype);
     if (mimetype) {
       cb(null, true);
     } else {
-      cb(new Error('Only images allowed'));
+      cb(new Error('Only images allowed (JPG, PNG, WEBP)'));
     }
   }
 });
@@ -73,7 +86,6 @@ async function initDatabase() {
       )
     `);
     
-    // Add missing columns if needed
     await client.query(`
       ALTER TABLE products ADD COLUMN IF NOT EXISTS photo_url TEXT;
       ALTER TABLE products ADD COLUMN IF NOT EXISTS description TEXT;
@@ -93,15 +105,50 @@ async function initDatabase() {
   }
 }
 
-// Upload endpoint
+// Upload endpoint - with Cloudinary
 app.post('/api/upload', upload.single('photo'), async (req, res) => {
+  console.log('📸 Upload request received');
+  
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
     
-    const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-    res.json({ photoUrl: base64 });
+    console.log(`File: ${req.file.originalname}, Size: ${Math.round(req.file.size / 1024)}KB`);
+    
+    let photoUrl;
+    
+    // If Cloudinary is configured, upload to Cloudinary
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+      console.log('Uploading to Cloudinary...');
+      
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'spravochnik',
+            transformation: [
+              { width: 500, height: 500, crop: 'limit' },
+              { quality: 'auto' }
+            ]
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+      
+      photoUrl = result.secure_url;
+      console.log(`✅ Uploaded to Cloudinary: ${photoUrl}`);
+    } else {
+      // Fallback to base64
+      photoUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      console.log(`✅ Converted to base64, size: ${Math.round(photoUrl.length / 1024)}KB`);
+    }
+    
+    res.json({ photoUrl: photoUrl });
+    
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ error: 'Upload failed: ' + error.message });
@@ -150,6 +197,7 @@ app.post('/api/products/:category', async (req, res) => {
       [category, id, name.trim(), strength || 5, origin || null, desc || null, photoUrl || null]
     );
     
+    console.log(`✅ Saved: ${result.rows[0].name}`);
     res.json(result.rows[0]);
   } catch (error) {
     console.error('POST error:', error);
@@ -184,64 +232,31 @@ app.put('/api/products/:category/:id', async (req, res) => {
   }
 });
 
-// DELETE product - FIXED with better logging
+// DELETE product
 app.delete('/api/products/:category/:id', async (req, res) => {
-  console.log('='.repeat(50));
-  console.log('DELETE REQUEST RECEIVED');
-  console.log('Category:', req.params.category);
-  console.log('ID:', req.params.id);
-  console.log('='.repeat(50));
-  
-  if (!pool) {
-    console.log('No database pool');
-    return res.status(503).json({ error: 'Database not connected' });
-  }
+  if (!pool) return res.status(503).json({ error: 'Database not connected' });
   
   const { category, id } = req.params;
   
-  if (!id) {
-    console.log('Missing ID');
-    return res.status(400).json({ error: 'Product ID is required' });
-  }
-  
   try {
-    // First, check if product exists
-    const checkResult = await pool.query(
-      'SELECT * FROM products WHERE category = $1 AND product_id = $2',
-      [category, id]
-    );
-    
-    console.log('Found products:', checkResult.rows.length);
-    
-    if (checkResult.rows.length === 0) {
-      console.log('Product not found in database');
-      return res.status(404).json({ error: 'Product not found' });
-    }
-    
-    console.log('Product to delete:', checkResult.rows[0].name);
-    
-    // Delete the product
-    const deleteResult = await pool.query(
+    const result = await pool.query(
       'DELETE FROM products WHERE category = $1 AND product_id = $2 RETURNING *',
       [category, id]
     );
     
-    console.log('Deleted successfully:', deleteResult.rows[0].name);
-    console.log('='.repeat(50));
-    
-    res.json({ 
-      success: true, 
-      message: 'Product deleted successfully',
-      deleted: deleteResult.rows[0]
-    });
-    
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Product not found' });
+    } else {
+      console.log(`✅ Deleted: ${result.rows[0].name}`);
+      res.json({ success: true, message: 'Deleted successfully' });
+    }
   } catch (error) {
     console.error('DELETE error:', error);
     res.status(500).json({ error: 'Delete failed: ' + error.message });
   }
 });
 
-// Debug endpoint - list all products
+// Debug endpoint
 app.get('/api/debug/:category', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'No database' });
   
@@ -261,7 +276,8 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    database: pool ? 'connected' : 'disconnected'
+    database: pool ? 'connected' : 'disconnected',
+    cloudinary: process.env.CLOUDINARY_CLOUD_NAME ? 'configured' : 'not configured'
   });
 });
 
@@ -290,11 +306,20 @@ app.get('/:page', (req, res) => {
 // Start server
 async function startServer() {
   console.log('\n🚀 Starting server...\n');
+  
+  // Show Cloudinary status
+  if (process.env.CLOUDINARY_CLOUD_NAME) {
+    console.log(`📸 Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME}`);
+  } else {
+    console.log('📸 Cloudinary: NOT configured (using base64)');
+  }
+  
   const dbReady = await initDatabase();
   
   app.listen(PORT, () => {
     console.log(`\n✅ Server running on port ${PORT}`);
     console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
+    console.log(`📸 Photos: ${process.env.CLOUDINARY_CLOUD_NAME ? 'CLOUDINARY' : 'BASE64'}`);
     console.log(`🔗 URL: http://localhost:${PORT}\n`);
   });
 }
