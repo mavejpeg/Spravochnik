@@ -1,10 +1,9 @@
-// server.js
+// server.js - упрощенная версия без Cloudinary
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
 const cors = require('cors');
 const multer = require('multer');
-const { v2: cloudinary } = require('cloudinary');
 require('dotenv').config();
 
 const app = express();
@@ -16,33 +15,18 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// Cloudinary configuration (только если есть ключи)
-if (process.env.CLOUDINARY_CLOUD_NAME && 
-    process.env.CLOUDINARY_API_KEY && 
-    process.env.CLOUDINARY_API_SECRET) {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-  });
-  console.log('✅ Cloudinary configured');
-} else {
-  console.log('⚠️ Cloudinary not configured - using local images only');
-}
-
-// Multer setup (для временного хранения, если Cloudinary не настроен)
+// Multer setup for memory storage
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    if (mimetype && extname) {
-      return cb(null, true);
+    if (mimetype) {
+      cb(null, true);
     } else {
-      cb(new Error('Only images are allowed'));
+      cb(new Error('Only images allowed'));
     }
   }
 });
@@ -103,35 +87,18 @@ async function initDatabase() {
   }
 }
 
-// Upload endpoint
+// Upload endpoint - base64 only (no Cloudinary)
 app.post('/api/upload', upload.single('photo'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
     
-    // If Cloudinary is configured, upload to Cloudinary
-    if (process.env.CLOUDINARY_CLOUD_NAME) {
-      const result = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            folder: 'spravochnik',
-            transformation: [{ width: 500, height: 500, crop: 'limit' }]
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-        uploadStream.end(req.file.buffer);
-      });
-      
-      return res.json({ photoUrl: result.secure_url });
-    }
-    
-    // Fallback: convert to base64 (for testing without Cloudinary)
+    // Convert to base64
     const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-    return res.json({ photoUrl: base64 });
+    console.log('✅ Photo converted to base64, size:', Math.round(base64.length / 1024), 'KB');
+    
+    res.json({ photoUrl: base64 });
     
   } catch (error) {
     console.error('Upload error:', error);
@@ -233,22 +200,34 @@ app.put('/api/products/:category/:id', async (req, res) => {
   }
 });
 
-// DELETE product
+// DELETE product - ИСПРАВЛЕНО
 app.delete('/api/products/:category/:id', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'DB not connected' });
+  console.log('DELETE request received');
+  console.log('Params:', req.params);
+  
+  if (!pool) {
+    console.error('No database connection');
+    return res.status(503).json({ error: 'Database not connected' });
+  }
   
   const { category, id } = req.params;
-  console.log(`Deleting: category=${category}, id=${id}`);
+  
+  if (!category || !id) {
+    console.error('Missing category or id');
+    return res.status(400).json({ error: 'Missing category or id' });
+  }
   
   try {
     const result = await pool.query(
       'DELETE FROM products WHERE category = $1 AND product_id = $2 RETURNING *',
       [category, id]
     );
-    if (result.rows.length === 0) {
+    
+    console.log('Delete result:', result.rowCount);
+    
+    if (result.rowCount === 0) {
       res.status(404).json({ error: 'Product not found' });
     } else {
-      console.log(`Deleted: ${result.rows[0].name}`);
       res.json({ message: 'Deleted successfully', product: result.rows[0] });
     }
   } catch (error) {
@@ -262,8 +241,7 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    database: pool ? 'connected' : 'disconnected',
-    cloudinary: !!process.env.CLOUDINARY_CLOUD_NAME
+    database: pool ? 'connected' : 'disconnected'
   });
 });
 
@@ -296,7 +274,7 @@ async function startServer() {
   app.listen(PORT, () => {
     console.log(`\n🚀 Server running on http://localhost:${PORT}`);
     console.log(`📦 Database: ${dbReady ? '✅ connected' : '❌ not connected'}`);
-    console.log(`📸 Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME ? '✅ configured' : '⚠️ not configured (using base64)'}`);
+    console.log(`📸 Photos: base64 mode (no Cloudinary needed)`);
     console.log(`\n📱 Open: http://localhost:${PORT}\n`);
   });
 }
