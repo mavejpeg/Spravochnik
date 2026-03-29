@@ -118,7 +118,6 @@
             opacity: 0.5;
         }
         
-        /* Скрытое поле логина */
         .hidden-field {
             display: none;
             animation: slideDown 0.3s ease;
@@ -246,7 +245,7 @@
             </div>
             
             <form id="loginForm">
-                <!-- Режим: обычный пользователь (только пароль) -->
+                <!-- Обычный режим (только пароль) -->
                 <div id="userMode">
                     <div class="input-group">
                         <label>🔐 ПАРОЛЬ ДОСТУПА</label>
@@ -254,7 +253,7 @@
                     </div>
                 </div>
                 
-                <!-- Режим: РОП (логин + пароль) - скрыт по умолчанию -->
+                <!-- РОП режим (логин + пароль) -->
                 <div id="ropMode" class="hidden-field">
                     <div class="mode-badge rop-mode">👑 РЕЖИМ РОП</div>
                     <div class="input-group">
@@ -290,7 +289,7 @@
         
         let isRopMode = false;
         
-        // Проверяем, не залогинен ли уже пользователь
+        // Check if already logged in
         fetch('/api/check-auth')
             .then(res => res.json())
             .then(data => {
@@ -299,27 +298,23 @@
                 }
             });
         
-        // Переключение режима РОП
+        // Toggle ROP mode
         ropToggleBtn.addEventListener('click', () => {
             isRopMode = !isRopMode;
             
             if (isRopMode) {
-                // Включаем режим РОП
                 userMode.style.display = 'none';
                 ropMode.classList.add('show');
                 ropToggleBtn.textContent = '← Обычный вход';
                 ropToggleBtn.style.borderColor = 'var(--accent)';
                 submitBtn.textContent = 'ВОЙТИ КАК РОП';
-                // Фокус на поле логина
                 setTimeout(() => document.getElementById('ropUsername').focus(), 100);
             } else {
-                // Включаем обычный режим
                 userMode.style.display = 'block';
                 ropMode.classList.remove('show');
                 ropToggleBtn.textContent = '👑 Вход для РОП';
                 ropToggleBtn.style.borderColor = 'var(--border)';
                 submitBtn.textContent = 'ВОЙТИ';
-                // Фокус на поле пароля
                 setTimeout(() => document.getElementById('userPassword').focus(), 100);
             }
         });
@@ -328,7 +323,7 @@
             e.preventDefault();
             
             if (isRopMode) {
-                // РОП режим - нужны логин и пароль
+                // ROP mode - username + password
                 const username = document.getElementById('ropUsername').value.trim();
                 const password = document.getElementById('ropPassword').value;
                 
@@ -355,7 +350,7 @@
                     showError('Ошибка соединения с сервером');
                 }
             } else {
-                // Обычный режим - только пароль (используем USER аккаунт)
+                // Simple mode - only password
                 const password = document.getElementById('userPassword').value;
                 
                 if (!password) {
@@ -364,11 +359,10 @@
                 }
                 
                 try {
-                    // Пробуем войти как USER с введенным паролем
-                    const response = await fetch('/api/login', {
+                    const response = await fetch('/api/simple-login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: 'USER', password: password })
+                        body: JSON.stringify({ password })
                     });
                     
                     const data = await response.json();
@@ -376,7 +370,7 @@
                     if (response.ok) {
                         window.location.href = '/';
                     } else {
-                        showError('Неверный пароль');
+                        showError(data.error || 'Неверный пароль');
                     }
                 } catch (error) {
                     showError('Ошибка соединения с сервером');
