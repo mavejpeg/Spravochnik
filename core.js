@@ -1,12 +1,14 @@
-// core.js - полная рабочая версия с красивой загрузкой фото
+// core.js - полная исправленная версия
 
 // ========== API FUNCTIONS ==========
 
 async function getCategory(category) {
   try {
-    const response = await fetch(`/api/products/${category}`);
+    const response = await fetch(`/api/products/${category}`, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch');
-    return await response.json();
+    const data = await response.json();
+    console.log(`Loaded ${category}:`, data.length, 'items');
+    return data;
   } catch (error) {
     console.error('Fetch error:', error);
     return [];
@@ -18,6 +20,7 @@ async function addItem(category, item) {
     const response = await fetch(`/api/products/${category}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(item)
     });
     if (!response.ok) {
@@ -33,8 +36,10 @@ async function addItem(category, item) {
 
 async function deleteItem(category, id) {
   try {
+    console.log(`Deleting ${category}/${id}`);
     const response = await fetch(`/api/products/${category}/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      credentials: 'include'
     });
     if (!response.ok) {
       const error = await response.json();
@@ -52,6 +57,7 @@ async function updateItem(category, id, data) {
     const response = await fetch(`/api/products/${category}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data)
     });
     if (!response.ok) {
@@ -185,7 +191,8 @@ function renderEmpty(container, icon, title, sub) {
   `;
 }
 
-// Обновите renderProductCard - скрывайте кнопки если не РОП
+// ========== PRODUCT CARD ==========
+
 function renderProductCard(item, category, onDelete, onEdit) {
   const div = document.createElement('div');
   div.className = 'product-card';
@@ -195,10 +202,13 @@ function renderProductCard(item, category, onDelete, onEdit) {
   const badgeClass = STRENGTH_BADGE_CLASS[strength] || 'badge-strength-3';
   const photoUrl = item.photo_url || item.photoUrl;
   
+  // Проверяем права
+  const canEdit = window.isRopGlobal === true;
+  
   div.innerHTML = `
-    <div class="card-actions">
-      <button class="card-action-btn btn-edit" data-id="${productId}" style="${window.isRopGlobal ? '' : 'display: none !important;'}">✏️</button>
-      <button class="card-action-btn btn-delete" data-id="${productId}" style="${window.isRopGlobal ? '' : 'display: none !important;'}">🗑</button>
+    <div class="card-actions" style="${canEdit ? '' : 'display: none !important;'}">
+      <button class="card-action-btn btn-edit" data-id="${productId}" title="Редактировать">✏️</button>
+      <button class="card-action-btn btn-delete" data-id="${productId}" title="Удалить">🗑</button>
     </div>
     <div class="card-img ${photoUrl ? '' : 'no-img'}">
       ${photoUrl ? `<img src="${photoUrl}" alt="${escapeHtml(item.name)}" loading="lazy">` : '📦'}
@@ -221,7 +231,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
   
   // Кнопка удаления
   const deleteBtn = div.querySelector('.btn-delete');
-  if (deleteBtn && window.isRopGlobal) {
+  if (deleteBtn && canEdit) {
     deleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       if (confirm(`❌ Удалить "${item.name}"?`)) {
@@ -243,7 +253,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
   
   // Кнопка редактирования
   const editBtn = div.querySelector('.btn-edit');
-  if (editBtn && window.isRopGlobal) {
+  if (editBtn && canEdit) {
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       const editItem = {
@@ -259,7 +269,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
   return div;
 }
 
-// ========== PRODUCT MODAL WITH BEAUTIFUL PHOTO UPLOAD ==========
+// ========== PRODUCT MODAL ==========
 
 class ProductModal {
   constructor({ category, title, onSave, editItem = null }) {
@@ -304,7 +314,7 @@ class ProductModal {
               </div>
               <span class="progress-text">Загрузка...</span>
             </div>
-            <div class="photo-preview-container" id="photoPreviewContainer" style="${this.photoUrl ? 'display:block' : 'display:none'}">
+            <div class="photo-preview-container" id="photoPreviewContainer" style="${hasPhoto ? 'display:block' : 'display:none'}">
               <img class="photo-preview" id="photoPreview" src="${this.photoUrl || ''}">
               <button class="photo-remove-btn" id="removePhotoBtn" title="Удалить фото">✕</button>
             </div>
@@ -351,10 +361,14 @@ class ProductModal {
     const valDisp = overlay.querySelector('#strengthValDisplay');
     const labelDisp = overlay.querySelector('#strengthLabelDisplay');
     
-    slider.addEventListener('input', () => {
-      valDisp.textContent = slider.value;
-      labelDisp.textContent = STRENGTH_LABELS[slider.value] || '';
-    });
+    if (slider) {
+      slider.addEventListener('input', () => {
+        valDisp.textContent = slider.value;
+        labelDisp.textContent = STRENGTH_LABELS[slider.value] || '';
+        const val = parseInt(slider.value);
+        valDisp.style.color = val <= 3 ? 'var(--accent3)' : val <= 6 ? 'var(--accent4)' : 'var(--accent2)';
+      });
+    }
     
     // Photo upload
     const photoInput = overlay.querySelector('#photoInput');
@@ -365,53 +379,59 @@ class ProductModal {
     const previewContainer = overlay.querySelector('#photoPreviewContainer');
     const removePhotoBtn = overlay.querySelector('#removePhotoBtn');
     
-    // Click to upload
-    const uploadArea = overlay.querySelector('#photoUploadArea');
-    uploadArea.addEventListener('click', () => {
-      photoInput.click();
-    });
-    
-    photoInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+    if (photoInput) {
+      const uploadArea = overlay.querySelector('#photoUploadArea');
+      uploadArea.addEventListener('click', () => {
+        photoInput.click();
+      });
       
-      if (file.size > 5 * 1024 * 1024) {
-        alert('❌ Файл слишком большой! Максимум 5MB');
-        return;
-      }
-      
-      uploadProgress.style.display = 'block';
-      this.isUploading = true;
-      
-      // Simulate progress
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress = Math.min(progress + 10, 90);
-        if (progressBar) progressBar.style.width = progress + '%';
-        if (progressText) progressText.textContent = `Загрузка ${progress}%...`;
-      }, 100);
-      
-      try {
-        const photoUrl = await uploadPhoto(file);
-        this.photoUrl = photoUrl;
-        photoPreview.src = photoUrl;
-        previewContainer.style.display = 'block';
+      photoInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
         
-        clearInterval(interval);
-        if (progressBar) progressBar.style.width = '100%';
-        if (progressText) progressText.textContent = '✅ Готово!';
+        if (file.size > 5 * 1024 * 1024) {
+          alert('❌ Файл слишком большой! Максимум 5MB');
+          return;
+        }
         
-        setTimeout(() => {
+        if (!file.type.startsWith('image/')) {
+          alert('❌ Пожалуйста, выберите изображение');
+          return;
+        }
+        
+        uploadProgress.style.display = 'block';
+        this.isUploading = true;
+        
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress = Math.min(progress + 10, 90);
+          if (progressBar) progressBar.style.width = progress + '%';
+          if (progressText) progressText.textContent = `Загрузка ${progress}%...`;
+        }, 100);
+        
+        try {
+          const photoUrl = await uploadPhoto(file);
+          this.photoUrl = photoUrl;
+          photoPreview.src = photoUrl;
+          previewContainer.style.display = 'block';
+          
+          clearInterval(interval);
+          if (progressBar) progressBar.style.width = '100%';
+          if (progressText) progressText.textContent = '✅ Готово!';
+          
+          setTimeout(() => {
+            uploadProgress.style.display = 'none';
+            if (progressBar) progressBar.style.width = '0%';
+          }, 1000);
+        } catch (error) {
+          clearInterval(interval);
+          alert('❌ Ошибка загрузки: ' + error.message);
           uploadProgress.style.display = 'none';
-        }, 1000);
-      } catch (error) {
-        clearInterval(interval);
-        alert('❌ Ошибка загрузки: ' + error.message);
-        uploadProgress.style.display = 'none';
-      } finally {
-        this.isUploading = false;
-      }
-    });
+        } finally {
+          this.isUploading = false;
+        }
+      });
+    }
     
     // Remove photo
     if (removePhotoBtn) {
@@ -428,83 +448,54 @@ class ProductModal {
       setTimeout(() => overlay.remove(), 300);
     };
     
-    overlay.querySelector('.modal-close').addEventListener('click', closeModal);
-    overlay.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    const closeBtn = overlay.querySelector('.modal-close');
+    const cancelBtn = overlay.querySelector('.btn-cancel');
+    
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) closeModal();
     });
     
     // Save
     const saveBtn = overlay.querySelector('.btn-save');
-    saveBtn.addEventListener('click', async () => {
-      if (this.isUploading) {
-        alert('⏳ Подождите, фото загружается...');
-        return;
-      }
-      
-      const nameInput = overlay.querySelector('#fieldName');
-      const name = nameInput.value.trim();
-      
-      if (!name) {
-        alert('❌ Введите название товара');
-        nameInput.focus();
-        return;
-      }
-      
-      const item = {
-        id: this.editItem?.id || (Date.now() + Math.random()).toString(),
-        name: name,
-        strength: parseInt(slider.value),
-        origin: overlay.querySelector('#fieldOrigin').value.trim(),
-        desc: overlay.querySelector('#fieldDesc').value.trim(),
-        photoUrl: this.photoUrl
-      };
-      
-      try {
-        await this.onSave(item);
-        closeModal();
-      } catch (err) {
-        alert('❌ Ошибка: ' + err.message);
-      }
-    });
-  }
-}
-
-// Функция для выхода
-async function logout() {
-  await fetch('/api/logout', { method: 'POST', credentials: 'include' });
-  window.location.href = '/login.html';
-}
-
-// Добавьте обработчик для кнопки выхода после загрузки DOM
-document.addEventListener('DOMContentLoaded', () => {
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', logout);
-  }
-});
-
-async function updateCounters() {
-  const categories = ['tobacco', 'liquids', 'snus', 'disposables'];
-  const elements = {
-    'tobacco': 'cnt-tobacco',
-    'liquids': 'cnt-liquids', 
-    'snus': 'cnt-snus',
-    'disposables': 'cnt-disposables'
-  };
-  
-  for (const cat of categories) {
-    const items = await getCategory(cat);
-    const el = document.getElementById(elements[cat]);
-    if (el) {
-      el.textContent = items.length ? `${items.length} позиций` : 'Пусто — добавьте первую';
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async () => {
+        if (this.isUploading) {
+          alert('⏳ Подождите, фото загружается...');
+          return;
+        }
+        
+        const nameInput = overlay.querySelector('#fieldName');
+        const name = nameInput ? nameInput.value.trim() : '';
+        
+        if (!name) {
+          alert('❌ Введите название товара');
+          if (nameInput) nameInput.focus();
+          return;
+        }
+        
+        const item = {
+          id: this.editItem?.id || (Date.now() + Math.random()).toString(),
+          name: name,
+          strength: parseInt(overlay.querySelector('#fieldStrength')?.value || 5),
+          origin: overlay.querySelector('#fieldOrigin')?.value.trim() || '',
+          desc: overlay.querySelector('#fieldDesc')?.value.trim() || '',
+          photoUrl: this.photoUrl
+        };
+        
+        try {
+          await this.onSave(item);
+          closeModal();
+        } catch (err) {
+          alert('❌ Ошибка: ' + err.message);
+        }
+      });
     }
   }
 }
 
-// Вызывайте updateCounters() после каждого изменения
-
-// ========== MAKE GLOBAL ==========
+// ========== EXPORT GLOBALS ==========
 
 window.getCategory = getCategory;
 window.addItem = addItem;
