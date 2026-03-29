@@ -3,8 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Жидкости — Справочник</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 
@@ -32,7 +35,7 @@
   <div class="section active" id="tab-catalog">
     <div class="sec-header">
       <span class="sec-title">💧 Жидкости — каталог</span>
-      <button class="btn-add" id="btnAddLiquid">
+      <button class="btn-add" id="btnAddLiquid" style="display: none;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
         Добавить жидкость
       </button>
@@ -49,7 +52,6 @@
   <!-- INFO -->
   <div class="section" id="tab-info">
     <div class="sec-header"><span class="sec-title">Общая информация</span></div>
-
     <div class="two-col">
       <div class="info-card">
         <h3>⚗️ Типы жидкостей</h3>
@@ -67,38 +69,7 @@
           <li>20/50 — два варианта крепости</li>
           <li>50 мг — крепкие</li>
           <li>70+ мг — экстремальные</li>
-          <li>100 мг — без подписи (самоубийцы)</li>
         </ul>
-      </div>
-    </div>
-
-    <div class="accordion">
-      <div class="acc-header">
-        <span class="acc-title">Black Jack vs Camel — в чём разница?</span>
-        <span class="acc-arrow">▼</span>
-      </div>
-      <div class="acc-body">
-        <div class="two-col" style="margin-top:14px">
-          <div class="info-card">
-            <h3>🐫 Camel</h3>
-            <ul><li>1-й план — вкус</li><li>2-й план — табачная нота</li></ul>
-          </div>
-          <div class="info-card">
-            <h3>🃏 Black Jack</h3>
-            <ul><li>1-й план — табак</li><li>2-й план — вкус</li></ul>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="accordion">
-      <div class="acc-header">
-        <span class="acc-title">Почему жидкость темнеет?</span>
-        <span class="acc-arrow">▼</span>
-      </div>
-      <div class="acc-body">
-        <p>Жидкость темнеет при карамелизации — когда долго стоит или находится в тепле. Цвет не означает плохое качество. Даже светлая жидкость потемнеет через пару дней на солнце.</p>
-        <div class="hl ok" style="margin-top:12px">Скрипт: «Цвет ароматизатора ни на что не влияет — он может быть светлым и тёмным. Это зависит от производителя, а не от качества»</div>
       </div>
     </div>
   </div>
@@ -106,25 +77,15 @@
   <!-- ALTERNATIVES -->
   <div class="section" id="tab-alts">
     <div class="sec-header"><span class="sec-title">Альтернативы</span></div>
-    <div class="info-card" data-searchable style="margin-bottom:14px">
+    <div class="info-card">
       <h3>🔄 Чем заменить</h3>
       <ul>
         <li><strong>Брызги</strong> → Провинция, Наркоз, Дуал, Трава, Хром</li>
         <li><strong>Рик и Морти</strong> → Сайонара, Злая Монашка, Ронин</li>
         <li><strong>Vape Cloud</strong> → Хром</li>
-        <li><strong>Скала, Монстр, Angry Vape</strong> (не производят) → Бруско</li>
+        <li><strong>Скала, Монстр, Angry Vape</strong> → Бруско</li>
         <li><strong>Скала</strong> → Чакра</li>
         <li><strong>Тойз</strong> → Антагонист</li>
-      </ul>
-    </div>
-    <div class="info-card" data-searchable>
-      <h3>🎨 Цвета Хром</h3>
-      <ul>
-        <li>Розовая — сладкая</li>
-        <li>Оранжевая — генетик</li>
-        <li>Голубая — холодная</li>
-        <li>Белая — классика</li>
-        <li>Зелёная — кислая</li>
       </ul>
     </div>
   </div>
@@ -132,79 +93,68 @@
   <!-- COILS -->
   <div class="section" id="tab-coils">
     <div class="sec-header"><span class="sec-title">Совместимость испарителей</span></div>
-    <div class="accordion open" data-searchable>
-      <div class="acc-header">
-        <span class="acc-title">Таблица коилов</span>
-        <span class="acc-arrow">▼</span>
-      </div>
+    <div class="accordion open">
+      <div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div>
       <div class="acc-body">
         <table class="ref-table">
-          <tr><th>Устройство / Платформа</th><th>Тип коила</th><th>Совместимые модели</th></tr>
-          <tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr>
-          <tr><td></td><td>R-3 коил</td><td>Pasito Mini</td></tr>
-          <tr><td></td><td>C-4 коил</td><td>Santi, Charon T50</td></tr>
-          <tr><td></td><td>K-3 коил</td><td>Po Sito 2, Knight 80</td></tr>
-          <tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco (все модели)</td></tr>
-          <tr><td>X-ross 4</td><td>Сменные картриджи</td><td>0.4, 0.6, 0.8, 1.2 Ом — с 4 поколения</td></tr>
-          <tr><td>Vmate</td><td>Сменные картриджи</td><td>0.4, 0.7, 1.2 Ом</td></tr>
-          <tr><td>Manta</td><td>Manta</td><td>—</td></tr>
+          <tr><th>Устройство</th><th>Тип коила</th></tr>
+          <tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td></tr>
+          <tr><td>MiniCan</td><td>4-я платформа</td></tr>
+          <tr><td>X-ross 4</td><td>Сменные картриджи</td></tr>
+          <tr><td>Vmate</td><td>Сменные картриджи</td></tr>
         </table>
-        <p style="margin-top:14px; font-size:12px; color:var(--muted)">Серии: Pnp, TW (Drag E60), WM (Drag E60), TPP, PNP-X (Drag 5, Drag X2, Drag C2, Argus Pro 2), Dragy, Argus</p>
       </div>
     </div>
   </div>
 
 </main>
 
-<script src="core.js"></script>
+<script src="core.js?v=2"></script>
 <script>
-  const CATEGORY = 'tobacco'; // измените для каждой страницы
+  const CATEGORY = 'liquids';
+  let currentUser = null;
   let isRop = false;
 
   initTabs();
   initAccordions();
   initSearch();
   
-  // Проверка прав пользователя
   async function checkPermissions() {
     try {
       const response = await fetch('/api/check-auth', { credentials: 'include' });
       const data = await response.json();
       
-      const addButton = document.getElementById('btnAddTobacco');
-      
-      if (data.authenticated && (data.user.role === 'rop' || data.user.role === 'root')) {
-        isRop = true;
-        if (addButton) addButton.style.display = 'flex';
+      if (data.authenticated) {
+        currentUser = data.user;
+        isRop = (data.user.role === 'rop' || data.user.role === 'root');
+        window.isRopGlobal = isRop;
+        
+        const userNameSpan = document.getElementById('userName');
+        if (userNameSpan) userNameSpan.textContent = data.user.full_name;
+        
+        const ropBtn = document.getElementById('ropBtn');
+        if (ropBtn && isRop) ropBtn.style.display = 'block';
+        
+        const addButton = document.getElementById('btnAddLiquid');
+        if (addButton) {
+          addButton.style.display = isRop ? 'flex' : 'none';
+        }
       } else {
-        isRop = false;
-        if (addButton) addButton.style.display = 'none';
+        window.location.href = '/login.html';
       }
-      
-      // Показываем имя пользователя
-      const userNameSpan = document.getElementById('userName');
-      if (userNameSpan && data.user) {
-        userNameSpan.textContent = data.user.full_name;
-      }
-      
-      // Показываем кнопку РОП если нужно
-      const ropBtn = document.getElementById('ropBtn');
-      if (ropBtn && data.user && (data.user.role === 'rop' || data.user.role === 'root')) {
-        ropBtn.style.display = 'block';
-      }
-      
     } catch (error) {
       console.error('Permission check error:', error);
+      window.location.href = '/login.html';
     }
   }
   
   async function renderGrid() {
-    const grid = document.getElementById('tobaccoGrid');
+    const grid = document.getElementById('liquidsGrid');
     const items = await getCategory(CATEGORY);
     grid.innerHTML = '';
 
     if (!items.length) {
-      renderEmpty(grid, '🌿', 'Каталог пуст', isRop ? 'Нажмите «Добавить» чтобы внести первую позицию' : 'Нет доступных позиций');
+      renderEmpty(grid, '💧', 'Каталог пуст', isRop ? 'Нажмите «Добавить жидкость» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
 
@@ -225,30 +175,21 @@
         }
       );
       
-      // Скрываем кнопки редактирования/удаления если не РОП
-      if (!isRop) {
-        const actions = card.querySelector('.card-actions');
-        if (actions) actions.style.display = 'none';
-      }
-      
       grid.appendChild(card);
     }
   }
 
-  // Кнопка добавления
-  const addBtn = document.getElementById('btnAddTobacco');
+  const addBtn = document.getElementById('btnAddLiquid');
   if (addBtn) {
     addBtn.addEventListener('click', () => {
-      console.log('Add button clicked, isRop:', isRop);
       if (!isRop) {
         alert('У вас нет прав для добавления');
         return;
       }
       new ProductModal({
         category: CATEGORY,
-        title: 'Добавить',
+        title: 'Добавить жидкость',
         onSave: async (item) => {
-          console.log('Saving item:', item);
           await addItem(CATEGORY, item);
           renderGrid();
         }
@@ -256,224 +197,148 @@
     });
   }
 
-  // Запускаем проверку прав и рендер
-  checkPermissions().then(() => renderGrid());
-</script>
-
-<script>
-// Информация о пользователе
-async function loadUserInfo() {
-    try {
-        const response = await fetch('/api/check-auth');
-        const data = await response.json();
-        
-        if (data.authenticated) {
-            document.getElementById('userName').textContent = data.user.full_name;
-            if (data.user.role === 'rop') {
-                document.getElementById('ropBtn').style.display = 'block';
-            }
-        }
-    } catch (error) {
-        console.error('Error loading user info:', error);
-    }
-}
-
-// Выход
-document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
     window.location.href = '/login.html';
-});
+  });
 
-// Кнопка управления РОП
-document.getElementById('ropBtn')?.addEventListener('click', () => {
+  document.getElementById('ropBtn')?.addEventListener('click', () => {
     openRopPanel();
-});
+  });
 
-function openRopPanel() {
+  async function openRopPanel() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.id = 'ropModal';
     modal.innerHTML = `
-        <div class="modal" style="max-width: 600px;">
-            <div class="modal-header">
-                <span class="modal-title">👑 Панель управления</span>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="field">
-                    <label>➕ Добавить пользователя</label>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
-                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
-                        <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
-                        <button id="addUserBtn" class="btn-add">Добавить</button>
-                    </div>
-                </div>
-                
-                <div class="field">
-                    <label>📋 Список пользователей</label>
-                    <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
-                </div>
-            </div>
+      <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+          <span class="modal-title">👑 Панель управления</span>
+          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
         </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>➕ Добавить пользователя</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
+              <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
+              <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
+              <button id="addUserBtn" class="btn-add">Добавить</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>📋 Список пользователей</label>
+            <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
+          </div>
+        </div>
+      </div>
     `;
     
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
-    
-    loadUsers();
+    await loadUsers();
     
     document.getElementById('addUserBtn').addEventListener('click', async () => {
-        const username = document.getElementById('newUsername').value.trim();
-        const password = document.getElementById('newPassword').value;
-        const full_name = document.getElementById('newFullName').value.trim();
-        
-        if (!username || !password || !full_name) {
-            alert('Заполните все поля');
-            return;
-        }
-        
-        if (!/^\d{4}$/.test(password)) {
-            alert('Пароль должен состоять из 4 цифр');
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, full_name, role: 'user' })
-            });
-            
-            if (response.ok) {
-                alert('Пользователь добавлен');
-                document.getElementById('newUsername').value = '';
-                document.getElementById('newPassword').value = '';
-                document.getElementById('newFullName').value = '';
-                loadUsers();
-            } else {
-                const error = await response.json();
-                alert(error.error);
-            }
-        } catch (error) {
-            alert('Ошибка: ' + error.message);
-        }
-    });
-}
-async function loadUsers() {
-    try {
-        const response = await fetch('/api/users', { credentials: 'include' });
-        const users = await response.json();
-        
-        const container = document.getElementById('usersList');
-        if (!container) return;
-        
-        // Получаем текущего пользователя
-        const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
-        const me = await meResponse.json();
-        
-        container.innerHTML = users.map(user => {
-            // Определяем, можно ли менять пароль
-            let canChangePassword = false;
-            
-            if (me.user.role === 'root') {
-                // Root может менять пароль всем
-                canChangePassword = true;
-            } else if (me.user.role === 'rop') {
-                // ROP может менять пароль только обычным пользователям
-                if (user.role === 'user') {
-                    canChangePassword = true;
-                }
-            }
-            
-            // Определяем, можно ли удалять
-            let canDelete = false;
-            if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) {
-                canDelete = true;
-            }
-            
-            return `
-                <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                        <div>
-                            <strong>${escapeHtml(user.full_name)}</strong><br>
-                            <span style="font-size: 11px; color: var(--muted);">
-                                Логин: ${user.username} | Роль: ${user.role === 'root' ? '👑 ROOT' : (user.role === 'rop' ? '👑 РОП' : '👤 Пользователь')}
-                            </span>
-                        </div>
-                        <div style="display: flex; gap: 6px;">
-                            ${canChangePassword ? `<button onclick="changePassword(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
-                            ${canDelete ? `<button onclick="deleteUser(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('Load users error:', error);
-    }
-}
-async function changePassword(userId, userName) {
-    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
-    
-    if (!newPassword) return;
-    
-    if (!/^\d{4}$/.test(newPassword)) {
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newPassword').value;
+      const full_name = document.getElementById('newFullName').value.trim();
+      
+      if (!username || !password || !full_name) {
+        alert('Заполните все поля');
+        return;
+      }
+      if (!/^\d{4}$/.test(password)) {
         alert('Пароль должен состоять из 4 цифр');
         return;
-    }
-    
-    try {
-        const response = await fetch(`/api/users/${userId}/change-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ newPassword })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            alert('Пароль успешно изменен');
-        } else {
-            alert(data.error || 'Ошибка смены пароля');
-        }
-    } catch (error) {
-        alert('Ошибка: ' + error.message);
-    }
-}
-
-async function deleteUser(userId) {
-    if (confirm('Удалить пользователя?')) {
-        try {
-            const response = await fetch(`/api/users/${userId}`, {
-                method: 'DELETE'
-            });
-            
-            if (response.ok) {
-                alert('Пользователь удален');
-                loadUsers();
-            } else {
-                const error = await response.json();
-                alert(error.error);
-            }
-        } catch (error) {
-            alert('Ошибка: ' + error.message);
-        }
-    }
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
+      }
+      
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, password, full_name, role: 'user' })
+      });
+      
+      if (response.ok) {
+        alert('Пользователь добавлен');
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('newFullName').value = '';
+        await loadUsers();
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
     });
-}
+  }
 
-loadUserInfo();
+  async function loadUsers() {
+    const response = await fetch('/api/users', { credentials: 'include' });
+    const users = await response.json();
+    const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
+    const me = await meResponse.json();
+    
+    const container = document.getElementById('usersList');
+    if (!container) return;
+    
+    container.innerHTML = users.map(user => {
+      let canChange = false;
+      if (me.user.role === 'root') canChange = true;
+      else if (me.user.role === 'rop' && user.role === 'user') canChange = true;
+      
+      let canDelete = false;
+      if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) canDelete = true;
+      
+      return `
+        <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong>${escapeHtml(user.full_name)}</strong><br>
+              <span style="font-size: 11px;">Логин: ${user.username} | Роль: ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              ${canChange ? `<button onclick="window.changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
+              ${canDelete ? `<button onclick="window.deleteUserById(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.changePasswordUser = async (userId, userName) => {
+    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
+    if (!newPassword) return;
+    if (!/^\d{4}$/.test(newPassword)) {
+      alert('Пароль должен состоять из 4 цифр');
+      return;
+    }
+    const response = await fetch(`/api/users/${userId}/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ newPassword })
+    });
+    if (response.ok) alert('Пароль успешно изменен');
+    else alert('Ошибка смены пароля');
+  };
+
+  window.deleteUserById = async (userId) => {
+    if (confirm('Удалить пользователя?')) {
+      const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
+      if (response.ok) {
+        alert('Пользователь удален');
+        await loadUsers();
+      } else alert('Ошибка удаления');
+    }
+  };
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+
+  checkPermissions().then(() => renderGrid());
 </script>
 </body>
 </html>
