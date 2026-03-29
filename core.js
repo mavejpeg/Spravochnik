@@ -1,4 +1,4 @@
-// core.js - полностью исправленная версия
+// core.js - упрощенная версия
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
 const API_URL = isBrowser ? window.location.origin : '';
 
@@ -22,7 +22,10 @@ async function apiAddProduct(category, product) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(product)
     });
-    if (!response.ok) throw new Error('Failed to add');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to add');
+    }
     return await response.json();
   } catch (error) {
     console.error('API add error:', error);
@@ -37,7 +40,10 @@ async function apiUpdateProduct(category, id, product) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(product)
     });
-    if (!response.ok) throw new Error('Failed to update');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update');
+    }
     return await response.json();
   } catch (error) {
     console.error('API update error:', error);
@@ -47,10 +53,15 @@ async function apiUpdateProduct(category, id, product) {
 
 async function apiDeleteProduct(category, id) {
   try {
+    console.log(`Deleting: ${category}/${id}`);
     const response = await fetch(`${API_URL}/api/products/${category}/${id}`, {
       method: 'DELETE'
     });
-    if (!response.ok) throw new Error('Failed to delete');
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete');
+    }
     return await response.json();
   } catch (error) {
     console.error('API delete error:', error);
@@ -63,7 +74,7 @@ async function uploadPhoto(file) {
   formData.append('photo', file);
   
   try {
-    console.log('Uploading photo...', file.name, file.size);
+    console.log('Uploading photo...', file.name, Math.round(file.size / 1024), 'KB');
     
     const response = await fetch(`${API_URL}/api/upload`, {
       method: 'POST',
@@ -76,7 +87,7 @@ async function uploadPhoto(file) {
     }
     
     const data = await response.json();
-    console.log('Upload success:', data.photoUrl);
+    console.log('Upload success, size:', Math.round(data.photoUrl.length / 1024), 'KB');
     return data.photoUrl;
   } catch (error) {
     console.error('Upload error:', error);
@@ -103,7 +114,6 @@ async function addItem(cat, item) {
 }
 
 async function deleteItem(cat, id) {
-  console.log(`Deleting: ${cat}/${id}`);
   return await apiDeleteProduct(cat, id);
 }
 
@@ -236,7 +246,6 @@ function renderProductCard(item, category, onDelete, onEdit) {
   const strength = item.strength || 5;
   const badgeClass = STRENGTH_BADGE_CLASS[strength] || 'badge-strength-3';
 
-  // Компактные точки крепости
   const strengthDots = Array.from({length: 10}, (_, i) => {
     const isActive = i < strength;
     return `<span class="strength-dot ${isActive ? 'active' : ''}" title="${i+1}/10"></span>`;
@@ -264,14 +273,14 @@ function renderProductCard(item, category, onDelete, onEdit) {
     </div>
   `;
 
-  // Кнопка удаления
+  // Delete button
   const deleteBtn = div.querySelector('.btn-delete');
   if (deleteBtn) {
     deleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       e.preventDefault();
       
-      if (confirm(`❌ Удалить "${item.name}"?\n\nЭто действие нельзя отменить.`)) {
+      if (confirm(`❌ Удалить "${item.name}"?`)) {
         try {
           div.style.opacity = '0.5';
           div.style.pointerEvents = 'none';
@@ -288,7 +297,6 @@ function renderProductCard(item, category, onDelete, onEdit) {
           }, 300);
           
         } catch (error) {
-          console.error('Delete error:', error);
           alert('Ошибка при удалении: ' + error.message);
           div.style.opacity = '1';
           div.style.pointerEvents = 'auto';
@@ -297,7 +305,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
     });
   }
 
-  // Кнопка редактирования
+  // Edit button
   const editBtn = div.querySelector('.btn-edit');
   if (editBtn) {
     editBtn.addEventListener('click', (e) => {
@@ -348,7 +356,6 @@ class ProductModal {
               <p>Нажмите или перетащите фото<br><strong>JPG, PNG, WEBP до 5MB</strong></p>
             </div>
             <div id="uploadProgress" style="display:none; margin-top:10px;">
-              <progress value="0" max="100" style="width:100%"></progress>
               <span style="font-size:12px">⏳ Загрузка...</span>
             </div>
             <img class="photo-preview" id="photoPreview" ${this.photoUrl ? `src="${this.photoUrl}" style="display:block"` : ''}>
@@ -428,9 +435,7 @@ class ProductModal {
             photoPreview.src = photoUrl;
             photoPreview.style.display = 'block';
           }
-          console.log('✅ Photo uploaded:', photoUrl);
         } catch (error) {
-          console.error('Upload error:', error);
           alert('❌ Ошибка загрузки фото: ' + error.message);
         } finally {
           if (uploadProgress) uploadProgress.style.display = 'none';
@@ -482,13 +487,10 @@ class ProductModal {
           photoUrl: this.photoUrl
         };
         
-        console.log('Saving item:', item);
-        
         try {
           await this.onSave(item);
           closeModal();
         } catch (error) {
-          console.error('Save error:', error);
           alert('❌ Ошибка сохранения: ' + error.message);
         }
       });
@@ -504,36 +506,30 @@ async function loadInitialData() {
   for (const cat of categories) {
     try {
       const items = await getCategory(cat);
-      if (items.length === 0) {
-        if (cat === 'disposables') {
-          const initialData = [
-            { id: 'disp_1', name: 'Husky', strength: 7, origin: 'Россия', desc: 'Крепкие, со льдом. Все модели.' },
-            { id: 'disp_2', name: 'Lost Mary', strength: 4, origin: 'Китай', desc: 'Лёгкие, фруктовые вкусы. От 4000 до 30000 затяжек.' },
-            { id: 'disp_3', name: 'Plonk', strength: 3, origin: 'Россия', desc: 'Премиальные лёгкие. Натуральные ароматы.' },
-            { id: 'disp_4', name: 'Iceberg', strength: 8, origin: 'Россия', desc: 'Крепкие. 6000 затяжек.' },
-            { id: 'disp_5', name: 'Ignite', strength: 3, origin: 'Россия', desc: 'Лёгкие, натуральные ароматы. 10000-25000 затяжек.' }
-          ];
-          for (const item of initialData) {
-            await addItem(cat, item);
-          }
-          console.log(`✅ Added initial data for ${cat}`);
+      if (items.length === 0 && cat === 'disposables') {
+        const initialData = [
+          { id: 'disp_1', name: 'Husky', strength: 7, origin: 'Россия', desc: 'Крепкие, со льдом' },
+          { id: 'disp_2', name: 'Lost Mary', strength: 4, origin: 'Китай', desc: 'Лёгкие, фруктовые' },
+          { id: 'disp_3', name: 'Plonk', strength: 3, origin: 'Россия', desc: 'Премиальные лёгкие' }
+        ];
+        for (const item of initialData) {
+          await addItem(cat, item);
         }
       }
     } catch (error) {
-      console.error(`Error loading initial data for ${cat}:`, error);
+      console.error('Error loading initial data:', error);
     }
   }
 }
 
-// ========== EXPORTS FOR BROWSER ==========
-
+// Initialize
 if (isBrowser) {
   document.addEventListener('DOMContentLoaded', () => {
     loadInitialData();
   });
 }
 
-// Make functions available globally
+// Make functions global
 if (typeof window !== 'undefined') {
   window.getCategory = getCategory;
   window.addItem = addItem;
@@ -545,7 +541,4 @@ if (typeof window !== 'undefined') {
   window.renderProductCard = renderProductCard;
   window.renderEmpty = renderEmpty;
   window.ProductModal = ProductModal;
-  window.STRENGTH_LABELS = STRENGTH_LABELS;
-  window.STRENGTH_BADGE_CLASS = STRENGTH_BADGE_CLASS;
-  window.uploadPhoto = uploadPhoto;
 }
