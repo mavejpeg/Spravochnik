@@ -3,8 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Жевательный табак — Справочник</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 
@@ -32,7 +35,7 @@
   <div class="section active" id="tab-catalog">
     <div class="sec-header">
       <span class="sec-title">🫙 Жевательный табак</span>
-      <button class="btn-add" id="btnAddSnus">
+      <button class="btn-add" id="btnAddSnus" style="display: none;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
         Добавить позицию
       </button>
@@ -40,7 +43,7 @@
 
     <div class="alert-bar success">
       <span>✅</span>
-      <span>Жевательный табак (шайба) — бездымный способ потребления никотина. Подходит для спортсменов, аллергиков и тех, кто бросает курить.</span>
+      <span>Жевательный табак (шайба) — бездымный способ потребления никотина.</span>
     </div>
 
     <div class="cards-grid" id="snusGrid"></div>
@@ -49,173 +52,103 @@
   <!-- HOW TO -->
   <div class="section" id="tab-howto">
     <div class="sec-header"><span class="sec-title">Как применять</span></div>
-    <div class="info-card" style="margin-bottom:16px" data-searchable>
+    <div class="info-card">
       <h3>📋 Инструкция для клиента</h3>
       <div class="steps">
-        <div class="step">
-          <div class="step-num">1</div>
-          <div class="step-body"><strong>Подготовить область</strong><span>Промокнуть область между верхней губой и десной сухой салфеткой для лучшего всасывания.</span></div>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <div class="step-body"><strong>Вложить пауч</strong><span>Пауч кладётся между верхней губой и верхней десной. Левая/правая сторона — чередовать.</span></div>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <div class="step-body"><strong>Держать 1–15 минут</strong><span>Никотин поступает через слизистую постепенно. Не жевать — не жуётся!</span></div>
-        </div>
-        <div class="step">
-          <div class="step-num">4</div>
-          <div class="step-body"><strong>Утилизировать</strong><span>Выбросить в мусор. Некоторые банки имеют отсек для использованных паучей (крышка).</span></div>
-        </div>
+        <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Подготовить область</strong><span>Промокнуть область между верхней губой и десной.</span></div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Вложить пауч</strong><span>Пауч кладётся между верхней губой и верхней десной.</span></div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Держать 1–15 минут</strong><span>Никотин поступает через слизистую постепенно.</span></div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Утилизировать</strong><span>Выбросить в мусор.</span></div></div>
       </div>
     </div>
-    <div class="hl warn" data-searchable>Несмотря на название «жевательный» — пауч НЕ жуётся. Некоторые производители (FAVE) пишут «мягко покусывать» — для отвода глаз в легислативе.</div>
   </div>
 
   <!-- FORMATS -->
   <div class="section" id="tab-formats">
     <div class="sec-header"><span class="sec-title">Форматы паучей</span></div>
     <div class="two-col">
-      <div class="info-card" data-searchable>
+      <div class="info-card">
         <h3>📦 Размеры</h3>
-        <ul>
-          <li><strong>Large</strong> — стандарт, 0.8–1 г, наполненный</li>
-          <li><strong>Slim</strong> — тонкий и широкий, ~1 г, менее заметен</li>
-          <li><strong>Mini</strong> — маленький, ~0.4 г, максимально незаметен</li>
-        </ul>
+        <ul><li><strong>Large</strong> — стандарт, 0.8–1 г</li><li><strong>Slim</strong> — тонкий и широкий, ~1 г</li><li><strong>Mini</strong> — маленький, ~0.4 г</li></ul>
       </div>
-      <div class="info-card" data-searchable>
+      <div class="info-card">
         <h3>🌿 Типы сырья</h3>
-        <ul>
-          <li><strong>White</strong> — промытый табак, мягкие аромки (малина, черника)</li>
-          <li><strong>Классический тёмный</strong> — менее промытый, агрессивные аромки (ментол, бергамот)</li>
-        </ul>
+        <ul><li><strong>White</strong> — промытый табак</li><li><strong>Классический тёмный</strong> — менее промытый</li></ul>
       </div>
-    </div>
-    <div class="info-card" data-searchable>
-      <h3>🧮 Как считается крепость пауча</h3>
-      <ul>
-        <li>Крепость сырья ÷ вес одного пауча = крепость пауча</li>
-        <li>Mini ~0.4 г → крепость ≈ –23 мг / пауч (при той же заявленной крепости сырья)</li>
-        <li>За крепость сырья принимаем заявленную производителем — не паучей</li>
-        <li>Slim и Large у большинства производителей одинаковы по весу → одинаковая крепость</li>
-      </ul>
     </div>
   </div>
 
-  <!-- STRENGTH TABLE -->
+  <!-- STRENGTH -->
   <div class="section" id="tab-strength">
     <div class="sec-header"><span class="sec-title">Классификация по крепости</span></div>
-
-    <div class="accordion open" data-searchable>
+    <div class="accordion open">
       <div class="acc-header"><span class="acc-title">🔥 Крепкие</span><span class="acc-arrow">▼</span></div>
       <div class="acc-body">
-        <table class="ref-table">
-          <tr><th>Бренд</th><th>Особенности</th></tr>
-          <tr><td><strong>Corvus Crash</strong></td><td>68 мг — самый крепкий</td></tr>
-          <tr><td><strong>Адекс</strong></td><td>Мощный удар</td></tr>
-          <tr><td><strong>ЕРОК Стронг (серые)</strong></td><td>Прямой аналог Siberia</td></tr>
-          <tr><td><strong>HAQMAN</strong></td><td>Премиальный табак</td></tr>
-          <tr><td><strong>СТ (Siberia Town)</strong></td><td>Аналог HAQMAN по крепости</td></tr>
-          <tr><td><strong>Iceberg Strong</strong></td><td>60 мг</td></tr>
-          <tr><td><strong>Husky Strong</strong></td><td>20 мг (ощущается как 50)</td></tr>
-          <tr><td><strong>Ayax Strong Strong</strong></td><td>~55 мг (2 золотых наклейки)</td></tr>
-          <tr><td><strong>Angry Chew</strong></td><td>70 мг (ощущается меньше)</td></tr>
-        </table>
+        <ul><li><strong>Corvus Crash</strong> — 68 мг</li><li><strong>Адекс</strong> — мощный удар</li><li><strong>Iceberg Strong</strong> — 60 мг</li><li><strong>Angry Chew</strong> — 70 мг</li></ul>
       </div>
     </div>
-
-    <div class="accordion" data-searchable>
+    <div class="accordion">
       <div class="acc-header"><span class="acc-title">🟡 Средние</span><span class="acc-arrow">▼</span></div>
       <div class="acc-body">
-        <table class="ref-table">
-          <tr><th>Бренд</th><th>Особенности</th></tr>
-          <tr><td><strong>Корвус Жёлтый</strong></td><td>Золотая середина</td></tr>
-          <tr><td><strong>Siberia вся</strong></td><td>43 мг, классика рынка</td></tr>
-          <tr><td><strong>Angry Birds Chew</strong></td><td>С дыней — крепче</td></tr>
-          <tr><td><strong>Monster Chewer</strong></td><td>СПРЕССОВАННЫЕ листья</td></tr>
-          <tr><td><strong>Dzen Strong</strong></td><td>50 мг</td></tr>
-          <tr><td><strong>Zверь</strong></td><td>40 мг</td></tr>
-          <tr><td><strong>Swag Strong</strong></td><td>★★★★★</td></tr>
-          <tr><td><strong>Drymost</strong></td><td>50 мг</td></tr>
-          <tr><td><strong>Corvus Toss</strong></td><td>~40 мг</td></tr>
-          <tr><td><strong>Iceberg Medium</strong></td><td>40 мг</td></tr>
-          <tr><td><strong>Hismoke Strong</strong></td><td>30 мг</td></tr>
-          <tr><td><strong>ЕРОК Medium (синие)</strong></td><td>Полегче по ощущениям</td></tr>
-        </table>
+        <ul><li><strong>Siberia</strong> — 43 мг</li><li><strong>Dzen Strong</strong> — 50 мг</li><li><strong>Zверь</strong> — 40 мг</li><li><strong>Drymost</strong> — 50 мг</li></ul>
       </div>
     </div>
-
-    <div class="accordion" data-searchable>
+    <div class="accordion">
       <div class="acc-header"><span class="acc-title">💨 Лёгкие</span><span class="acc-arrow">▼</span></div>
       <div class="acc-body">
-        <table class="ref-table">
-          <tr><th>Бренд</th><th>Особенности</th></tr>
-          <tr><td><strong>Husky Soft</strong></td><td>10 мг (ощущается как 30)</td></tr>
-          <tr><td><strong>Swag Medium</strong></td><td>★★★★</td></tr>
-          <tr><td><strong>FAVE</strong></td><td>25–28 мг, сухой</td></tr>
-          <tr><td><strong>Hismoke Classic</strong></td><td>22 мг</td></tr>
-          <tr><td><strong>Dzen Medium</strong></td><td>35–40 мг</td></tr>
-          <tr><td><strong>Корвус Зелёный</strong></td><td>Ниже среднего</td></tr>
-          <tr><td><strong>IceBurn</strong></td><td>Ниже среднего</td></tr>
-          <tr><td><strong>Одинс / ЕРОК Light</strong></td><td>Одинс = ЕРОК. Некоторые вкусы крепче.</td></tr>
-        </table>
+        <ul><li><strong>Husky Soft</strong> — 10 мг</li><li><strong>FAVE</strong> — 25–28 мг</li><li><strong>Hismoke Classic</strong> — 22 мг</li></ul>
       </div>
     </div>
   </div>
 
 </main>
 
-<script src="core.js"></script>
+<script src="core.js?v=2"></script>
 <script>
-  const CATEGORY = 'snus'; // измените для каждой страницы
+  const CATEGORY = 'snus';
+  let currentUser = null;
   let isRop = false;
 
   initTabs();
   initAccordions();
   initSearch();
   
-  // Проверка прав пользователя
   async function checkPermissions() {
     try {
       const response = await fetch('/api/check-auth', { credentials: 'include' });
       const data = await response.json();
       
-      const addButton = document.getElementById('btnAddTobacco');
-      
-      if (data.authenticated && (data.user.role === 'rop' || data.user.role === 'root')) {
-        isRop = true;
-        if (addButton) addButton.style.display = 'flex';
+      if (data.authenticated) {
+        currentUser = data.user;
+        isRop = (data.user.role === 'rop' || data.user.role === 'root');
+        window.isRopGlobal = isRop;
+        
+        const userNameSpan = document.getElementById('userName');
+        if (userNameSpan) userNameSpan.textContent = data.user.full_name;
+        
+        const ropBtn = document.getElementById('ropBtn');
+        if (ropBtn && isRop) ropBtn.style.display = 'block';
+        
+        const addButton = document.getElementById('btnAddSnus');
+        if (addButton) {
+          addButton.style.display = isRop ? 'flex' : 'none';
+        }
       } else {
-        isRop = false;
-        if (addButton) addButton.style.display = 'none';
+        window.location.href = '/login.html';
       }
-      
-      // Показываем имя пользователя
-      const userNameSpan = document.getElementById('userName');
-      if (userNameSpan && data.user) {
-        userNameSpan.textContent = data.user.full_name;
-      }
-      
-      // Показываем кнопку РОП если нужно
-      const ropBtn = document.getElementById('ropBtn');
-      if (ropBtn && data.user && (data.user.role === 'rop' || data.user.role === 'root')) {
-        ropBtn.style.display = 'block';
-      }
-      
     } catch (error) {
       console.error('Permission check error:', error);
+      window.location.href = '/login.html';
     }
   }
   
   async function renderGrid() {
-    const grid = document.getElementById('tobaccoGrid');
+    const grid = document.getElementById('snusGrid');
     const items = await getCategory(CATEGORY);
     grid.innerHTML = '';
 
     if (!items.length) {
-      renderEmpty(grid, '🌿', 'Каталог пуст', isRop ? 'Нажмите «Добавить» чтобы внести первую позицию' : 'Нет доступных позиций');
+      renderEmpty(grid, '🫙', 'Каталог пуст', isRop ? 'Нажмите «Добавить позицию» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
 
@@ -236,30 +169,21 @@
         }
       );
       
-      // Скрываем кнопки редактирования/удаления если не РОП
-      if (!isRop) {
-        const actions = card.querySelector('.card-actions');
-        if (actions) actions.style.display = 'none';
-      }
-      
       grid.appendChild(card);
     }
   }
 
-  // Кнопка добавления
-  const addBtn = document.getElementById('btnAddTobacco');
+  const addBtn = document.getElementById('btnAddSnus');
   if (addBtn) {
     addBtn.addEventListener('click', () => {
-      console.log('Add button clicked, isRop:', isRop);
       if (!isRop) {
         alert('У вас нет прав для добавления');
         return;
       }
       new ProductModal({
         category: CATEGORY,
-        title: 'Добавить',
+        title: 'Добавить жевательный табак',
         onSave: async (item) => {
-          console.log('Saving item:', item);
           await addItem(CATEGORY, item);
           renderGrid();
         }
@@ -267,227 +191,148 @@
     });
   }
 
-  // Запускаем проверку прав и рендер
-  checkPermissions().then(() => renderGrid());
-</script>
-
-
-<script>
-// Информация о пользователе
-async function loadUserInfo() {
-    try {
-        const response = await fetch('/api/check-auth');
-        const data = await response.json();
-        
-        if (data.authenticated) {
-            document.getElementById('userName').textContent = data.user.full_name;
-            if (data.user.role === 'rop') {
-                document.getElementById('ropBtn').style.display = 'block';
-            }
-        }
-    } catch (error) {
-        console.error('Error loading user info:', error);
-    }
-}
-
-// Выход
-document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
     window.location.href = '/login.html';
-});
+  });
 
-// Кнопка управления РОП
-document.getElementById('ropBtn')?.addEventListener('click', () => {
+  document.getElementById('ropBtn')?.addEventListener('click', () => {
     openRopPanel();
-});
+  });
 
-function openRopPanel() {
+  async function openRopPanel() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.id = 'ropModal';
     modal.innerHTML = `
-        <div class="modal" style="max-width: 600px;">
-            <div class="modal-header">
-                <span class="modal-title">👑 Панель управления</span>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="field">
-                    <label>➕ Добавить пользователя</label>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
-                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
-                        <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
-                        <button id="addUserBtn" class="btn-add">Добавить</button>
-                    </div>
-                </div>
-                
-                <div class="field">
-                    <label>📋 Список пользователей</label>
-                    <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
-                </div>
-            </div>
+      <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+          <span class="modal-title">👑 Панель управления</span>
+          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
         </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>➕ Добавить пользователя</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
+              <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
+              <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
+              <button id="addUserBtn" class="btn-add">Добавить</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>📋 Список пользователей</label>
+            <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
+          </div>
+        </div>
+      </div>
     `;
     
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
-    
-    loadUsers();
+    await loadUsers();
     
     document.getElementById('addUserBtn').addEventListener('click', async () => {
-        const username = document.getElementById('newUsername').value.trim();
-        const password = document.getElementById('newPassword').value;
-        const full_name = document.getElementById('newFullName').value.trim();
-        
-        if (!username || !password || !full_name) {
-            alert('Заполните все поля');
-            return;
-        }
-        
-        if (!/^\d{4}$/.test(password)) {
-            alert('Пароль должен состоять из 4 цифр');
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, full_name, role: 'user' })
-            });
-            
-            if (response.ok) {
-                alert('Пользователь добавлен');
-                document.getElementById('newUsername').value = '';
-                document.getElementById('newPassword').value = '';
-                document.getElementById('newFullName').value = '';
-                loadUsers();
-            } else {
-                const error = await response.json();
-                alert(error.error);
-            }
-        } catch (error) {
-            alert('Ошибка: ' + error.message);
-        }
-    });
-}
-
-async function loadUsers() {
-    try {
-        const response = await fetch('/api/users', { credentials: 'include' });
-        const users = await response.json();
-        
-        const container = document.getElementById('usersList');
-        if (!container) return;
-        
-        // Получаем текущего пользователя
-        const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
-        const me = await meResponse.json();
-        
-        container.innerHTML = users.map(user => {
-            // Определяем, можно ли менять пароль
-            let canChangePassword = false;
-            
-            if (me.user.role === 'root') {
-                // Root может менять пароль всем
-                canChangePassword = true;
-            } else if (me.user.role === 'rop') {
-                // ROP может менять пароль только обычным пользователям
-                if (user.role === 'user') {
-                    canChangePassword = true;
-                }
-            }
-            
-            // Определяем, можно ли удалять
-            let canDelete = false;
-            if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) {
-                canDelete = true;
-            }
-            
-            return `
-                <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                        <div>
-                            <strong>${escapeHtml(user.full_name)}</strong><br>
-                            <span style="font-size: 11px; color: var(--muted);">
-                                Логин: ${user.username} | Роль: ${user.role === 'root' ? '👑 ROOT' : (user.role === 'rop' ? '👑 РОП' : '👤 Пользователь')}
-                            </span>
-                        </div>
-                        <div style="display: flex; gap: 6px;">
-                            ${canChangePassword ? `<button onclick="changePassword(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
-                            ${canDelete ? `<button onclick="deleteUser(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('Load users error:', error);
-    }
-}
-  
-async function changePassword(userId, userName) {
-    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
-    
-    if (!newPassword) return;
-    
-    if (!/^\d{4}$/.test(newPassword)) {
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newPassword').value;
+      const full_name = document.getElementById('newFullName').value.trim();
+      
+      if (!username || !password || !full_name) {
+        alert('Заполните все поля');
+        return;
+      }
+      if (!/^\d{4}$/.test(password)) {
         alert('Пароль должен состоять из 4 цифр');
         return;
-    }
-    
-    try {
-        const response = await fetch(`/api/users/${userId}/change-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ newPassword })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            alert('Пароль успешно изменен');
-        } else {
-            alert(data.error || 'Ошибка смены пароля');
-        }
-    } catch (error) {
-        alert('Ошибка: ' + error.message);
-    }
-}
-
-async function deleteUser(userId) {
-    if (confirm('Удалить пользователя?')) {
-        try {
-            const response = await fetch(`/api/users/${userId}`, {
-                method: 'DELETE'
-            });
-            
-            if (response.ok) {
-                alert('Пользователь удален');
-                loadUsers();
-            } else {
-                const error = await response.json();
-                alert(error.error);
-            }
-        } catch (error) {
-            alert('Ошибка: ' + error.message);
-        }
-    }
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
+      }
+      
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, password, full_name, role: 'user' })
+      });
+      
+      if (response.ok) {
+        alert('Пользователь добавлен');
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('newFullName').value = '';
+        await loadUsers();
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
     });
-}
+  }
 
-loadUserInfo();
+  async function loadUsers() {
+    const response = await fetch('/api/users', { credentials: 'include' });
+    const users = await response.json();
+    const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
+    const me = await meResponse.json();
+    
+    const container = document.getElementById('usersList');
+    if (!container) return;
+    
+    container.innerHTML = users.map(user => {
+      let canChange = false;
+      if (me.user.role === 'root') canChange = true;
+      else if (me.user.role === 'rop' && user.role === 'user') canChange = true;
+      
+      let canDelete = false;
+      if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) canDelete = true;
+      
+      return `
+        <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong>${escapeHtml(user.full_name)}</strong><br>
+              <span style="font-size: 11px;">Логин: ${user.username} | Роль: ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              ${canChange ? `<button onclick="window.changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
+              ${canDelete ? `<button onclick="window.deleteUserById(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.changePasswordUser = async (userId, userName) => {
+    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
+    if (!newPassword) return;
+    if (!/^\d{4}$/.test(newPassword)) {
+      alert('Пароль должен состоять из 4 цифр');
+      return;
+    }
+    const response = await fetch(`/api/users/${userId}/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ newPassword })
+    });
+    if (response.ok) alert('Пароль успешно изменен');
+    else alert('Ошибка смены пароля');
+  };
+
+  window.deleteUserById = async (userId) => {
+    if (confirm('Удалить пользователя?')) {
+      const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
+      if (response.ok) {
+        alert('Пользователь удален');
+        await loadUsers();
+      } else alert('Ошибка удаления');
+    }
+  };
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+
+  checkPermissions().then(() => renderGrid());
 </script>
 </body>
 </html>
