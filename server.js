@@ -1,4 +1,4 @@
-// server.js - с хранением сессий в PostgreSQL
+// server.js - с хранением пользователей в БД
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -39,7 +39,7 @@ function initPool() {
     });
 }
 
-// Initialize database and session store
+// Initialize database
 async function initDatabase() {
     pool = initPool();
     if (!pool) return false;
@@ -72,11 +72,12 @@ async function initDatabase() {
                 password VARCHAR(255) NOT NULL,
                 full_name VARCHAR(255) NOT NULL,
                 role VARCHAR(20) DEFAULT 'user',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
-        // Create session table (for connect-pg-simple)
+        // Create session table
         await client.query(`
             CREATE TABLE IF NOT EXISTS "session" (
                 "sid" varchar NOT NULL COLLATE "default",
@@ -99,21 +100,28 @@ async function initDatabase() {
             CREATE INDEX IF NOT EXISTS IDX_session_expire ON "session" ("expire");
         `);
 
-        // Insert default users
+        // Insert default users if not exists
         await client.query(`
             INSERT INTO users (username, password, full_name, role) 
-            VALUES ('ROOT', '1234', 'Системный администратор', 'rop')
+            VALUES ('user', '1111', 'Обычный пользователь', 'user')
             ON CONFLICT (username) DO NOTHING
         `);
         
         await client.query(`
             INSERT INTO users (username, password, full_name, role) 
-            VALUES ('USER', '1111', 'Обычный пользователь', 'user')
+            VALUES ('rop', '1234', 'Руководитель отдела продаж', 'rop')
+            ON CONFLICT (username) DO NOTHING
+        `);
+        
+        await client.query(`
+            INSERT INTO users (username, password, full_name, role) 
+            VALUES ('root', 'root123', 'Главный администратор', 'rop')
             ON CONFLICT (username) DO NOTHING
         `);
 
         client.release();
         console.log('✅ Database tables ready');
+        console.log('📋 Users in DB: user (1111), rop (1234), root (root123)');
         return true;
     } catch (error) {
         console.error('❌ Database init error:', error.message);
@@ -132,7 +140,7 @@ function setupSession() {
         store: new pgSession({
             pool: pool,
             tableName: 'session',
-            createTableIfMissing: false // Table already created
+            createTableIfMissing: false
         }),
         secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
         resave: false,
@@ -140,7 +148,7 @@ function setupSession() {
         cookie: {
             secure: process.env.NODE_ENV === 'production',
             httpOnly: true,
-            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+            maxAge: 30 * 24 * 60 * 60 * 1000
         },
         name: 'spravochnik.sid'
     });
@@ -207,10 +215,14 @@ app.get('/api/check-auth', (req, res) => {
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     
+    if (!username || !password) {
+        return res.status(401).json({ error: 'Неверный логин или пароль' });
+    }
+    
     try {
         const result = await pool.query(
             'SELECT * FROM users WHERE username = $1 AND password = $2',
-            [username.toUpperCase(), password]
+            [username.toLowerCase(), password]
         );
         
         if (result.rows.length === 0) {
@@ -231,6 +243,43 @@ app.post('/api/login', async (req, res) => {
         });
     } catch (error) {
         console.error('Login error:', error);
+        res.status(500).json({ error: 'Ошибка входа' });
+    }
+});
+
+// Simple login for users (only password)
+app.post('/api/simple-login', async (req, res) => {
+    const { password } = req.body;
+    
+    if (!password) {
+        return res.status(401).json({ error: 'Введите пароль' });
+    }
+    
+    try {
+        // Find user with role 'user' and matching password
+        const result = await pool.query(
+            'SELECT * FROM users WHERE role = $1 AND password = $2 LIMIT 1',
+            ['user', password]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Неверный пароль' });
+        }
+        
+        const user = result.rows[0];
+        req.session.user = {
+            id: user.id,
+            username: user.username,
+            full_name: user.full_name,
+            role: user.role
+        };
+        
+        res.json({ 
+            success: true, 
+            user: req.session.user
+        });
+    } catch (error) {
+        console.error('Simple login error:', error);
         res.status(500).json({ error: 'Ошибка входа' });
     }
 });
@@ -266,14 +315,20 @@ app.post('/api/users/:id/change-password', requireRop, async (req, res) => {
     }
     
     try {
-        await pool.query(
-            'UPDATE users SET password = $1 WHERE id = $2',
+        const result = await pool.query(
+            'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING username',
             [newPassword, id]
         );
-        res.json({ success: true });
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+        
+        console.log(`✅ Password changed for user: ${result.rows[0].username}`);
+        res.json({ success: true, message: 'Пароль успешно изменен' });
     } catch (error) {
         console.error('Change password error:', error);
-        res.status(500).json({ error: 'Failed to change password' });
+        res.status(500).json({ error: 'Ошибка смены пароля' });
     }
 });
 
@@ -292,26 +347,46 @@ app.post('/api/users', requireRop, async (req, res) => {
     try {
         await pool.query(
             'INSERT INTO users (username, password, full_name, role) VALUES ($1, $2, $3, $4)',
-            [username.toUpperCase(), password, full_name, role || 'user']
+            [username.toLowerCase(), password, full_name, role || 'user']
         );
-        res.json({ success: true });
+        console.log(`✅ User created: ${username}`);
+        res.json({ success: true, message: 'Пользователь создан' });
     } catch (error) {
         console.error('Create user error:', error);
         res.status(500).json({ error: 'Пользователь уже существует' });
     }
 });
 
-// Delete user (ROP only)
+// Delete user (ROP only, cannot delete self)
 app.delete('/api/users/:id', requireRop, async (req, res) => {
     const { id } = req.params;
+    const currentUserId = req.session.user.id;
+    
+    if (parseInt(id) === currentUserId) {
+        return res.status(400).json({ error: 'Нельзя удалить самого себя' });
+    }
     
     try {
-        await pool.query('DELETE FROM users WHERE id = $1 AND username != $2', [id, 'ROOT']);
-        res.json({ success: true });
+        const result = await pool.query(
+            'DELETE FROM users WHERE id = $1 AND role != $2 RETURNING username',
+            [id, 'rop']
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+        
+        console.log(`✅ User deleted: ${result.rows[0].username}`);
+        res.json({ success: true, message: 'Пользователь удален' });
     } catch (error) {
         console.error('Delete user error:', error);
-        res.status(500).json({ error: 'Failed to delete user' });
+        res.status(500).json({ error: 'Ошибка удаления' });
     }
+});
+
+// Get current user info
+app.get('/api/me', requireAuth, (req, res) => {
+    res.json(req.session.user);
 });
 
 // ========== PRODUCT ROUTES ==========
@@ -503,23 +578,22 @@ async function startServer() {
     const dbReady = await initDatabase();
     
     if (dbReady && pool) {
-        // Setup session with PostgreSQL store
         const sessionMiddleware = setupSession();
         if (sessionMiddleware) {
             app.use(sessionMiddleware);
             console.log('✅ Session store: PostgreSQL');
-        } else {
-            console.log('⚠️ Session store: Memory (fallback)');
         }
     }
     
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`🔐 Auth: Enabled (sessions in PostgreSQL)`);
-        console.log(`👑 ROOT: ROOT / 1234`);
-        console.log(`👤 USER: USER / 1111`);
-        console.log(`🔗 URL: http://localhost:${PORT}\n`);
+        console.log(`🔐 Auth: Enabled (users in database)`);
+        console.log(`\n📋 Пользователи в БД:`);
+        console.log(`   👤 Обычный пароль: 1111`);
+        console.log(`   👑 РОП: rop / 1234`);
+        console.log(`   👑 ROOT: root / root123`);
+        console.log(`\n🔗 URL: http://localhost:${PORT}\n`);
     });
 }
 
