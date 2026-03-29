@@ -836,5 +836,32 @@ function escapeHtml(str) {
 
 loadUserInfo();
 </script>
+
+<script>
+async function updateAllCounters() {
+  const categories = ['tobacco', 'liquids', 'snus', 'disposables'];
+  const elements = {
+    'tobacco': 'cnt-tobacco',
+    'liquids': 'cnt-liquids',
+    'snus': 'cnt-snus',
+    'disposables': 'cnt-disposables'
+  };
+  
+  for (const cat of categories) {
+    try {
+      const response = await fetch(`/api/products/${cat}`, { credentials: 'include' });
+      const items = await response.json();
+      const el = document.getElementById(elements[cat]);
+      if (el) {
+        el.textContent = items.length ? `${items.length} позиций` : 'Пусто — добавьте первую';
+      }
+    } catch (e) {
+      console.error('Error updating counter:', e);
+    }
+  }
+}
+
+updateAllCounters();
+</script>
 </body>
 </html>
