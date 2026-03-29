@@ -1,4 +1,4 @@
-// server.js - исправленная версия с правильной защитой страниц
+// server.js - исправленный порядок middleware
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -12,15 +12,7 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ========== MIDDLEWARE (порядок ВАЖЕН!) ==========
-app.use(cors({
-    origin: true,
-    credentials: true
-}));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// PostgreSQL connection pool
+// ========== PostgreSQL connection ==========
 let pool = null;
 
 function initPool() {
@@ -38,7 +30,7 @@ function initPool() {
     });
 }
 
-// Initialize database
+// ========== Initialize database ==========
 async function initDatabase() {
     pool = initPool();
     if (!pool) return false;
@@ -127,7 +119,7 @@ async function initDatabase() {
     }
 }
 
-// Session middleware (ДО статических файлов и маршрутов)
+// ========== Session middleware setup ==========
 function setupSession() {
     if (!pool) {
         console.error('❌ Cannot setup session: no database pool');
@@ -144,7 +136,7 @@ function setupSession() {
         resave: false,
         saveUninitialized: false,
         cookie: {
-            secure: false, // Для Railway http ставим false
+            secure: false,
             httpOnly: true,
             maxAge: 30 * 24 * 60 * 60 * 1000
         },
@@ -152,7 +144,7 @@ function setupSession() {
     });
 }
 
-// Cloudinary configuration
+// ========== Cloudinary ==========
 if (process.env.CLOUDINARY_CLOUD_NAME) {
     cloudinary.config({
         cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -162,7 +154,7 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
     console.log('✅ Cloudinary configured');
 }
 
-// Multer setup
+// ========== Multer setup ==========
 const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
@@ -201,23 +193,31 @@ function requireRop(req, res, next) {
     }
 }
 
-// Middleware для защиты HTML страниц
 function protectPage(req, res, next) {
-    // Если пользователь авторизован - показываем страницу
     if (req.session && req.session.user) {
         next();
     } else {
-        // Иначе отправляем на страницу входа
         res.sendFile(path.join(__dirname, 'login.html'));
     }
 }
 
-// ========== STATIC FILES (но не HTML страницы) ==========
-// Статические файлы (CSS, JS, изображения) доступны без авторизации
+// ========== MIDDLEWARE ORDER (ВАЖНО!) ==========
+// 1. CORS и JSON парсеры
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// 2. Session middleware (ДО всех маршрутов, КРОМЕ статики)
+// Но сначала инициализируем БД и сессии в startServer
+
+// ========== STATIC FILES (доступны без авторизации) ==========
 app.use('/style.css', express.static(path.join(__dirname, 'style.css')));
 app.use('/core.js', express.static(path.join(__dirname, 'core.js')));
 
-// ========== AUTH ROUTES (без авторизации) ==========
+// ========== AUTH ROUTES (доступны без авторизации) ==========
 
 // Check if user is authenticated
 app.get('/api/check-auth', (req, res) => {
@@ -233,6 +233,8 @@ app.get('/api/check-auth', (req, res) => {
 
 // Login
 app.post('/api/login', async (req, res) => {
+    console.log('Login attempt:', req.body);
+    
     const { username, password } = req.body;
     
     if (!username || !password) {
@@ -250,6 +252,13 @@ app.post('/api/login', async (req, res) => {
         }
         
         const user = result.rows[0];
+        
+        // Проверяем что сессия существует
+        if (!req.session) {
+            console.error('Session is not available!');
+            return res.status(500).json({ error: 'Session error' });
+        }
+        
         req.session.user = {
             id: user.id,
             username: user.username,
@@ -257,6 +266,7 @@ app.post('/api/login', async (req, res) => {
             role: user.role
         };
         
+        console.log('Login successful:', user.username);
         res.json({ 
             success: true, 
             user: req.session.user
@@ -269,6 +279,8 @@ app.post('/api/login', async (req, res) => {
 
 // Simple login for users (only password)
 app.post('/api/simple-login', async (req, res) => {
+    console.log('Simple login attempt with password:', req.body.password);
+    
     const { password } = req.body;
     
     if (!password) {
@@ -286,6 +298,12 @@ app.post('/api/simple-login', async (req, res) => {
         }
         
         const user = result.rows[0];
+        
+        if (!req.session) {
+            console.error('Session is not available!');
+            return res.status(500).json({ error: 'Session error' });
+        }
+        
         req.session.user = {
             id: user.id,
             username: user.username,
@@ -293,6 +311,7 @@ app.post('/api/simple-login', async (req, res) => {
             role: user.role
         };
         
+        console.log('Simple login successful:', user.username);
         res.json({ 
             success: true, 
             user: req.session.user
@@ -385,7 +404,7 @@ app.post('/api/users', requireRop, async (req, res) => {
 // Delete user
 app.delete('/api/users/:id', requireRop, async (req, res) => {
     const { id } = req.params;
-    const currentUserId = req.session.user.id;
+    const currentUserId = req.session.user?.id;
     
     if (parseInt(id) === currentUserId) {
         return res.status(400).json({ error: 'Нельзя удалить самого себя' });
@@ -393,8 +412,8 @@ app.delete('/api/users/:id', requireRop, async (req, res) => {
     
     try {
         const result = await pool.query(
-            'DELETE FROM users WHERE id = $1 AND role != $2 RETURNING username',
-            [id, 'rop']
+            'DELETE FROM users WHERE id = $1 RETURNING username',
+            [id]
         );
         
         if (result.rows.length === 0) {
@@ -534,12 +553,11 @@ app.get('/health', (req, res) => {
         status: 'ok', 
         timestamp: new Date().toISOString(),
         database: pool ? 'connected' : 'disconnected',
-        sessionStore: 'postgresql'
+        session: req.session ? 'available' : 'not available'
     });
 });
 
-// ========== HTML PAGES (защищены) ==========
-// login.html доступна без авторизации
+// ========== HTML PAGES ==========
 app.get('/login.html', (req, res) => {
     if (req.session && req.session.user) {
         res.redirect('/');
@@ -548,7 +566,7 @@ app.get('/login.html', (req, res) => {
     }
 });
 
-// Все остальные HTML страницы требуют авторизации
+// Защищенные страницы
 app.get('/', protectPage, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -589,12 +607,7 @@ app.get('/disposables.html', protectPage, (req, res) => {
     res.sendFile(path.join(__dirname, 'disposables.html'));
 });
 
-// Перенаправление корневого маршрута на index.html
-app.get('/', protectPage, (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Start server
+// ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
     
@@ -603,6 +616,7 @@ async function startServer() {
     if (dbReady && pool) {
         const sessionMiddleware = setupSession();
         if (sessionMiddleware) {
+            // Применяем session middleware ко всем маршрутам
             app.use(sessionMiddleware);
             console.log('✅ Session store: PostgreSQL');
         } else {
@@ -613,7 +627,7 @@ async function startServer() {
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`🔐 Auth: Enabled (pages protected)`);
+        console.log(`🔐 Auth: Enabled`);
         console.log(`\n📋 Данные для входа:`);
         console.log(`   👤 Обычный пользователь: пароль 1111`);
         console.log(`   👑 РОП: rop / 1234`);
