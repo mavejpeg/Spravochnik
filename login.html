@@ -118,6 +118,27 @@
             opacity: 0.5;
         }
         
+        /* Скрытое поле логина */
+        .hidden-field {
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+        
+        .hidden-field.show {
+            display: block;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         .login-btn {
             width: 100%;
             background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -140,6 +161,27 @@
         
         .login-btn:active {
             transform: translateY(0);
+        }
+        
+        .rop-toggle-btn {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px;
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Manrope', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 12px;
+        }
+        
+        .rop-toggle-btn:hover {
+            background: var(--accent-glow);
+            border-color: var(--accent);
+            transform: translateY(-1px);
         }
         
         .error-message {
@@ -173,8 +215,20 @@
             border-top: 1px solid var(--border);
         }
         
-        .info-text span {
+        .mode-badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: var(--surface2);
+            color: var(--muted);
+            margin-bottom: 16px;
+        }
+        
+        .mode-badge.rop-mode {
+            background: var(--accent-glow);
             color: var(--accent);
+            border: 1px solid var(--accent);
         }
     </style>
 </head>
@@ -184,29 +238,44 @@
             <div class="logo">
                 <div class="logo-icon">☁</div>
                 <h1>СПРАВОЧНИК</h1>
-                <p>Введите данные для входа</p>
+                <p>Введите пароль для доступа</p>
             </div>
             
             <div class="error-message" id="errorMessage">
-                ❌ Неверный логин или пароль
+                ❌ Неверный пароль
             </div>
             
             <form id="loginForm">
-                <div class="input-group">
-                    <label>ЛОГИН</label>
-                    <input type="text" id="username" placeholder="Введите логин" autocomplete="off" autofocus>
+                <!-- Режим: обычный пользователь (только пароль) -->
+                <div id="userMode">
+                    <div class="input-group">
+                        <label>🔐 ПАРОЛЬ ДОСТУПА</label>
+                        <input type="password" id="userPassword" placeholder="Введите пароль" autofocus>
+                    </div>
                 </div>
                 
-                <div class="input-group">
-                    <label>ПАРОЛЬ</label>
-                    <input type="password" id="password" placeholder="Введите пароль">
+                <!-- Режим: РОП (логин + пароль) - скрыт по умолчанию -->
+                <div id="ropMode" class="hidden-field">
+                    <div class="mode-badge rop-mode">👑 РЕЖИМ РОП</div>
+                    <div class="input-group">
+                        <label>👤 ЛОГИН</label>
+                        <input type="text" id="ropUsername" placeholder="Введите логин">
+                    </div>
+                    <div class="input-group">
+                        <label>🔐 ПАРОЛЬ</label>
+                        <input type="password" id="ropPassword" placeholder="Введите пароль">
+                    </div>
                 </div>
                 
-                <button type="submit" class="login-btn">ВОЙТИ В СИСТЕМУ</button>
+                <button type="submit" class="login-btn" id="submitBtn">ВОЙТИ</button>
             </form>
             
+            <button class="rop-toggle-btn" id="ropToggleBtn">
+                👑 Вход для РОП
+            </button>
+            
             <div class="info-text">
-                🔐 Доступ только для сотрудников
+                🔐 Обычный пароль: <span>1111</span>
             </div>
         </div>
     </div>
@@ -214,6 +283,12 @@
     <script>
         const form = document.getElementById('loginForm');
         const errorDiv = document.getElementById('errorMessage');
+        const ropToggleBtn = document.getElementById('ropToggleBtn');
+        const userMode = document.getElementById('userMode');
+        const ropMode = document.getElementById('ropMode');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        let isRopMode = false;
         
         // Проверяем, не залогинен ли уже пользователь
         fetch('/api/check-auth')
@@ -224,33 +299,88 @@
                 }
             });
         
+        // Переключение режима РОП
+        ropToggleBtn.addEventListener('click', () => {
+            isRopMode = !isRopMode;
+            
+            if (isRopMode) {
+                // Включаем режим РОП
+                userMode.style.display = 'none';
+                ropMode.classList.add('show');
+                ropToggleBtn.textContent = '← Обычный вход';
+                ropToggleBtn.style.borderColor = 'var(--accent)';
+                submitBtn.textContent = 'ВОЙТИ КАК РОП';
+                // Фокус на поле логина
+                setTimeout(() => document.getElementById('ropUsername').focus(), 100);
+            } else {
+                // Включаем обычный режим
+                userMode.style.display = 'block';
+                ropMode.classList.remove('show');
+                ropToggleBtn.textContent = '👑 Вход для РОП';
+                ropToggleBtn.style.borderColor = 'var(--border)';
+                submitBtn.textContent = 'ВОЙТИ';
+                // Фокус на поле пароля
+                setTimeout(() => document.getElementById('userPassword').focus(), 100);
+            }
+        });
+        
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            
-            if (!username || !password) {
-                showError('Заполните все поля');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
+            if (isRopMode) {
+                // РОП режим - нужны логин и пароль
+                const username = document.getElementById('ropUsername').value.trim();
+                const password = document.getElementById('ropPassword').value;
                 
-                const data = await response.json();
-                
-                if (response.ok) {
-                    window.location.href = '/';
-                } else {
-                    showError(data.error || 'Неверный логин или пароль');
+                if (!username || !password) {
+                    showError('Заполните логин и пароль');
+                    return;
                 }
-            } catch (error) {
-                showError('Ошибка соединения с сервером');
+                
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        window.location.href = '/';
+                    } else {
+                        showError(data.error || 'Неверный логин или пароль');
+                    }
+                } catch (error) {
+                    showError('Ошибка соединения с сервером');
+                }
+            } else {
+                // Обычный режим - только пароль (используем USER аккаунт)
+                const password = document.getElementById('userPassword').value;
+                
+                if (!password) {
+                    showError('Введите пароль');
+                    return;
+                }
+                
+                try {
+                    // Пробуем войти как USER с введенным паролем
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: 'USER', password: password })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        window.location.href = '/';
+                    } else {
+                        showError('Неверный пароль');
+                    }
+                } catch (error) {
+                    showError('Ошибка соединения с сервером');
+                }
             }
         });
         
@@ -263,11 +393,15 @@
         }
         
         // Enter key submit
-        document.getElementById('password').addEventListener('keypress', (e) => {
+        const handleEnter = (e) => {
             if (e.key === 'Enter') {
                 form.dispatchEvent(new Event('submit'));
             }
-        });
+        };
+        
+        document.getElementById('userPassword').addEventListener('keypress', handleEnter);
+        document.getElementById('ropUsername').addEventListener('keypress', handleEnter);
+        document.getElementById('ropPassword').addEventListener('keypress', handleEnter);
     </script>
 </body>
 </html>
