@@ -5,7 +5,6 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 require('dotenv').config();
 
 const app = express();
@@ -14,128 +13,178 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// Cloudinary configuration
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
+// Cloudinary configuration (только если есть ключи)
+if (process.env.CLOUDINARY_CLOUD_NAME && 
+    process.env.CLOUDINARY_API_KEY && 
+    process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+  console.log('✅ Cloudinary configured');
+} else {
+  console.log('⚠️ Cloudinary not configured - using local images only');
+}
 
-// Configure multer for Cloudinary
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'spravochnik',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    transformation: [{ width: 500, height: 500, crop: 'limit' }]
+// Multer setup (для временного хранения, если Cloudinary не настроен)
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only images are allowed'));
+    }
   }
 });
-
-const upload = multer({ storage: storage });
 
 // PostgreSQL connection
 let pool = null;
 
 function initPool() {
   if (!process.env.DATABASE_URL) {
-    console.error('❌ DATABASE_URL environment variable is not set');
+    console.error('❌ DATABASE_URL not set');
     return null;
   }
-
   return new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    max: 20,
+    max: 10,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 20000,
+    connectionTimeoutMillis: 10000,
   });
 }
 
-// Initialize database tables
-async function initDatabase(retries = 5, delay = 3000) {
+// Initialize database
+async function initDatabase() {
   if (!pool) {
     pool = initPool();
     if (!pool) return false;
   }
-
-  for (let i = 0; i < retries; i++) {
-    try {
-      console.log(`🔌 Database connection attempt ${i + 1}/${retries}...`);
-      const client = await pool.connect();
-      
-      // Create products table
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS products (
-          id SERIAL PRIMARY KEY,
-          category VARCHAR(50) NOT NULL,
-          product_id VARCHAR(100) UNIQUE NOT NULL,
-          name VARCHAR(255) NOT NULL,
-          strength INTEGER DEFAULT 5,
-          origin VARCHAR(255),
-          description TEXT,
-          photo_url TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-
-      // Create indexes
-      await client.query(`
-        CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
-        CREATE INDEX IF NOT EXISTS idx_products_product_id ON products(product_id);
-      `);
-
-      client.release();
-      console.log('✅ Database initialized successfully');
-      return true;
-    } catch (error) {
-      console.error(`❌ Database attempt ${i + 1} failed:`, error.message);
-      if (i < retries - 1) {
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
+  
+  try {
+    const client = await pool.connect();
+    
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        category VARCHAR(50) NOT NULL,
+        product_id VARCHAR(100) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        strength INTEGER DEFAULT 5,
+        origin VARCHAR(255),
+        description TEXT,
+        photo_url TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+      CREATE INDEX IF NOT EXISTS idx_products_product_id ON products(product_id);
+    `);
+    
+    client.release();
+    console.log('✅ Database ready');
+    return true;
+  } catch (error) {
+    console.error('❌ Database init error:', error.message);
+    return false;
   }
-  return false;
 }
 
-// API Routes
-app.get('/api/products/:category', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'Database not connected' });
-  
-  const { category } = req.params;
-  try {
-    const result = await pool.query(
-      'SELECT * FROM products WHERE category = $1 ORDER BY created_at DESC',
-      [category]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Upload photo endpoint
+// Upload endpoint
 app.post('/api/upload', upload.single('photo'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    res.json({ photoUrl: req.file.path });
+    
+    // If Cloudinary is configured, upload to Cloudinary
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'spravochnik',
+            transformation: [{ width: 500, height: 500, crop: 'limit' }]
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+      
+      return res.json({ photoUrl: result.secure_url });
+    }
+    
+    // Fallback: convert to base64 (for testing without Cloudinary)
+    const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    return res.json({ photoUrl: base64 });
+    
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ error: 'Upload failed' });
+    res.status(500).json({ error: 'Upload failed: ' + error.message });
   }
 });
 
-// Add new product
+// GET all products by category
+app.get('/api/products/:category', async (req, res) => {
+  if (!pool) return res.status(503).json([]);
+  
+  try {
+    const result = await pool.query(
+      'SELECT * FROM products WHERE category = $1 ORDER BY created_at DESC',
+      [req.params.category]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('GET error:', error);
+    res.status(500).json([]);
+  }
+});
+
+// GET single product
+app.get('/api/products/:category/:id', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'DB not connected' });
+  
+  try {
+    const result = await pool.query(
+      'SELECT * FROM products WHERE category = $1 AND product_id = $2',
+      [req.params.category, req.params.id]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Not found' });
+    } else {
+      res.json(result.rows[0]);
+    }
+  } catch (error) {
+    console.error('GET one error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST new product
 app.post('/api/products/:category', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'Database not connected' });
+  if (!pool) return res.status(503).json({ error: 'DB not connected' });
   
   const { category } = req.params;
   const { id, name, strength, origin, desc, photoUrl } = req.body;
+  
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Name is required' });
+  }
   
   try {
     const result = await pool.query(
@@ -149,17 +198,18 @@ app.post('/api/products/:category', async (req, res) => {
          photo_url = EXCLUDED.photo_url,
          updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
-      [category, id, name, strength, origin || null, desc || null, photoUrl || null]
+      [category, id, name.trim(), strength || 5, origin || null, desc || null, photoUrl || null]
     );
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error adding product:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('POST error:', error);
+    res.status(500).json({ error: 'Failed to save' });
   }
 });
 
+// PUT update product
 app.put('/api/products/:category/:id', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'Database not connected' });
+  if (!pool) return res.status(503).json({ error: 'DB not connected' });
   
   const { category, id } = req.params;
   const { name, strength, origin, desc, photoUrl } = req.body;
@@ -178,15 +228,18 @@ app.put('/api/products/:category/:id', async (req, res) => {
       res.json(result.rows[0]);
     }
   } catch (error) {
-    console.error('Error updating product:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('PUT error:', error);
+    res.status(500).json({ error: 'Update failed' });
   }
 });
 
+// DELETE product
 app.delete('/api/products/:category/:id', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'Database not connected' });
+  if (!pool) return res.status(503).json({ error: 'DB not connected' });
   
   const { category, id } = req.params;
+  console.log(`Deleting: category=${category}, id=${id}`);
+  
   try {
     const result = await pool.query(
       'DELETE FROM products WHERE category = $1 AND product_id = $2 RETURNING *',
@@ -195,19 +248,22 @@ app.delete('/api/products/:category/:id', async (req, res) => {
     if (result.rows.length === 0) {
       res.status(404).json({ error: 'Product not found' });
     } else {
-      res.json({ message: 'Product deleted successfully' });
+      console.log(`Deleted: ${result.rows[0].name}`);
+      res.json({ message: 'Deleted successfully', product: result.rows[0] });
     }
   } catch (error) {
-    console.error('Error deleting product:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('DELETE error:', error);
+    res.status(500).json({ error: 'Delete failed: ' + error.message });
   }
 });
 
+// Health check
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
+  res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    database: pool ? 'connected' : 'disconnected'
+    database: pool ? 'connected' : 'disconnected',
+    cloudinary: !!process.env.CLOUDINARY_CLOUD_NAME
   });
 });
 
@@ -230,30 +286,19 @@ app.get('/:page', (req, res) => {
       return res.sendFile(filePath);
     }
   }
-  
   res.status(404).send('Page not found');
 });
 
 // Start server
 async function startServer() {
-  if (!process.env.DATABASE_URL) {
-    console.error('❌ DATABASE_URL missing! Add PostgreSQL database on Railway');
-    app.listen(PORT, () => {
-      console.log(`⚠️ Server running without database on port ${PORT}`);
-    });
-    return;
-  }
+  const dbReady = await initDatabase();
   
-  const dbInitialized = await initDatabase();
   app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`💾 Database: ${dbInitialized ? 'connected' : 'disconnected'}`);
+    console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📦 Database: ${dbReady ? '✅ connected' : '❌ not connected'}`);
+    console.log(`📸 Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME ? '✅ configured' : '⚠️ not configured (using base64)'}`);
+    console.log(`\n📱 Open: http://localhost:${PORT}\n`);
   });
 }
-
-process.on('SIGTERM', async () => {
-  if (pool) await pool.end();
-  process.exit(0);
-});
 
 startServer();
