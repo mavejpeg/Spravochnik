@@ -45,9 +45,11 @@ async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_products_product_id ON products(product_id);
     `);
 
-    console.log('Database initialized successfully');
+    console.log('✅ Database initialized successfully');
+    return true;
   } catch (error) {
-    console.error('Database initialization error:', error);
+    console.error('❌ Database initialization error:', error);
+    return false;
   } finally {
     client.release();
   }
@@ -105,7 +107,7 @@ app.post('/api/products/:category', async (req, res) => {
          photo = EXCLUDED.photo,
          updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
-      [category, id, name, strength, origin, desc, photo]
+      [category, id, name, strength, origin || null, desc || null, photo || null]
     );
     res.json(result.rows[0]);
   } catch (error) {
@@ -125,7 +127,7 @@ app.put('/api/products/:category/:id', async (req, res) => {
        SET name = $1, strength = $2, origin = $3, description = $4, photo = $5, updated_at = CURRENT_TIMESTAMP
        WHERE category = $6 AND product_id = $7
        RETURNING *`,
-      [name, strength, origin, desc, photo, category, id]
+      [name, strength, origin || null, desc || null, photo || null, category, id]
     );
     if (result.rows.length === 0) {
       res.status(404).json({ error: 'Product not found' });
@@ -157,6 +159,11 @@ app.delete('/api/products/:category/:id', async (req, res) => {
   }
 });
 
+// Health check endpoint for Railway
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Serve HTML files
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -164,19 +171,46 @@ app.get('/', (req, res) => {
 
 app.get('/:page', (req, res) => {
   const page = req.params.page;
-  if (page.endsWith('.html')) {
-    res.sendFile(path.join(__dirname, page));
-  } else {
-    res.sendFile(path.join(__dirname, `${page}.html`));
+  // Prevent directory traversal attacks
+  if (page.includes('..') || page.includes('\\')) {
+    return res.status(403).send('Forbidden');
   }
+  
+  // Check if file exists
+  const possibleFiles = [page, `${page}.html`];
+  for (const file of possibleFiles) {
+    const filePath = path.join(__dirname, file);
+    const fs = require('fs');
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      return res.sendFile(filePath);
+    }
+  }
+  
+  res.status(404).send('Page not found');
 });
 
 // Start server
 async function startServer() {
-  await initDatabase();
+  const dbInitialized = await initDatabase();
+  if (!dbInitialized) {
+    console.error('Failed to initialize database. Exiting...');
+    process.exit(1);
+  }
+  
   app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📱 Access at http://localhost:${PORT}`);
+    console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 }
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  pool.end(() => {
+    console.log('Database pool closed');
+    process.exit(0);
+  });
+});
 
 startServer();
