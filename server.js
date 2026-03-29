@@ -1,4 +1,4 @@
-// server.js - с полным логированием
+// server.js - с правильным порядком: сначала middleware, потом маршруты
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -15,10 +15,6 @@ const PORT = process.env.PORT || 3000;
 console.log('='.repeat(60));
 console.log('SERVER STARTING...');
 console.log('='.repeat(60));
-console.log('Node version:', process.version);
-console.log('Environment:', process.env.NODE_ENV || 'development');
-console.log('PORT:', PORT);
-console.log('='.repeat(60));
 
 // ========== PostgreSQL connection ==========
 let pool = null;
@@ -32,7 +28,6 @@ function initPool() {
         return null;
     }
     
-    console.log('[DB] Creating connection pool...');
     return new Pool({
         connectionString: databaseUrl,
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
@@ -67,7 +62,6 @@ async function initDatabase() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        console.log('[DB] ✅ Products table ready');
 
         // Create users table
         await client.query(`
@@ -81,7 +75,6 @@ async function initDatabase() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        console.log('[DB] ✅ Users table ready');
 
         // Create session table
         await client.query(`
@@ -92,7 +85,6 @@ async function initDatabase() {
                 CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
             )
         `);
-        console.log('[DB] ✅ Session table ready');
 
         // Add columns if missing
         await client.query(`
@@ -106,10 +98,6 @@ async function initDatabase() {
             CREATE INDEX IF NOT EXISTS idx_products_product_id ON products(product_id);
             CREATE INDEX IF NOT EXISTS IDX_session_expire ON "session" ("expire");
         `);
-
-        // Check existing users
-        const usersResult = await client.query('SELECT COUNT(*) FROM users');
-        console.log(`[DB] Existing users count: ${usersResult.rows[0].count}`);
 
         // Insert default users
         await client.query(`
@@ -129,20 +117,12 @@ async function initDatabase() {
             VALUES ('root', 'root123', 'Главный администратор', 'rop')
             ON CONFLICT (username) DO NOTHING
         `);
-        
-        console.log('[DB] ✅ Default users inserted');
-
-        // Verify users
-        const finalUsers = await client.query('SELECT username, role FROM users');
-        console.log('[DB] Users in database:');
-        finalUsers.rows.forEach(u => console.log(`  - ${u.username}: ${u.role}`));
 
         client.release();
         console.log('[DB] ✅ Database initialization complete');
         return true;
     } catch (error) {
         console.error('[DB] ❌ Database init error:', error.message);
-        console.error('[DB] Error stack:', error.stack);
         return false;
     }
 }
@@ -173,10 +153,10 @@ const upload = multer({
     }
 });
 
-// ========== MIDDLEWARE ==========
-console.log('[Middleware] Setting up CORS and JSON parsers...');
+// ========== СНАЧАЛА ПРИМЕНЯЕМ MIDDLEWARE ==========
+console.log('[Middleware] Setting up middleware...');
 
-// CORS и JSON парсеры - ПЕРВЫМИ
+// CORS и JSON парсеры
 app.use(cors({
     origin: true,
     credentials: true
@@ -184,18 +164,18 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-console.log('[Middleware] CORS and JSON parsers configured');
-
-// ========== STATIC FILES ==========
+// Статические файлы
 app.use('/style.css', express.static(path.join(__dirname, 'style.css')));
 app.use('/core.js', express.static(path.join(__dirname, 'core.js')));
-console.log('[Static] CSS and JS files mapped');
 
-// ========== AUTH MIDDLEWARE ==========
+// Session middleware будет добавлен ПОСЛЕ инициализации БД, НО ДО маршрутов
+let sessionMiddlewareInstance = null;
+
+// ========== ПОТОМ ОПРЕДЕЛЯЕМ МАРШРУТЫ ==========
+
+// AUTH MIDDLEWARE
 function requireAuth(req, res, next) {
     console.log('[Auth] requireAuth - session exists:', !!req.session);
-    console.log('[Auth] requireAuth - user exists:', !!(req.session && req.session.user));
-    
     if (!req.session) {
         return res.status(401).json({ error: 'Session not initialized' });
     }
@@ -208,8 +188,6 @@ function requireAuth(req, res, next) {
 
 function requireRop(req, res, next) {
     console.log('[Auth] requireRop - session exists:', !!req.session);
-    console.log('[Auth] requireRop - user exists:', !!(req.session && req.session.user));
-    
     if (!req.session) {
         return res.status(401).json({ error: 'Session not initialized' });
     }
@@ -222,68 +200,48 @@ function requireRop(req, res, next) {
 
 function protectPage(req, res, next) {
     console.log('[Auth] protectPage - session exists:', !!req.session);
-    console.log('[Auth] protectPage - user exists:', !!(req.session && req.session.user));
-    
     if (req.session && req.session.user) {
         next();
     } else {
-        console.log('[Auth] protectPage - redirecting to login.html');
+        console.log('[Auth] protectPage - redirecting to login');
         res.sendFile(path.join(__dirname, 'login.html'));
     }
 }
 
 // ========== AUTH ROUTES ==========
 
-// Check if user is authenticated
 app.get('/api/check-auth', (req, res) => {
-    console.log('[API] /api/check-auth called');
-    console.log('[API] Session object:', req.session ? 'EXISTS' : 'NULL');
-    console.log('[API] Session user:', req.session?.user || 'none');
-    
+    console.log('[API] /api/check-auth - session exists:', !!req.session);
     if (req.session && req.session.user) {
-        res.json({ 
-            authenticated: true, 
-            user: req.session.user 
-        });
+        res.json({ authenticated: true, user: req.session.user });
     } else {
         res.json({ authenticated: false });
     }
 });
 
-// Login
 app.post('/api/login', async (req, res) => {
-    console.log('[API] /api/login called');
-    console.log('[API] Request body:', req.body);
-    console.log('[API] Session exists:', !!req.session);
-    console.log('[API] Session ID:', req.session?.id);
-    
+    console.log('[API] /api/login - session exists:', !!req.session);
     const { username, password } = req.body;
     
     if (!username || !password) {
-        console.log('[API] Missing username or password');
         return res.status(401).json({ error: 'Неверный логин или пароль' });
     }
     
     try {
-        console.log(`[API] Looking for user: ${username.toLowerCase()}`);
         const result = await pool.query(
             'SELECT * FROM users WHERE username = $1 AND password = $2',
             [username.toLowerCase(), password]
         );
         
-        console.log(`[API] Query result rows: ${result.rows.length}`);
-        
         if (result.rows.length === 0) {
-            console.log('[API] User not found or wrong password');
             return res.status(401).json({ error: 'Неверный логин или пароль' });
         }
         
         const user = result.rows[0];
-        console.log(`[API] User found: ${user.username}, role: ${user.role}`);
         
         if (!req.session) {
-            console.error('[API] ❌ Session is not available!');
-            return res.status(500).json({ error: 'Session error - please restart' });
+            console.error('[API] Session not available!');
+            return res.status(500).json({ error: 'Session error' });
         }
         
         req.session.user = {
@@ -293,53 +251,37 @@ app.post('/api/login', async (req, res) => {
             role: user.role
         };
         
-        console.log('[API] Session user set successfully');
-        console.log('[API] Session after set:', req.session.user);
-        
-        res.json({ 
-            success: true, 
-            user: req.session.user
-        });
+        console.log('[API] Login successful:', user.username);
+        res.json({ success: true, user: req.session.user });
     } catch (error) {
         console.error('[API] Login error:', error);
         res.status(500).json({ error: 'Ошибка входа' });
     }
 });
 
-// Simple login for users (only password)
 app.post('/api/simple-login', async (req, res) => {
-    console.log('[API] /api/simple-login called');
-    console.log('[API] Request body:', req.body);
-    console.log('[API] Session exists:', !!req.session);
-    console.log('[API] Session ID:', req.session?.id);
-    
+    console.log('[API] /api/simple-login - session exists:', !!req.session);
     const { password } = req.body;
     
     if (!password) {
-        console.log('[API] Missing password');
         return res.status(401).json({ error: 'Введите пароль' });
     }
     
     try {
-        console.log(`[API] Looking for user with password: ${password}`);
         const result = await pool.query(
             'SELECT * FROM users WHERE role = $1 AND password = $2 LIMIT 1',
             ['user', password]
         );
         
-        console.log(`[API] Query result rows: ${result.rows.length}`);
-        
         if (result.rows.length === 0) {
-            console.log('[API] User not found or wrong password');
             return res.status(401).json({ error: 'Неверный пароль' });
         }
         
         const user = result.rows[0];
-        console.log(`[API] User found: ${user.username}, role: ${user.role}`);
         
         if (!req.session) {
-            console.error('[API] ❌ Session is not available!');
-            return res.status(500).json({ error: 'Session error - please restart' });
+            console.error('[API] Session not available!');
+            return res.status(500).json({ error: 'Session error' });
         }
         
         req.session.user = {
@@ -349,51 +291,34 @@ app.post('/api/simple-login', async (req, res) => {
             role: user.role
         };
         
-        console.log('[API] Session user set successfully');
-        console.log('[API] Session after set:', req.session.user);
-        
-        res.json({ 
-            success: true, 
-            user: req.session.user
-        });
+        console.log('[API] Simple login successful:', user.username);
+        res.json({ success: true, user: req.session.user });
     } catch (error) {
         console.error('[API] Simple login error:', error);
         res.status(500).json({ error: 'Ошибка входа' });
     }
 });
 
-// Logout
 app.post('/api/logout', (req, res) => {
-    console.log('[API] /api/logout called');
+    console.log('[API] /api/logout');
     if (req.session) {
-        req.session.destroy((err) => {
-            if (err) console.error('Logout error:', err);
-            console.log('[API] Session destroyed');
-            res.json({ success: true });
-        });
+        req.session.destroy(() => res.json({ success: true }));
     } else {
-        console.log('[API] No session to destroy');
         res.json({ success: true });
     }
 });
 
-// ========== USER MANAGEMENT (ROP only) ==========
+// ========== USER MANAGEMENT ==========
 
-// Get all users
 app.get('/api/users', requireRop, async (req, res) => {
-    console.log('[API] /api/users called');
     try {
-        const result = await pool.query(
-            'SELECT id, username, full_name, role FROM users ORDER BY id'
-        );
+        const result = await pool.query('SELECT id, username, full_name, role FROM users ORDER BY id');
         res.json(result.rows);
     } catch (error) {
-        console.error('Get users error:', error);
         res.status(500).json({ error: 'Failed to get users' });
     }
 });
 
-// Change user password
 app.post('/api/users/:id/change-password', requireRop, async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
@@ -403,24 +328,13 @@ app.post('/api/users/:id/change-password', requireRop, async (req, res) => {
     }
     
     try {
-        const result = await pool.query(
-            'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING username',
-            [newPassword, id]
-        );
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-        
-        console.log(`✅ Password changed for user: ${result.rows[0].username}`);
-        res.json({ success: true, message: 'Пароль успешно изменен' });
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [newPassword, id]);
+        res.json({ success: true });
     } catch (error) {
-        console.error('Change password error:', error);
         res.status(500).json({ error: 'Ошибка смены пароля' });
     }
 });
 
-// Create new user
 app.post('/api/users', requireRop, async (req, res) => {
     const { username, password, full_name, role } = req.body;
     
@@ -437,44 +351,24 @@ app.post('/api/users', requireRop, async (req, res) => {
             'INSERT INTO users (username, password, full_name, role) VALUES ($1, $2, $3, $4)',
             [username.toLowerCase(), password, full_name, role || 'user']
         );
-        console.log(`✅ User created: ${username}`);
-        res.json({ success: true, message: 'Пользователь создан' });
+        res.json({ success: true });
     } catch (error) {
-        console.error('Create user error:', error);
         res.status(500).json({ error: 'Пользователь уже существует' });
     }
 });
 
-// Delete user
 app.delete('/api/users/:id', requireRop, async (req, res) => {
     const { id } = req.params;
-    const currentUserId = req.session.user?.id;
-    
-    if (parseInt(id) === currentUserId) {
-        return res.status(400).json({ error: 'Нельзя удалить самого себя' });
-    }
-    
     try {
-        const result = await pool.query(
-            'DELETE FROM users WHERE id = $1 RETURNING username',
-            [id]
-        );
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-        
-        console.log(`✅ User deleted: ${result.rows[0].username}`);
-        res.json({ success: true, message: 'Пользователь удален' });
+        await pool.query('DELETE FROM users WHERE id = $1', [id]);
+        res.json({ success: true });
     } catch (error) {
-        console.error('Delete user error:', error);
         res.status(500).json({ error: 'Ошибка удаления' });
     }
 });
 
 // ========== PRODUCT ROUTES ==========
 
-// Upload photo
 app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) => {
     try {
         if (!req.file) {
@@ -503,7 +397,6 @@ app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) =>
     }
 });
 
-// GET products
 app.get('/api/products/:category', requireAuth, async (req, res) => {
     if (!pool) return res.status(503).json([]);
     
@@ -519,7 +412,6 @@ app.get('/api/products/:category', requireAuth, async (req, res) => {
     }
 });
 
-// POST product
 app.post('/api/products/:category', requireRop, async (req, res) => {
     const { category } = req.params;
     const { id, name, strength, origin, desc, photoUrl } = req.body;
@@ -545,7 +437,6 @@ app.post('/api/products/:category', requireRop, async (req, res) => {
     }
 });
 
-// PUT product
 app.put('/api/products/:category/:id', requireRop, async (req, res) => {
     const { category, id } = req.params;
     const { name, strength, origin, desc, photoUrl } = req.body;
@@ -570,7 +461,6 @@ app.put('/api/products/:category/:id', requireRop, async (req, res) => {
     }
 });
 
-// DELETE product
 app.delete('/api/products/:category/:id', requireRop, async (req, res) => {
     const { category, id } = req.params;
     
@@ -591,37 +481,27 @@ app.delete('/api/products/:category/:id', requireRop, async (req, res) => {
     }
 });
 
-// Health check
 app.get('/health', (req, res) => {
-    console.log('[API] /health called - session exists:', !!req.session);
+    console.log('[API] /health - session exists:', !!req.session);
     res.json({ 
         status: 'ok', 
         timestamp: new Date().toISOString(),
         database: pool ? 'connected' : 'disconnected',
-        session: req.session ? 'available' : 'not available',
-        sessionId: req.session?.id || 'none'
+        session: req.session ? 'available' : 'not available'
     });
 });
 
 // ========== HTML PAGES ==========
+
 app.get('/login.html', (req, res) => {
-    console.log('[Route] /login.html called - session exists:', !!req.session);
     if (req.session && req.session.user) {
-        console.log('[Route] User already logged in, redirecting to /');
         res.redirect('/');
     } else {
-        console.log('[Route] Sending login.html');
         res.sendFile(path.join(__dirname, 'login.html'));
     }
 });
 
-// Защищенные страницы
 app.get('/', protectPage, (req, res) => {
-    console.log('[Route] / called - sending index.html');
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/index.html', protectPage, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
@@ -659,21 +539,13 @@ app.get('/disposables.html', protectPage, (req, res) => {
 
 // ========== START SERVER ==========
 async function startServer() {
-    console.log('\n' + '='.repeat(60));
-    console.log('STARTING SERVER INITIALIZATION');
-    console.log('='.repeat(60));
-    
-    // 1. Инициализируем БД
     console.log('\n[Step 1] Initializing database...');
     const dbReady = await initDatabase();
     
-    // 2. Создаем и применяем session middleware
-    console.log('\n[Step 2] Setting up session middleware...');
+    console.log('\n[Step 2] Creating session middleware...');
     
     if (dbReady && pool) {
-        console.log('[Session] Creating PostgreSQL session store...');
-        
-        const sessionMiddlewareInstance = session({
+        sessionMiddlewareInstance = session({
             store: new pgSession({
                 pool: pool,
                 tableName: 'session',
@@ -690,37 +562,31 @@ async function startServer() {
             name: 'spravochnik.sid'
         });
         
-        // Применяем session middleware
+        // ПРИМЕНЯЕМ SESSION MIDDLEWARE КО ВСЕМ МАРШРУТАМ
         app.use(sessionMiddlewareInstance);
-        console.log('[Session] ✅ Session middleware applied to all routes');
-        console.log('[Session] Store type: PostgreSQL');
+        console.log('[Session] ✅ Session middleware applied');
     } else {
-        console.log('[Session] ⚠️ Using memory store (fallback)');
-        const memorySession = session({
-            secret: 'fallback_secret_key',
+        console.log('[Session] ⚠️ Using memory store');
+        app.use(session({
+            secret: 'fallback',
             resave: false,
-            saveUninitialized: true,
-            cookie: { secure: false }
-        });
-        app.use(memorySession);
+            saveUninitialized: true
+        }));
     }
     
-    // 3. Запускаем сервер
-    console.log('\n[Step 3] Starting HTTP server...');
+    console.log('\n[Step 3] Starting server...');
     
     app.listen(PORT, () => {
         console.log('\n' + '='.repeat(60));
-        console.log('✅ SERVER STARTED SUCCESSFULLY');
+        console.log('✅ SERVER STARTED');
         console.log('='.repeat(60));
         console.log(`📡 Port: ${PORT}`);
-        console.log(`💾 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`🔐 Auth: Enabled`);
-        console.log(`\n📋 Данные для входа (из БД):`);
-        console.log(`   👤 Обычный пользователь: пароль 1111`);
+        console.log(`💾 Database: ${dbReady ? 'CONNECTED' : 'NOT'}`);
+        console.log(`\n📋 Пароли (из БД):`);
+        console.log(`   👤 Обычный: 1111`);
         console.log(`   👑 РОП: rop / 1234`);
         console.log(`   👑 ROOT: root / root123`);
-        console.log(`\n🔗 URL: http://localhost:${PORT}`);
-        console.log(`🔍 Health check: http://localhost:${PORT}/health`);
+        console.log(`\n🔗 http://localhost:${PORT}`);
         console.log('='.repeat(60) + '\n');
     });
 }
