@@ -156,19 +156,41 @@
 
 <script src="core.js"></script>
 <script>
-  const CATEGORY = 'tobacco';
+  const CATEGORY = 'liquids';
+  let isRop = false;
 
   initTabs();
   initAccordions();
   initSearch();
   
+  async function checkPermissions() {
+    try {
+      const response = await fetch('/api/check-session');
+      const data = await response.json();
+      
+      const addButton = document.getElementById('btnAddLiquid');
+      
+      if (data.authenticated && data.user.role === 'rop') {
+        isRop = true;
+        if (addButton) addButton.style.display = 'flex';
+        document.body.classList.add('rop-mode');
+      } else {
+        isRop = false;
+        if (addButton) addButton.style.display = 'none';
+        document.body.classList.add('view-mode');
+      }
+    } catch (error) {
+      console.error('Permission check error:', error);
+    }
+  }
+  
   async function renderGrid() {
-    const grid = document.getElementById('tobaccoGrid');
+    const grid = document.getElementById('liquidsGrid');
     const items = await getCategory(CATEGORY);
     grid.innerHTML = '';
 
     if (!items.length) {
-      renderEmpty(grid, '🌿', 'Каталог пуст', 'Нажмите «Добавить табак» чтобы внести первую позицию');
+      renderEmpty(grid, '💧', 'Каталог пуст', isRop ? 'Нажмите «Добавить жидкость» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
 
@@ -176,6 +198,7 @@
       const card = renderProductCard(item, CATEGORY,
         () => renderGrid(),
         (it) => {
+          if (!isRop) return;
           new ProductModal({
             category: CATEGORY,
             title: 'Редактировать',
@@ -187,14 +210,21 @@
           });
         }
       );
+      
+      if (!isRop) {
+        const actions = card.querySelector('.card-actions');
+        if (actions) actions.style.display = 'none';
+      }
+      
       grid.appendChild(card);
     }
   }
 
-  document.getElementById('btnAddTobacco').addEventListener('click', () => {
+  document.getElementById('btnAddLiquid').addEventListener('click', () => {
+    if (!isRop) return;
     new ProductModal({
       category: CATEGORY,
-      title: 'Добавить табак',
+      title: 'Добавить жидкость',
       onSave: async (item) => {
         await addItem(CATEGORY, item);
         renderGrid();
@@ -202,7 +232,7 @@
     });
   });
 
-  // Initial render
+  await checkPermissions();
   renderGrid();
 </script>
 </body>
