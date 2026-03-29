@@ -1,4 +1,4 @@
-// server.js - правильный порядок: сначала проверка авторизации
+// server.js - полная версия
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -24,6 +24,7 @@ const pool = new Pool({
 async function initTables() {
     const client = await pool.connect();
     try {
+        // Users table
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -35,6 +36,7 @@ async function initTables() {
             )
         `);
 
+        // Products table
         await client.query(`
             CREATE TABLE IF NOT EXISTS products (
                 id SERIAL PRIMARY KEY,
@@ -49,6 +51,7 @@ async function initTables() {
             )
         `);
 
+        // Session table
         await client.query(`
             CREATE TABLE IF NOT EXISTS session (
                 sid VARCHAR(255) PRIMARY KEY,
@@ -57,6 +60,20 @@ async function initTables() {
             )
         `);
 
+        // Content table for editable content
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS content (
+                id SERIAL PRIMARY KEY,
+                page VARCHAR(100) NOT NULL,
+                section VARCHAR(100) NOT NULL,
+                content TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_by VARCHAR(50),
+                UNIQUE(page, section)
+            )
+        `);
+
+        // Insert default users
         await client.query(`
             INSERT INTO users (username, password, full_name, role) 
             VALUES ('user', '1111', 'Обычный пользователь', 'user')
@@ -73,6 +90,31 @@ async function initTables() {
             INSERT INTO users (username, password, full_name, role) 
             VALUES ('root', 'root123', 'Главный администратор', 'root')
             ON CONFLICT (username) DO NOTHING
+        `);
+
+        // Insert default content for hookah page
+        await client.query(`
+            INSERT INTO content (page, section, content) 
+            VALUES ('hookah', 'parts', '{"html":"<div class=\"info-card\" style=\"margin-bottom:16px\"><h3>ℹ️ Что такое кальян</h3><ul><li>Приспособление для курения кальянной смеси</li><li>Охлаждение испарений через воду</li><li>Вода фильтрует испарения от твёрдых частиц</li><li>Охлаждённый пар наносит меньше вреда дыхательным путям</li></ul></div><div class=\"two-col\"><div class=\"info-card\"><h3>🔝 Верхняя часть</h3><ul><li>Экран / Фольга / Калауд</li><li>Чаша (чашка)</li><li>Тарелка (блюдце) для пепла</li><li>Шахта</li><li>Держатель трубки</li></ul></div><div class=\"info-card\"><h3>🔽 Нижняя часть</h3><ul><li>Пружина от перегиба шланга</li><li>Коннектор трубки</li><li>Система фиксации</li><li>Нижняя часть шахты</li><li>Диффузор</li><li>Колба</li><li>Трубка / Шланг</li><li>Клапан</li><li>Мундштук</li></ul></div></div><div class=\"hl info\">Тарелка правильно называется блюдцем. Система фиксации удерживает шахту в колбе.</div>"}')
+            ON CONFLICT (page, section) DO NOTHING
+        `);
+
+        await client.query(`
+            INSERT INTO content (page, section, content) 
+            VALUES ('hookah', 'bowls', '{"html":"<div class=\"alert-bar info\"><span>💡</span><span>Разные чаши по-разному раскрывают табак — влияют на крепость и вкус.</span></div><table class=\"ref-table\"><tr><th>Чаша</th><th>Описание</th><th>Для кого</th></tr><tr><td><strong>Турка / Универсальная</strong></td><td>5 отверстий. Классический баланс вкуса и крепости.</td><td>Все категории</td></tr><tr><td><strong>Убивашка</strong></td><td>5 отверстий, особая форма. Плотный дым, усиленная крепость.</td><td>Опытные</td></tr><tr><td><strong>Фанол / Фаннель</strong></td><td>1 центральное отверстие. Максимально чистый вкус.</td><td>Ценители вкуса</td></tr><tr><td><strong>Мелассоуловитель</strong></td><td>Ставится между чашей и шахтой. Собирает лишний сироп.</td><td>Для чистоты</td></tr></table>"}')
+            ON CONFLICT (page, section) DO NOTHING
+        `);
+
+        await client.query(`
+            INSERT INTO content (page, section, content) 
+            VALUES ('hookah', 'coal', '{"html":"<table class=\"ref-table\" style=\"margin-bottom:20px\"><tr><th>Инструмент</th><th>Описание</th></tr><tr><td><strong>Щипцы дешёвые</strong></td><td>Короткие, быстро нагреваются, покрытие облезает</td></tr><tr><td><strong>Щипцы дорогие</strong></td><td>Длинные, прочные, надёжная фиксация угля</td></tr><tr><td><strong>Колпак</strong></td><td>Накрывает чашу — помогает разжечься, защищает от ветра</td></tr><tr><td><strong>Печка / Каляница</strong></td><td>Электроплитка для равномерного и быстрого нагрева</td></tr><tr><td><strong>Кадило</strong></td><td>Металлическая ёмкость для переноски раскалённых углей</td></tr><tr><td><strong>Шило / Прокалыватель</strong></td><td>Отверстия в фольге. Также для распределения табака в чаше.</td></tr></table><div class=\"info-card\"><h3>⚫ Размеры углей</h3><ul><li><strong>22 мм</strong> — компактный, для небольших чаш</li><li><strong>25 мм</strong> — стандарт, универсальный</li></ul></div>"}')
+            ON CONFLICT (page, section) DO NOTHING
+        `);
+
+        await client.query(`
+            INSERT INTO content (page, section, content) 
+            VALUES ('hookah', 'clean', '{"html":"<table class=\"ref-table\"><tr><th>Аксессуар</th><th>Применение</th></tr><tr><td><strong>Уплотнитель для колбы</strong></td><td>Резиновое кольцо на горлышко колбы — герметичность</td></tr><tr><td><strong>Уплотнитель для чаши</strong></td><td>Резиновое кольцо на шахту — герметичность</td></tr><tr><td><strong>Ёршик для колбы</strong></td><td>Широкий, с изогнутой ручкой</td></tr><tr><td><strong>Ёршик для шахты</strong></td><td>Длинный и узкий — прочищает внутренние каналы</td></tr><tr><td><strong>Пружина для шланга</strong></td><td>Надевается на основание шланга — предотвращает перегиб</td></tr><tr><td><strong>Сетка на кальян</strong></td><td>Защитный экран от опрокидывания (животные, дети)</td></tr></table>"}')
+            ON CONFLICT (page, section) DO NOTHING
         `);
 
         console.log('✅ Database tables ready');
@@ -92,7 +134,7 @@ const sessionMiddleware = session({
         tableName: 'session',
         createTableIfMissing: false
     }),
-    secret: 'spravochnik_secret_key_2024',
+    secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -110,6 +152,7 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
         api_key: process.env.CLOUDINARY_API_KEY,
         api_secret: process.env.CLOUDINARY_API_SECRET
     });
+    console.log('✅ Cloudinary configured');
 }
 
 // ========== Multer ==========
@@ -123,8 +166,6 @@ const upload = multer({
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
-
-// Session middleware
 app.use(sessionMiddleware);
 
 // ========== AUTH MIDDLEWARE ==========
@@ -152,8 +193,7 @@ function requireRoot(req, res, next) {
     }
 }
 
-// ========== СТАТИЧЕСКИЕ ФАЙЛЫ (только CSS и JS) ==========
-// Они доступны без авторизации, чтобы страница входа могла загрузить стили
+// ========== STATIC FILES ==========
 app.get('/style.css', (req, res) => {
     res.sendFile(path.join(__dirname, 'style.css'));
 });
@@ -162,7 +202,7 @@ app.get('/core.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'core.js'));
 });
 
-// ========== API ROUTES ==========
+// ========== AUTH ROUTES ==========
 
 app.get('/api/check-auth', (req, res) => {
     if (req.session.user) {
@@ -349,6 +389,40 @@ app.delete('/api/users/:id', requireRoot, async (req, res) => {
     }
 });
 
+// ========== CONTENT MANAGEMENT API ==========
+
+app.get('/api/content/:page/:section', async (req, res) => {
+    const { page, section } = req.params;
+    try {
+        const result = await pool.query(
+            'SELECT content FROM content WHERE page = $1 AND section = $2',
+            [page, section]
+        );
+        res.json({ content: result.rows[0]?.content || '' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get content' });
+    }
+});
+
+app.post('/api/content/:page/:section', requireRop, async (req, res) => {
+    const { page, section } = req.params;
+    const { content } = req.body;
+    
+    try {
+        await pool.query(
+            `INSERT INTO content (page, section, content, updated_at, updated_by) 
+             VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)
+             ON CONFLICT (page, section) 
+             DO UPDATE SET content = EXCLUDED.content, updated_at = CURRENT_TIMESTAMP, updated_by = EXCLUDED.updated_by`,
+            [page, section, content, req.session.user?.username]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Save content error:', error);
+        res.status(500).json({ error: 'Failed to save content' });
+    }
+});
+
 // ========== PRODUCT ROUTES ==========
 
 app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) => {
@@ -416,9 +490,8 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', session: !!req.session.user });
 });
 
-// ========== HTML ROUTES - ГЛАВНОЕ: СНАЧАЛА ПРОВЕРКА АВТОРИЗАЦИИ ==========
+// ========== HTML ROUTES ==========
 
-// Страница входа - доступна без авторизации
 app.get('/login.html', (req, res) => {
     if (req.session.user) {
         res.redirect('/');
@@ -427,7 +500,6 @@ app.get('/login.html', (req, res) => {
     }
 });
 
-// ВСЕ остальные HTML страницы - ПРОВЕРКА АВТОРИЗАЦИИ
 app.get('/', (req, res) => {
     if (req.session.user) {
         res.sendFile(path.join(__dirname, 'index.html'));
