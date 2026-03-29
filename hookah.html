@@ -164,7 +164,6 @@
         const ropBtn = document.getElementById('ropBtn');
         if (ropBtn && isRop) ropBtn.style.display = 'block';
         
-        // Показываем кнопки редактирования контента для РОП
         const editBtns = document.querySelectorAll('.btn-edit-content');
         editBtns.forEach(btn => {
           btn.style.display = isRop ? 'inline-flex' : 'none';
@@ -179,36 +178,265 @@
     }
   }
 
-  async function editContent(page, section) {
+  function editContent(page, section) {
     // Получаем текущий контент
     const contentDiv = document.getElementById(`${section}-content`);
-    const currentHtml = contentDiv.innerHTML;
     
-    // Создаем модальное окно для редактирования
+    // Создаем модальное окно с простыми полями
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal" style="max-width: 800px;">
-        <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: ${section}</span>
-          <button class="modal-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="field">
-            <label>📝 Содержимое (HTML)</label>
-            <textarea id="contentEditor" style="width:100%; min-height:400px; font-family:monospace; font-size:13px;">${escapeHtml(currentHtml)}</textarea>
+    modal.style.zIndex = '2000';
+    
+    if (section === 'parts') {
+      // Извлекаем данные из HTML для формы редактирования
+      const whatIsHookah = extractListContent(contentDiv, '.info-card:first-child ul');
+      const topParts = extractListContent(contentDiv, '.two-col .info-card:first-child ul');
+      const bottomParts = extractListContent(contentDiv, '.two-col .info-card:last-child ul');
+      const note = extractTextContent(contentDiv, '.hl.info');
+      
+      modal.innerHTML = `
+        <div class="modal" style="max-width: 700px;">
+          <div class="modal-header">
+            <span class="modal-title">✏️ Редактировать: Комплектация кальяна</span>
+            <button class="modal-close">✕</button>
           </div>
-          <div class="alert-bar info">
-            <span>💡</span>
-            <span>Вы можете использовать HTML теги: &lt;div&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;table&gt;, &lt;h3&gt; и т.д.</span>
+          <div class="modal-body">
+            <div class="field">
+              <label>📖 Что такое кальян (список)</label>
+              <textarea id="whatIsHookah" rows="4" placeholder="Каждый пункт с новой строки">${whatIsHookah}</textarea>
+            </div>
+            <div class="field">
+              <label>🔝 Верхняя часть (список)</label>
+              <textarea id="topParts" rows="4" placeholder="Каждый пункт с новой строки">${topParts}</textarea>
+            </div>
+            <div class="field">
+              <label>🔽 Нижняя часть (список)</label>
+              <textarea id="bottomParts" rows="6" placeholder="Каждый пункт с новой строки">${bottomParts}</textarea>
+            </div>
+            <div class="field">
+              <label>💡 Примечание</label>
+              <textarea id="note" rows="2" placeholder="Дополнительная информация">${note}</textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-cancel">Отмена</button>
+            <button class="btn-save">💾 Сохранить</button>
           </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn-cancel">Отмена</button>
-          <button class="btn-save">💾 Сохранить</button>
+      `;
+    } 
+    else if (section === 'bowls') {
+      // Для чаш нужно редактировать таблицу
+      const rows = [];
+      const tableRows = contentDiv.querySelectorAll('.ref-table tr');
+      for (let i = 1; i < tableRows.length; i++) {
+        const cells = tableRows[i].querySelectorAll('td');
+        if (cells.length >= 3) {
+          rows.push({
+            name: cells[0].textContent.trim(),
+            desc: cells[1].textContent.trim(),
+            audience: cells[2].textContent.trim()
+          });
+        }
+      }
+      
+      let bowlsHtml = '';
+      rows.forEach((row, index) => {
+        bowlsHtml += `
+          <div class="bowl-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+              <input type="text" class="bowl-name" value="${escapeHtml(row.name)}" placeholder="Название чаши" style="flex:2">
+              <input type="text" class="bowl-audience" value="${escapeHtml(row.audience)}" placeholder="Для кого" style="flex:1">
+            </div>
+            <textarea class="bowl-desc" rows="2" placeholder="Описание" style="width:100%">${escapeHtml(row.desc)}</textarea>
+            <button class="remove-bowl-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
+          </div>
+        `;
+      });
+      
+      modal.innerHTML = `
+        <div class="modal" style="max-width: 800px;">
+          <div class="modal-header">
+            <span class="modal-title">✏️ Редактировать: Чаши</span>
+            <button class="modal-close">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="field">
+              <label>💡 Заголовок-подсказка</label>
+              <input type="text" id="alertText" value="Разные чаши по-разному раскрывают табак — влияют на крепость и вкус." style="width:100%">
+            </div>
+            <div class="field">
+              <label>🏺 Чаши</label>
+              <div id="bowlsList">${bowlsHtml}</div>
+              <button id="addBowlBtn" class="btn-add" style="margin-top: 10px;">➕ Добавить чашу</button>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-cancel">Отмена</button>
+            <button class="btn-save">💾 Сохранить</button>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+      
+      setTimeout(() => {
+        document.getElementById('addBowlBtn')?.addEventListener('click', () => {
+          const bowlsList = document.getElementById('bowlsList');
+          const newItem = document.createElement('div');
+          newItem.className = 'bowl-item';
+          newItem.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
+          newItem.innerHTML = `
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+              <input type="text" class="bowl-name" placeholder="Название чаши" style="flex:2">
+              <input type="text" class="bowl-audience" placeholder="Для кого" style="flex:1">
+            </div>
+            <textarea class="bowl-desc" rows="2" placeholder="Описание" style="width:100%"></textarea>
+            <button class="remove-bowl-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
+          `;
+          newItem.querySelector('.remove-bowl-btn').addEventListener('click', () => newItem.remove());
+          bowlsList.appendChild(newItem);
+        });
+        
+        document.querySelectorAll('.remove-bowl-btn').forEach(btn => {
+          btn.addEventListener('click', () => btn.closest('.bowl-item').remove());
+        });
+      }, 10);
+    }
+    else if (section === 'coal') {
+      // Редактирование углей
+      const tools = [];
+      const toolRows = contentDiv.querySelectorAll('.ref-table tr');
+      for (let i = 1; i < toolRows.length; i++) {
+        const cells = toolRows[i].querySelectorAll('td');
+        if (cells.length >= 2) {
+          tools.push({
+            name: cells[0].textContent.trim(),
+            desc: cells[1].textContent.trim()
+          });
+        }
+      }
+      
+      const coalSizes = extractListContent(contentDiv, '.info-card ul');
+      
+      let toolsHtml = '';
+      tools.forEach((tool, index) => {
+        toolsHtml += `
+          <div class="tool-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+            <input type="text" class="tool-name" value="${escapeHtml(tool.name)}" placeholder="Инструмент" style="width:100%; margin-bottom: 8px;">
+            <textarea class="tool-desc" rows="2" placeholder="Описание" style="width:100%">${escapeHtml(tool.desc)}</textarea>
+            <button class="remove-tool-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
+          </div>
+        `;
+      });
+      
+      modal.innerHTML = `
+        <div class="modal" style="max-width: 700px;">
+          <div class="modal-header">
+            <span class="modal-title">✏️ Редактировать: Уголь и управление</span>
+            <button class="modal-close">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="field">
+              <label>🔥 Инструменты</label>
+              <div id="toolsList">${toolsHtml}</div>
+              <button id="addToolBtn" class="btn-add" style="margin-top: 10px;">➕ Добавить инструмент</button>
+            </div>
+            <div class="field">
+              <label>⚫ Размеры углей (список)</label>
+              <textarea id="coalSizes" rows="3" placeholder="Каждый пункт с новой строки">${coalSizes}</textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-cancel">Отмена</button>
+            <button class="btn-save">💾 Сохранить</button>
+          </div>
+        </div>
+      `;
+      
+      setTimeout(() => {
+        document.getElementById('addToolBtn')?.addEventListener('click', () => {
+          const toolsList = document.getElementById('toolsList');
+          const newItem = document.createElement('div');
+          newItem.className = 'tool-item';
+          newItem.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
+          newItem.innerHTML = `
+            <input type="text" class="tool-name" placeholder="Инструмент" style="width:100%; margin-bottom: 8px;">
+            <textarea class="tool-desc" rows="2" placeholder="Описание" style="width:100%"></textarea>
+            <button class="remove-tool-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
+          `;
+          newItem.querySelector('.remove-tool-btn').addEventListener('click', () => newItem.remove());
+          toolsList.appendChild(newItem);
+        });
+        
+        document.querySelectorAll('.remove-tool-btn').forEach(btn => {
+          btn.addEventListener('click', () => btn.closest('.tool-item').remove());
+        });
+      }, 10);
+    }
+    else if (section === 'clean') {
+      // Редактирование чистки
+      const accessories = [];
+      const accRows = contentDiv.querySelectorAll('.ref-table tr');
+      for (let i = 1; i < accRows.length; i++) {
+        const cells = accRows[i].querySelectorAll('td');
+        if (cells.length >= 2) {
+          accessories.push({
+            name: cells[0].textContent.trim(),
+            desc: cells[1].textContent.trim()
+          });
+        }
+      }
+      
+      let accHtml = '';
+      accessories.forEach((acc, index) => {
+        accHtml += `
+          <div class="acc-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+            <input type="text" class="acc-name" value="${escapeHtml(acc.name)}" placeholder="Аксессуар" style="width:100%; margin-bottom: 8px;">
+            <textarea class="acc-desc" rows="2" placeholder="Применение" style="width:100%">${escapeHtml(acc.desc)}</textarea>
+            <button class="remove-acc-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
+          </div>
+        `;
+      });
+      
+      modal.innerHTML = `
+        <div class="modal" style="max-width: 700px;">
+          <div class="modal-header">
+            <span class="modal-title">✏️ Редактировать: Обслуживание и чистка</span>
+            <button class="modal-close">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="field">
+              <label>🧼 Аксессуары для чистки</label>
+              <div id="accList">${accHtml}</div>
+              <button id="addAccBtn" class="btn-add" style="margin-top: 10px;">➕ Добавить аксессуар</button>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-cancel">Отмена</button>
+            <button class="btn-save">💾 Сохранить</button>
+          </div>
+        </div>
+      `;
+      
+      setTimeout(() => {
+        document.getElementById('addAccBtn')?.addEventListener('click', () => {
+          const accList = document.getElementById('accList');
+          const newItem = document.createElement('div');
+          newItem.className = 'acc-item';
+          newItem.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
+          newItem.innerHTML = `
+            <input type="text" class="acc-name" placeholder="Аксессуар" style="width:100%; margin-bottom: 8px;">
+            <textarea class="acc-desc" rows="2" placeholder="Применение" style="width:100%"></textarea>
+            <button class="remove-acc-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
+          `;
+          newItem.querySelector('.remove-acc-btn').addEventListener('click', () => newItem.remove());
+          accList.appendChild(newItem);
+        });
+        
+        document.querySelectorAll('.remove-acc-btn').forEach(btn => {
+          btn.addEventListener('click', () => btn.closest('.acc-item').remove());
+        });
+      }, 10);
+    }
     
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
@@ -222,27 +450,134 @@
     modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
     
     modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const newContent = modal.querySelector('#contentEditor').value;
+      let newHtml = '';
+      
+      if (section === 'parts') {
+        const whatIsHookah = modal.querySelector('#whatIsHookah').value.split('\n').filter(l => l.trim()).map(l => `<li>${escapeHtml(l.trim())}</li>`).join('');
+        const topParts = modal.querySelector('#topParts').value.split('\n').filter(l => l.trim()).map(l => `<li>${escapeHtml(l.trim())}</li>`).join('');
+        const bottomParts = modal.querySelector('#bottomParts').value.split('\n').filter(l => l.trim()).map(l => `<li>${escapeHtml(l.trim())}</li>`).join('');
+        const note = modal.querySelector('#note').value;
+        
+        newHtml = `
+          <div class="info-card" style="margin-bottom:16px">
+            <h3>ℹ️ Что такое кальян</h3>
+            <ul>${whatIsHookah}</ul>
+          </div>
+          <div class="two-col">
+            <div class="info-card">
+              <h3>🔝 Верхняя часть</h3>
+              <ul>${topParts}</ul>
+            </div>
+            <div class="info-card">
+              <h3>🔽 Нижняя часть</h3>
+              <ul>${bottomParts}</ul>
+            </div>
+          </div>
+          <div class="hl info">${escapeHtml(note)}</div>
+        `;
+      }
+      else if (section === 'bowls') {
+        const alertText = modal.querySelector('#alertText').value;
+        const bowlItems = modal.querySelectorAll('.bowl-item');
+        let tableRows = '';
+        bowlItems.forEach(item => {
+          const name = item.querySelector('.bowl-name').value;
+          const audience = item.querySelector('.bowl-audience').value;
+          const desc = item.querySelector('.bowl-desc').value;
+          if (name && desc) {
+            tableRows += `<tr><td><strong>${escapeHtml(name)}</strong></td><td>${escapeHtml(desc)}</td><td>${escapeHtml(audience)}</td></tr>`;
+          }
+        });
+        
+        newHtml = `
+          <div class="alert-bar info">
+            <span>💡</span><span>${escapeHtml(alertText)}</span>
+          </div>
+          <table class="ref-table">
+            <tr><th>Чаша</th><th>Описание</th><th>Для кого</th></tr>
+            ${tableRows}
+          </table>
+        `;
+      }
+      else if (section === 'coal') {
+        const toolItems = modal.querySelectorAll('.tool-item');
+        let toolRows = '';
+        toolItems.forEach(item => {
+          const name = item.querySelector('.tool-name').value;
+          const desc = item.querySelector('.tool-desc').value;
+          if (name && desc) {
+            toolRows += `<tr><td><strong>${escapeHtml(name)}</strong></td><td>${escapeHtml(desc)}</td></tr>`;
+          }
+        });
+        
+        const coalSizes = modal.querySelector('#coalSizes').value.split('\n').filter(l => l.trim()).map(l => `<li>${escapeHtml(l.trim())}</li>`).join('');
+        
+        newHtml = `
+          <table class="ref-table" style="margin-bottom:20px">
+            <tr><th>Инструмент</th><th>Описание</th></tr>
+            ${toolRows}
+          </table>
+          <div class="info-card">
+            <h3>⚫ Размеры углей</h3>
+            <ul>${coalSizes}</ul>
+          </div>
+        `;
+      }
+      else if (section === 'clean') {
+        const accItems = modal.querySelectorAll('.acc-item');
+        let accRows = '';
+        accItems.forEach(item => {
+          const name = item.querySelector('.acc-name').value;
+          const desc = item.querySelector('.acc-desc').value;
+          if (name && desc) {
+            accRows += `<tr><td><strong>${escapeHtml(name)}</strong></td><td>${escapeHtml(desc)}</td></tr>`;
+          }
+        });
+        
+        newHtml = `
+          <table class="ref-table">
+            <tr><th>Аксессуар</th><th>Применение</th></tr>
+            ${accRows}
+          </table>
+        `;
+      }
       
       try {
-        const response = await fetch(`/api/content/${page}/${section}`, {
+        const response = await fetch(`/api/content/hookah/${section}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ content: newContent })
+          body: JSON.stringify({ content: newHtml })
         });
         
         if (response.ok) {
-          contentDiv.innerHTML = newContent;
-          alert('Сохранено успешно!');
+          contentDiv.innerHTML = newHtml;
+          alert('✅ Сохранено успешно!');
           closeModal();
         } else {
-          alert('Ошибка сохранения');
+          alert('❌ Ошибка сохранения');
         }
       } catch (error) {
-        alert('Ошибка: ' + error.message);
+        alert('❌ Ошибка: ' + error.message);
       }
     });
+  }
+
+  function extractListContent(container, selector) {
+    const element = container.querySelector(selector);
+    if (!element) return '';
+    const items = element.querySelectorAll('li');
+    return Array.from(items).map(li => li.textContent.trim()).join('\n');
+  }
+
+  function extractTextContent(container, selector) {
+    const element = container.querySelector(selector);
+    return element ? element.textContent.trim() : '';
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
   }
 
   document.getElementById('logoutBtn')?.addEventListener('click', async () => {
@@ -295,7 +630,7 @@
     modal.querySelector('.modal-close').addEventListener('click', closeModal);
     modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
     
-    await loadUsers();
+    await loadUsers(modal);
     
     document.getElementById('addUserBtn').addEventListener('click', async () => {
       const username = document.getElementById('newUsername').value.trim();
@@ -323,7 +658,7 @@
         document.getElementById('newUsername').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('newFullName').value = '';
-        await loadUsers();
+        await loadUsers(modal);
       } else {
         const error = await response.json();
         alert(error.error);
@@ -331,13 +666,13 @@
     });
   }
 
-  async function loadUsers() {
+  async function loadUsers(modal) {
     const response = await fetch('/api/users', { credentials: 'include' });
     const users = await response.json();
     const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
     const me = await meResponse.json();
     
-    const container = document.getElementById('usersList');
+    const container = modal.querySelector('#usersList');
     if (!container) return;
     
     container.innerHTML = users.map(user => {
@@ -387,15 +722,10 @@
       const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
       if (response.ok) {
         alert('Пользователь удален');
-        await loadUsers();
+        location.reload();
       } else alert('Ошибка удаления');
     }
   };
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
-  }
 
   checkPermissions();
 </script>
