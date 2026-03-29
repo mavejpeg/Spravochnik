@@ -274,7 +274,7 @@
             </button>
             
             <div class="info-text">
-                🔐 Если не знаешь пароль <span>запроси его у РОП</span>
+                🔐 Обычный пароль: <span>1111</span>
             </div>
         </div>
     </div>
@@ -289,16 +289,17 @@
         
         let isRopMode = false;
         
-        // Check if already logged in
-        fetch('/api/check-auth')
+        // Проверяем, не залогинен ли уже пользователь
+        fetch('/api/check-auth', { credentials: 'include' })
             .then(res => res.json())
             .then(data => {
                 if (data.authenticated) {
                     window.location.href = '/';
                 }
-            });
+            })
+            .catch(err => console.error('Auth check error:', err));
         
-        // Toggle ROP mode
+        // Переключение режима РОП
         ropToggleBtn.addEventListener('click', () => {
             isRopMode = !isRopMode;
             
@@ -323,7 +324,7 @@
             e.preventDefault();
             
             if (isRopMode) {
-                // ROP mode - username + password
+                // РОП режим - нужны логин и пароль
                 const username = document.getElementById('ropUsername').value.trim();
                 const password = document.getElementById('ropPassword').value;
                 
@@ -336,6 +337,7 @@
                     const response = await fetch('/api/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
                         body: JSON.stringify({ username, password })
                     });
                     
@@ -347,10 +349,11 @@
                         showError(data.error || 'Неверный логин или пароль');
                     }
                 } catch (error) {
+                    console.error('Login error:', error);
                     showError('Ошибка соединения с сервером');
                 }
             } else {
-                // Simple mode - only password
+                // Обычный режим - только пароль
                 const password = document.getElementById('userPassword').value;
                 
                 if (!password) {
@@ -362,6 +365,7 @@
                     const response = await fetch('/api/simple-login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
                         body: JSON.stringify({ password })
                     });
                     
@@ -373,6 +377,7 @@
                         showError(data.error || 'Неверный пароль');
                     }
                 } catch (error) {
+                    console.error('Simple login error:', error);
                     showError('Ошибка соединения с сервером');
                 }
             }
@@ -386,7 +391,7 @@
             }, 3000);
         }
         
-        // Enter key submit
+        // Enter key submit для всех полей
         const handleEnter = (e) => {
             if (e.key === 'Enter') {
                 form.dispatchEvent(new Event('submit'));
