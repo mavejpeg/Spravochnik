@@ -776,3 +776,13 @@ mark { background: rgba(124,92,252,0.25); color: var(--accent); border-radius: 3
     font-size: 9px;
   }
 }
+
+.hub-card.disposables::before {
+  background: radial-gradient(ellipse at top left, rgba(252,92,124,0.07), transparent 60%);
+  border: 1px solid rgba(252,92,124,0.2);
+}
+.hub-card.disposables { border-color: rgba(252,92,124,0.15); }
+.hub-card.disposables .hub-icon { 
+  background: linear-gradient(135deg, rgba(252,92,124,0.15), rgba(252,92,124,0.05));
+  color: var(--accent2);
+}
