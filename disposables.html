@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Одноразки — Справочник</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="index.html">☁ СПРАВОЧНИК</a>
+  <div class="search-wrap">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/>
+      <path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input class="search-input" id="searchInput" type="text" placeholder="Поиск по одноразкам...">
+  </div>
+  <a class="home-btn" href="index.html">← Главная</a>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-catalog">📦 Каталог</button>
+  <button class="tab-btn" data-tab="tab-guide">📖 Гид по брендам</button>
+</nav>
+
+<main>
+
+  <!-- CATALOG -->
+  <div class="section active" id="tab-catalog">
+    <div class="sec-header">
+      <span class="sec-title">⚡ Одноразовые электронные сигареты</span>
+      <button class="btn-add" id="btnAddDisposable">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Добавить одноразку
+      </button>
+    </div>
+
+    <div class="alert-bar info">
+      <span>💡</span>
+      <span><strong>Классификация по крепости:</strong> 1-3 — лёгкие, 4-6 — средние, 7-10 — крепкие</span>
+    </div>
+
+    <div class="cards-grid" id="disposablesGrid"></div>
+  </div>
+
+  <!-- GUIDE -->
+  <div class="section" id="tab-guide">
+    <div class="sec-header"><span class="sec-title">Гид по брендам</span></div>
+    
+    <div class="accordion open" data-searchable>
+      <div class="acc-header">
+        <span class="acc-title">🔥 Крепкие бренды (7-10)</span>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="acc-body">
+        <ul>
+          <li><strong>Husky</strong> — все модели крепкие, со льдом</li>
+          <li><strong>Iceberg</strong> — 6000 затяжек, крепкая</li>
+          <li><strong>GENG</strong> — 8000/12000 затяжек</li>
+          <li><strong>Fumo</strong> — 22000 затяжек</li>
+          <li><strong>Вака</strong> — 20000 затяжек, самая крепкая</li>
+          <li><strong>Vozol Vista</strong> — 20000 затяжек</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion" data-searchable>
+      <div class="acc-header">
+        <span class="acc-title">💨 Лёгкие бренды (1-3)</span>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="acc-body">
+        <ul>
+          <li><strong>Plonk</strong> — 6000-12000 затяжек, премиальные</li>
+          <li><strong>Ignite</strong> — 10000-25000 затяжек, натуральные ароматы</li>
+          <li><strong>Soak</strong> — 9000 затяжек, необычные вкусы</li>
+          <li><strong>Daft</strong> — 7000 затяжек, кальянная тяга</li>
+          <li><strong>Lost Mary</strong> — 4000-30000 затяжек</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion" data-searchable>
+      <div class="acc-header">
+        <span class="acc-title">⚖️ Средние бренды (4-6)</span>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="acc-body">
+        <ul>
+          <li><strong>KRZ</strong> — 8000 затяжек</li>
+          <li><strong>Inflave Strong</strong> — 18000 затяжек</li>
+          <li><strong>HQD</strong> — 12000-18000 затяжек</li>
+          <li><strong>Funky Lands</strong> — 10000 затяжек</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="core.js"></script>
+<script>
+  const CATEGORY = 'disposables';
+
+  initTabs();
+  initAccordions();
+  initSearch();
+  
+  async function renderGrid() {
+    const grid = document.getElementById('disposablesGrid');
+    const items = await getCategory(CATEGORY);
+    grid.innerHTML = '';
+
+    if (!items.length) {
+      renderEmpty(grid, '⚡', 'Каталог пуст', 'Нажмите «Добавить одноразку» чтобы внести первую позицию');
+      return;
+    }
+
+    for (const item of items) {
+      const card = renderProductCard(item, CATEGORY,
+        () => renderGrid(),
+        (it) => {
+          new ProductModal({
+            category: CATEGORY,
+            title: 'Редактировать',
+            editItem: it,
+            onSave: async (data) => {
+              await updateItem(CATEGORY, it.id, data);
+              renderGrid();
+            }
+          });
+        }
+      );
+      grid.appendChild(card);
+    }
+  }
+
+  document.getElementById('btnAddDisposable').addEventListener('click', () => {
+    new ProductModal({
+      category: CATEGORY,
+      title: 'Добавить одноразку',
+      onSave: async (item) => {
+        await addItem(CATEGORY, item);
+        renderGrid();
+      }
+    });
+  });
+
+  renderGrid();
+</script>
+</body>
+</html>
