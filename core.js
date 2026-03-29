@@ -484,6 +484,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+async function updateCounters() {
+  const categories = ['tobacco', 'liquids', 'snus', 'disposables'];
+  const elements = {
+    'tobacco': 'cnt-tobacco',
+    'liquids': 'cnt-liquids', 
+    'snus': 'cnt-snus',
+    'disposables': 'cnt-disposables'
+  };
+  
+  for (const cat of categories) {
+    const items = await getCategory(cat);
+    const el = document.getElementById(elements[cat]);
+    if (el) {
+      el.textContent = items.length ? `${items.length} позиций` : 'Пусто — добавьте первую';
+    }
+  }
+}
+
+// Вызывайте updateCounters() после каждого изменения
+
 // ========== MAKE GLOBAL ==========
 
 window.getCategory = getCategory;
