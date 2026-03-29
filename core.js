@@ -1,58 +1,65 @@
-// core.js - упрощенная версия с отладкой
+// core.js - минимальная рабочая версия
 
-async function apiFetchProducts(category) {
+// API Functions
+async function getCategory(category) {
   try {
     const response = await fetch(`/api/products/${category}`);
     if (!response.ok) throw new Error('Failed to fetch');
     return await response.json();
   } catch (error) {
-    console.error('API fetch error:', error);
+    console.error('Fetch error:', error);
     return [];
   }
 }
 
-async function apiAddProduct(category, product) {
-  console.log('Adding product:', category, product);
-  
+async function addItem(category, item) {
   try {
     const response = await fetch(`/api/products/${category}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(product)
+      body: JSON.stringify(item)
     });
-    
-    console.log('Response status:', response.status);
-    
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to add');
     }
-    
-    const data = await response.json();
-    console.log('Success:', data);
-    return data;
+    return await response.json();
   } catch (error) {
-    console.error('API add error:', error);
+    console.error('Add error:', error);
     throw error;
   }
 }
 
-async function apiDeleteProduct(category, id) {
-  console.log('Deleting:', category, id);
-  
+async function deleteItem(category, id) {
   try {
     const response = await fetch(`/api/products/${category}/${id}`, {
       method: 'DELETE'
     });
-    
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to delete');
     }
-    
     return await response.json();
   } catch (error) {
-    console.error('API delete error:', error);
+    console.error('Delete error:', error);
+    throw error;
+  }
+}
+
+async function updateItem(category, id, data) {
+  try {
+    const response = await fetch(`/api/products/${category}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Update error:', error);
     throw error;
   }
 }
@@ -66,38 +73,16 @@ async function uploadPhoto(file) {
       method: 'POST',
       body: formData
     });
-    
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Upload failed');
     }
-    
     const data = await response.json();
     return data.photoUrl;
   } catch (error) {
     console.error('Upload error:', error);
     throw error;
   }
-}
-
-async function getCategory(cat) {
-  return await apiFetchProducts(cat);
-}
-
-async function addItem(cat, item) {
-  const product = {
-    id: item.id || (Date.now() + Math.random()).toString(),
-    name: item.name,
-    strength: item.strength || 5,
-    origin: item.origin || '',
-    desc: item.desc || '',
-    photoUrl: item.photoUrl || null
-  };
-  return await apiAddProduct(cat, product);
-}
-
-async function deleteItem(cat, id) {
-  return await apiDeleteProduct(cat, id);
 }
 
 // Strength labels
@@ -115,6 +100,7 @@ const STRENGTH_BADGE_CLASS = {
   9: 'badge-strength-5', 10: 'badge-strength-5'
 };
 
+// UI Functions
 function initAccordions() {
   document.querySelectorAll('.acc-header').forEach(h => {
     h.addEventListener('click', () => {
@@ -148,8 +134,6 @@ function initSearch(scope) {
 
 function doSearch(val, scope) {
   document.querySelectorAll('.section').forEach(s => s.classList.add('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-
   (scope || document).querySelectorAll('[data-searchable]').forEach(el => {
     const text = el.textContent.toLowerCase();
     if (text.includes(val)) {
@@ -179,53 +163,52 @@ function renderEmpty(container, icon, title, sub) {
 function renderProductCard(item, category, onDelete, onEdit) {
   const div = document.createElement('div');
   div.className = 'product-card';
-  div.dataset.id = item.id;
-
+  
   const strength = item.strength || 5;
   const badgeClass = STRENGTH_BADGE_CLASS[strength] || 'badge-strength-3';
-
+  
   div.innerHTML = `
     <div class="card-actions">
       <button class="card-action-btn btn-edit">✏️</button>
       <button class="card-action-btn btn-delete">🗑</button>
     </div>
-    <div class="card-img ${item.photoUrl ? '' : 'no-img'}">
-      ${item.photoUrl ? `<img src="${item.photoUrl}" alt="${item.name}">` : '📦'}
+    <div class="card-img ${item.photo_url || item.photoUrl ? '' : 'no-img'}">
+      ${(item.photo_url || item.photoUrl) ? `<img src="${item.photo_url || item.photoUrl}" alt="${item.name}">` : '📦'}
     </div>
     <div class="card-body">
       <div class="card-name">${item.name}</div>
       <div class="card-meta">
-        <span class="badge ${badgeClass}">${STRENGTH_LABELS[strength] || strength}</span>
+        <span class="badge ${badgeClass}">${STRENGTH_LABELS[strength]}</span>
         ${item.origin ? `<span class="badge badge-origin">🌍 ${item.origin}</span>` : ''}
       </div>
       <div class="strength-compact">
-        <span class="strength-label-small">Крепость ${strength}/10</span>
+        <span>Крепость ${strength}/10</span>
         <div class="strength-dots">
-          ${Array.from({length: 10}, (_, i) => `<span class="strength-dot ${i < strength ? 'active' : ''}"></span>`).join('')}
+          ${Array(10).fill().map((_, i) => `<span class="strength-dot ${i < strength ? 'active' : ''}"></span>`).join('')}
         </div>
       </div>
-      ${item.desc ? `<div class="card-desc">${item.desc.substring(0, 80)}${item.desc.length > 80 ? '...' : ''}</div>` : ''}
+      ${item.description ? `<div class="card-desc">${item.description.substring(0, 80)}${item.description.length > 80 ? '...' : ''}</div>` : ''}
     </div>
   `;
-
+  
   div.querySelector('.btn-delete').addEventListener('click', async (e) => {
     e.stopPropagation();
     if (confirm(`Удалить "${item.name}"?`)) {
       try {
-        await deleteItem(category, item.id);
+        await deleteItem(category, item.product_id || item.id);
         div.remove();
         if (onDelete) onDelete();
       } catch (error) {
-        alert('Ошибка удаления: ' + error.message);
+        alert('Ошибка: ' + error.message);
       }
     }
   });
-
+  
   div.querySelector('.btn-edit').addEventListener('click', (e) => {
     e.stopPropagation();
     if (onEdit) onEdit(item);
   });
-
+  
   return div;
 }
 
@@ -235,20 +218,20 @@ class ProductModal {
     this.titleText = title;
     this.onSave = onSave;
     this.editItem = editItem;
-    this.photoUrl = editItem?.photoUrl || null;
+    this.photoUrl = editItem?.photo_url || editItem?.photoUrl || null;
     this._build();
   }
-
+  
   _build() {
-    const existingModal = document.getElementById('productModal');
-    if (existingModal) existingModal.remove();
-
+    const existing = document.getElementById('productModal');
+    if (existing) existing.remove();
+    
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.id = 'productModal';
-
+    
     const strengthVal = this.editItem?.strength || 5;
-
+    
     overlay.innerHTML = `
       <div class="modal">
         <div class="modal-header">
@@ -257,22 +240,18 @@ class ProductModal {
         </div>
         <div class="modal-body">
           <div class="field">
-            <label>📷 Фото товара</label>
-            <div class="photo-upload">
-              <input type="file" id="photoInput" accept="image/*">
-              <div class="photo-upload-icon">📷</div>
-              <p>Нажмите для выбора фото<br><strong>JPG, PNG до 5MB</strong></p>
-            </div>
-            <img class="photo-preview" id="photoPreview" ${this.photoUrl ? `src="${this.photoUrl}" style="display:block"` : ''}>
+            <label>📷 Фото</label>
+            <input type="file" id="photoInput" accept="image/*">
+            <div id="uploadProgress" style="display:none">Загрузка...</div>
+            ${this.photoUrl ? `<img src="${this.photoUrl}" style="max-width:100%; margin-top:10px">` : ''}
           </div>
           <div class="field">
             <label>Название *</label>
-            <input type="text" id="fieldName" placeholder="Название" value="${this.editItem?.name || ''}">
+            <input type="text" id="fieldName" value="${this.editItem?.name || ''}">
           </div>
           <div class="field">
-            <label>Крепость (1-10)</label>
+            <label>Крепость (1-10): <span id="strengthVal">${strengthVal}</span></label>
             <input type="range" id="fieldStrength" min="1" max="10" value="${strengthVal}">
-            <span id="strengthValue">${strengthVal}</span>
           </div>
           <div class="field">
             <label>Производитель</label>
@@ -280,7 +259,7 @@ class ProductModal {
           </div>
           <div class="field">
             <label>Описание</label>
-            <textarea id="fieldDesc">${this.editItem?.desc || ''}</textarea>
+            <textarea id="fieldDesc">${this.editItem?.description || this.editItem?.desc || ''}</textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -289,46 +268,44 @@ class ProductModal {
         </div>
       </div>
     `;
-
+    
     document.body.appendChild(overlay);
     setTimeout(() => overlay.classList.add('open'), 10);
-
+    
     // Strength slider
     const slider = overlay.querySelector('#fieldStrength');
-    const strengthSpan = overlay.querySelector('#strengthValue');
+    const strengthSpan = overlay.querySelector('#strengthVal');
     slider.addEventListener('input', () => {
       strengthSpan.textContent = slider.value;
     });
-
+    
     // Photo upload
     const photoInput = overlay.querySelector('#photoInput');
-    const photoPreview = overlay.querySelector('#photoPreview');
+    const progress = overlay.querySelector('#uploadProgress');
     photoInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      
+      progress.style.display = 'block';
       try {
-        const photoUrl = await uploadPhoto(file);
-        this.photoUrl = photoUrl;
-        photoPreview.src = photoUrl;
-        photoPreview.style.display = 'block';
-      } catch (error) {
-        alert('Ошибка загрузки фото: ' + error.message);
+        this.photoUrl = await uploadPhoto(file);
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
+      } finally {
+        progress.style.display = 'none';
       }
     });
-
+    
     // Close
-    const closeModal = () => {
+    const close = () => {
       overlay.classList.remove('open');
       setTimeout(() => overlay.remove(), 300);
     };
-    
-    overlay.querySelector('.modal-close').addEventListener('click', closeModal);
-    overlay.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    overlay.querySelector('.modal-close').addEventListener('click', close);
+    overlay.querySelector('.btn-cancel').addEventListener('click', close);
     overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) closeModal();
+      if (e.target === overlay) close();
     });
-
+    
     // Save
     overlay.querySelector('.btn-save').addEventListener('click', async () => {
       const name = overlay.querySelector('#fieldName').value.trim();
@@ -338,7 +315,7 @@ class ProductModal {
       }
       
       const item = {
-        id: this.editItem?.id || (Date.now() + Math.random()).toString(),
+        id: this.editItem?.product_id || this.editItem?.id || (Date.now() + Math.random()).toString(),
         name: name,
         strength: parseInt(overlay.querySelector('#fieldStrength').value),
         origin: overlay.querySelector('#fieldOrigin').value.trim(),
@@ -348,9 +325,9 @@ class ProductModal {
       
       try {
         await this.onSave(item);
-        closeModal();
-      } catch (error) {
-        alert('Ошибка: ' + error.message);
+        close();
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
       }
     });
   }
@@ -360,6 +337,7 @@ class ProductModal {
 window.getCategory = getCategory;
 window.addItem = addItem;
 window.deleteItem = deleteItem;
+window.updateItem = updateItem;
 window.initAccordions = initAccordions;
 window.initTabs = initTabs;
 window.initSearch = initSearch;
