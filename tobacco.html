@@ -133,10 +133,33 @@
 <script src="core.js"></script>
 <script>
   const CATEGORY = 'tobacco';
+  let isRop = false;
 
   initTabs();
   initAccordions();
   initSearch();
+  
+  // Проверка прав пользователя
+  async function checkPermissions() {
+    try {
+      const response = await fetch('/api/check-session');
+      const data = await response.json();
+      
+      const addButton = document.getElementById('btnAddTobacco');
+      
+      if (data.authenticated && data.user.role === 'rop') {
+        isRop = true;
+        if (addButton) addButton.style.display = 'flex';
+        document.body.classList.add('rop-mode');
+      } else {
+        isRop = false;
+        if (addButton) addButton.style.display = 'none';
+        document.body.classList.add('view-mode');
+      }
+    } catch (error) {
+      console.error('Permission check error:', error);
+    }
+  }
   
   async function renderGrid() {
     const grid = document.getElementById('tobaccoGrid');
@@ -144,7 +167,7 @@
     grid.innerHTML = '';
 
     if (!items.length) {
-      renderEmpty(grid, '🌿', 'Каталог пуст', 'Нажмите «Добавить табак» чтобы внести первую позицию');
+      renderEmpty(grid, '🌿', 'Каталог пуст', isRop ? 'Нажмите «Добавить табак» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
 
@@ -152,6 +175,7 @@
       const card = renderProductCard(item, CATEGORY,
         () => renderGrid(),
         (it) => {
+          if (!isRop) return;
           new ProductModal({
             category: CATEGORY,
             title: 'Редактировать',
@@ -163,11 +187,19 @@
           });
         }
       );
+      
+      // Скрываем кнопки редактирования/удаления если не ROP
+      if (!isRop) {
+        const actions = card.querySelector('.card-actions');
+        if (actions) actions.style.display = 'none';
+      }
+      
       grid.appendChild(card);
     }
   }
 
   document.getElementById('btnAddTobacco').addEventListener('click', () => {
+    if (!isRop) return;
     new ProductModal({
       category: CATEGORY,
       title: 'Добавить табак',
@@ -178,7 +210,8 @@
     });
   });
 
-  // Initial render
+  // Запускаем проверку прав и рендер
+  await checkPermissions();
   renderGrid();
 </script>
 </body>
