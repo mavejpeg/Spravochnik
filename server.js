@@ -1,4 +1,4 @@
-// server.js - полностью исправленный
+// server.js - с полным логированием
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -12,15 +12,27 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+console.log('='.repeat(60));
+console.log('SERVER STARTING...');
+console.log('='.repeat(60));
+console.log('Node version:', process.version);
+console.log('Environment:', process.env.NODE_ENV || 'development');
+console.log('PORT:', PORT);
+console.log('='.repeat(60));
+
 // ========== PostgreSQL connection ==========
 let pool = null;
 
 function initPool() {
     const databaseUrl = process.env.DATABASE_URL;
+    console.log('[DB] DATABASE_URL exists:', !!databaseUrl);
+    
     if (!databaseUrl) {
-        console.error('❌ DATABASE_URL is not set!');
+        console.error('[DB] ❌ DATABASE_URL is not set!');
         return null;
     }
+    
+    console.log('[DB] Creating connection pool...');
     return new Pool({
         connectionString: databaseUrl,
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
@@ -32,12 +44,13 @@ function initPool() {
 
 // ========== Initialize database ==========
 async function initDatabase() {
+    console.log('[DB] Initializing database...');
     pool = initPool();
     if (!pool) return false;
     
     try {
         const client = await pool.connect();
-        console.log('✅ Database connected');
+        console.log('[DB] ✅ Database connected');
 
         // Create products table
         await client.query(`
@@ -54,6 +67,7 @@ async function initDatabase() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        console.log('[DB] ✅ Products table ready');
 
         // Create users table
         await client.query(`
@@ -67,6 +81,7 @@ async function initDatabase() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        console.log('[DB] ✅ Users table ready');
 
         // Create session table
         await client.query(`
@@ -77,6 +92,7 @@ async function initDatabase() {
                 CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
             )
         `);
+        console.log('[DB] ✅ Session table ready');
 
         // Add columns if missing
         await client.query(`
@@ -90,6 +106,10 @@ async function initDatabase() {
             CREATE INDEX IF NOT EXISTS idx_products_product_id ON products(product_id);
             CREATE INDEX IF NOT EXISTS IDX_session_expire ON "session" ("expire");
         `);
+
+        // Check existing users
+        const usersResult = await client.query('SELECT COUNT(*) FROM users');
+        console.log(`[DB] Existing users count: ${usersResult.rows[0].count}`);
 
         // Insert default users
         await client.query(`
@@ -109,12 +129,20 @@ async function initDatabase() {
             VALUES ('root', 'root123', 'Главный администратор', 'rop')
             ON CONFLICT (username) DO NOTHING
         `);
+        
+        console.log('[DB] ✅ Default users inserted');
+
+        // Verify users
+        const finalUsers = await client.query('SELECT username, role FROM users');
+        console.log('[DB] Users in database:');
+        finalUsers.rows.forEach(u => console.log(`  - ${u.username}: ${u.role}`));
 
         client.release();
-        console.log('✅ Database tables ready');
+        console.log('[DB] ✅ Database initialization complete');
         return true;
     } catch (error) {
-        console.error('❌ Database init error:', error.message);
+        console.error('[DB] ❌ Database init error:', error.message);
+        console.error('[DB] Error stack:', error.stack);
         return false;
     }
 }
@@ -126,7 +154,7 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
         api_key: process.env.CLOUDINARY_API_KEY,
         api_secret: process.env.CLOUDINARY_API_SECRET
     });
-    console.log('✅ Cloudinary configured');
+    console.log('[Cloudinary] ✅ Configured');
 }
 
 // ========== Multer setup ==========
@@ -146,6 +174,8 @@ const upload = multer({
 });
 
 // ========== MIDDLEWARE ==========
+console.log('[Middleware] Setting up CORS and JSON parsers...');
+
 // CORS и JSON парсеры - ПЕРВЫМИ
 app.use(cors({
     origin: true,
@@ -154,15 +184,18 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Session middleware - будем добавлять после инициализации БД
-let sessionMiddleware = null;
+console.log('[Middleware] CORS and JSON parsers configured');
 
 // ========== STATIC FILES ==========
 app.use('/style.css', express.static(path.join(__dirname, 'style.css')));
 app.use('/core.js', express.static(path.join(__dirname, 'core.js')));
+console.log('[Static] CSS and JS files mapped');
 
 // ========== AUTH MIDDLEWARE ==========
 function requireAuth(req, res, next) {
+    console.log('[Auth] requireAuth - session exists:', !!req.session);
+    console.log('[Auth] requireAuth - user exists:', !!(req.session && req.session.user));
+    
     if (!req.session) {
         return res.status(401).json({ error: 'Session not initialized' });
     }
@@ -174,6 +207,9 @@ function requireAuth(req, res, next) {
 }
 
 function requireRop(req, res, next) {
+    console.log('[Auth] requireRop - session exists:', !!req.session);
+    console.log('[Auth] requireRop - user exists:', !!(req.session && req.session.user));
+    
     if (!req.session) {
         return res.status(401).json({ error: 'Session not initialized' });
     }
@@ -185,9 +221,13 @@ function requireRop(req, res, next) {
 }
 
 function protectPage(req, res, next) {
+    console.log('[Auth] protectPage - session exists:', !!req.session);
+    console.log('[Auth] protectPage - user exists:', !!(req.session && req.session.user));
+    
     if (req.session && req.session.user) {
         next();
     } else {
+        console.log('[Auth] protectPage - redirecting to login.html');
         res.sendFile(path.join(__dirname, 'login.html'));
     }
 }
@@ -196,7 +236,10 @@ function protectPage(req, res, next) {
 
 // Check if user is authenticated
 app.get('/api/check-auth', (req, res) => {
-    console.log('Check auth - session exists:', !!req.session);
+    console.log('[API] /api/check-auth called');
+    console.log('[API] Session object:', req.session ? 'EXISTS' : 'NULL');
+    console.log('[API] Session user:', req.session?.user || 'none');
+    
     if (req.session && req.session.user) {
         res.json({ 
             authenticated: true, 
@@ -209,30 +252,38 @@ app.get('/api/check-auth', (req, res) => {
 
 // Login
 app.post('/api/login', async (req, res) => {
-    console.log('Login attempt:', req.body.username);
-    console.log('Session exists:', !!req.session);
+    console.log('[API] /api/login called');
+    console.log('[API] Request body:', req.body);
+    console.log('[API] Session exists:', !!req.session);
+    console.log('[API] Session ID:', req.session?.id);
     
     const { username, password } = req.body;
     
     if (!username || !password) {
+        console.log('[API] Missing username or password');
         return res.status(401).json({ error: 'Неверный логин или пароль' });
     }
     
     try {
+        console.log(`[API] Looking for user: ${username.toLowerCase()}`);
         const result = await pool.query(
             'SELECT * FROM users WHERE username = $1 AND password = $2',
             [username.toLowerCase(), password]
         );
         
+        console.log(`[API] Query result rows: ${result.rows.length}`);
+        
         if (result.rows.length === 0) {
+            console.log('[API] User not found or wrong password');
             return res.status(401).json({ error: 'Неверный логин или пароль' });
         }
         
         const user = result.rows[0];
+        console.log(`[API] User found: ${user.username}, role: ${user.role}`);
         
         if (!req.session) {
-            console.error('Session is not available!');
-            return res.status(500).json({ error: 'Session error' });
+            console.error('[API] ❌ Session is not available!');
+            return res.status(500).json({ error: 'Session error - please restart' });
         }
         
         req.session.user = {
@@ -242,43 +293,53 @@ app.post('/api/login', async (req, res) => {
             role: user.role
         };
         
-        console.log('Login successful:', user.username);
+        console.log('[API] Session user set successfully');
+        console.log('[API] Session after set:', req.session.user);
+        
         res.json({ 
             success: true, 
             user: req.session.user
         });
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('[API] Login error:', error);
         res.status(500).json({ error: 'Ошибка входа' });
     }
 });
 
 // Simple login for users (only password)
 app.post('/api/simple-login', async (req, res) => {
-    console.log('Simple login attempt');
-    console.log('Session exists:', !!req.session);
+    console.log('[API] /api/simple-login called');
+    console.log('[API] Request body:', req.body);
+    console.log('[API] Session exists:', !!req.session);
+    console.log('[API] Session ID:', req.session?.id);
     
     const { password } = req.body;
     
     if (!password) {
+        console.log('[API] Missing password');
         return res.status(401).json({ error: 'Введите пароль' });
     }
     
     try {
+        console.log(`[API] Looking for user with password: ${password}`);
         const result = await pool.query(
             'SELECT * FROM users WHERE role = $1 AND password = $2 LIMIT 1',
             ['user', password]
         );
         
+        console.log(`[API] Query result rows: ${result.rows.length}`);
+        
         if (result.rows.length === 0) {
+            console.log('[API] User not found or wrong password');
             return res.status(401).json({ error: 'Неверный пароль' });
         }
         
         const user = result.rows[0];
+        console.log(`[API] User found: ${user.username}, role: ${user.role}`);
         
         if (!req.session) {
-            console.error('Session is not available!');
-            return res.status(500).json({ error: 'Session error' });
+            console.error('[API] ❌ Session is not available!');
+            return res.status(500).json({ error: 'Session error - please restart' });
         }
         
         req.session.user = {
@@ -288,25 +349,30 @@ app.post('/api/simple-login', async (req, res) => {
             role: user.role
         };
         
-        console.log('Simple login successful:', user.username);
+        console.log('[API] Session user set successfully');
+        console.log('[API] Session after set:', req.session.user);
+        
         res.json({ 
             success: true, 
             user: req.session.user
         });
     } catch (error) {
-        console.error('Simple login error:', error);
+        console.error('[API] Simple login error:', error);
         res.status(500).json({ error: 'Ошибка входа' });
     }
 });
 
 // Logout
 app.post('/api/logout', (req, res) => {
+    console.log('[API] /api/logout called');
     if (req.session) {
         req.session.destroy((err) => {
             if (err) console.error('Logout error:', err);
+            console.log('[API] Session destroyed');
             res.json({ success: true });
         });
     } else {
+        console.log('[API] No session to destroy');
         res.json({ success: true });
     }
 });
@@ -315,6 +381,7 @@ app.post('/api/logout', (req, res) => {
 
 // Get all users
 app.get('/api/users', requireRop, async (req, res) => {
+    console.log('[API] /api/users called');
     try {
         const result = await pool.query(
             'SELECT id, username, full_name, role FROM users ORDER BY id'
@@ -526,25 +593,31 @@ app.delete('/api/products/:category/:id', requireRop, async (req, res) => {
 
 // Health check
 app.get('/health', (req, res) => {
+    console.log('[API] /health called - session exists:', !!req.session);
     res.json({ 
         status: 'ok', 
         timestamp: new Date().toISOString(),
         database: pool ? 'connected' : 'disconnected',
-        session: req.session ? 'available' : 'not available'
+        session: req.session ? 'available' : 'not available',
+        sessionId: req.session?.id || 'none'
     });
 });
 
 // ========== HTML PAGES ==========
 app.get('/login.html', (req, res) => {
+    console.log('[Route] /login.html called - session exists:', !!req.session);
     if (req.session && req.session.user) {
+        console.log('[Route] User already logged in, redirecting to /');
         res.redirect('/');
     } else {
+        console.log('[Route] Sending login.html');
         res.sendFile(path.join(__dirname, 'login.html'));
     }
 });
 
 // Защищенные страницы
 app.get('/', protectPage, (req, res) => {
+    console.log('[Route] / called - sending index.html');
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
@@ -586,14 +659,21 @@ app.get('/disposables.html', protectPage, (req, res) => {
 
 // ========== START SERVER ==========
 async function startServer() {
-    console.log('\n🚀 Starting server...\n');
+    console.log('\n' + '='.repeat(60));
+    console.log('STARTING SERVER INITIALIZATION');
+    console.log('='.repeat(60));
     
     // 1. Инициализируем БД
+    console.log('\n[Step 1] Initializing database...');
     const dbReady = await initDatabase();
     
-    // 2. Создаем session middleware
+    // 2. Создаем и применяем session middleware
+    console.log('\n[Step 2] Setting up session middleware...');
+    
     if (dbReady && pool) {
-        sessionMiddleware = session({
+        console.log('[Session] Creating PostgreSQL session store...');
+        
+        const sessionMiddlewareInstance = session({
             store: new pgSession({
                 pool: pool,
                 tableName: 'session',
@@ -610,32 +690,38 @@ async function startServer() {
             name: 'spravochnik.sid'
         });
         
-        // 3. ПРИМЕНЯЕМ session middleware ко всем маршрутам
-        app.use(sessionMiddleware);
-        console.log('✅ Session store: PostgreSQL');
-        console.log('✅ Session middleware applied to all routes');
+        // Применяем session middleware
+        app.use(sessionMiddlewareInstance);
+        console.log('[Session] ✅ Session middleware applied to all routes');
+        console.log('[Session] Store type: PostgreSQL');
     } else {
-        console.log('⚠️ Session store: Memory (fallback)');
-        // Простой memory store для отладки
-        sessionMiddleware = session({
-            secret: 'fallback_secret',
+        console.log('[Session] ⚠️ Using memory store (fallback)');
+        const memorySession = session({
+            secret: 'fallback_secret_key',
             resave: false,
             saveUninitialized: true,
             cookie: { secure: false }
         });
-        app.use(sessionMiddleware);
+        app.use(memorySession);
     }
     
-    // 4. Запускаем сервер
+    // 3. Запускаем сервер
+    console.log('\n[Step 3] Starting HTTP server...');
+    
     app.listen(PORT, () => {
-        console.log(`\n✅ Server running on port ${PORT}`);
-        console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
+        console.log('\n' + '='.repeat(60));
+        console.log('✅ SERVER STARTED SUCCESSFULLY');
+        console.log('='.repeat(60));
+        console.log(`📡 Port: ${PORT}`);
+        console.log(`💾 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
         console.log(`🔐 Auth: Enabled`);
-        console.log(`\n📋 Данные для входа:`);
+        console.log(`\n📋 Данные для входа (из БД):`);
         console.log(`   👤 Обычный пользователь: пароль 1111`);
         console.log(`   👑 РОП: rop / 1234`);
         console.log(`   👑 ROOT: root / root123`);
-        console.log(`\n🔗 URL: http://localhost:${PORT}\n`);
+        console.log(`\n🔗 URL: http://localhost:${PORT}`);
+        console.log(`🔍 Health check: http://localhost:${PORT}/health`);
+        console.log('='.repeat(60) + '\n');
     });
 }
 
