@@ -1095,3 +1095,36 @@ progress::-webkit-progress-value {
     color: var(--accent);
     transform: translateY(-1px);
 }
+
+/* Добавьте в style.css */
+
+.btn-edit-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 6px 12px;
+  color: var(--accent);
+  font-size: 11px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-edit-content:hover {
+  background: var(--accent);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.sec-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
