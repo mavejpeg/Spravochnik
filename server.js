@@ -1,11 +1,10 @@
-// server.js - с авторизацией
+// server.js - упрощенная версия с паролем
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
 const cors = require('cors');
 const multer = require('multer');
 const session = require('express-session');
-const pgSession = require('connect-pg-simple')(session);
 const { v2: cloudinary } = require('cloudinary');
 require('dotenv').config();
 
@@ -22,6 +21,18 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname)));
 
 // Session setup
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'spravochnik_secret_2024',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 30 * 24 * 60 * 60 * 1000
+    }
+}));
+
+// PostgreSQL connection
 let pool = null;
 
 function initPool() {
@@ -39,23 +50,6 @@ function initPool() {
     });
 }
 
-// Session middleware
-app.use(session({
-    store: new pgSession({
-        pool: pool,
-        tableName: 'session',
-        createTableIfMissing: true
-    }),
-    secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-    }
-}));
-
 // Cloudinary configuration
 if (process.env.CLOUDINARY_CLOUD_NAME) {
     cloudinary.config({
@@ -68,7 +62,7 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
 
 // Multer setup
 const storage = multer.memoryStorage();
-const upload = multer({
+const upload = multer({ 
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
@@ -86,7 +80,7 @@ const upload = multer({
 async function initDatabase() {
     pool = initPool();
     if (!pool) return false;
-
+    
     try {
         const client = await pool.connect();
         console.log('✅ Database connected');
@@ -115,8 +109,7 @@ async function initDatabase() {
                 password VARCHAR(255) NOT NULL,
                 full_name VARCHAR(255) NOT NULL,
                 role VARCHAR(20) DEFAULT 'user',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
@@ -130,13 +123,18 @@ async function initDatabase() {
         await client.query(`
             CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
             CREATE INDEX IF NOT EXISTS idx_products_product_id ON products(product_id);
-            CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
         `);
 
-        // Insert default ROOT user if not exists
+        // Insert default users
         await client.query(`
             INSERT INTO users (username, password, full_name, role) 
             VALUES ('ROOT', '1234', 'Системный администратор', 'rop')
+            ON CONFLICT (username) DO NOTHING
+        `);
+        
+        await client.query(`
+            INSERT INTO users (username, password, full_name, role) 
+            VALUES ('USER', '1111', 'Обычный пользователь', 'user')
             ON CONFLICT (username) DO NOTHING
         `);
 
@@ -150,7 +148,7 @@ async function initDatabase() {
 }
 
 // ========== AUTH MIDDLEWARE ==========
-function isAuthenticated(req, res, next) {
+function requireAuth(req, res, next) {
     if (req.session.user) {
         next();
     } else {
@@ -158,7 +156,7 @@ function isAuthenticated(req, res, next) {
     }
 }
 
-function isRop(req, res, next) {
+function requireRop(req, res, next) {
     if (req.session.user && req.session.user.role === 'rop') {
         next();
     } else {
@@ -168,13 +166,21 @@ function isRop(req, res, next) {
 
 // ========== AUTH ROUTES ==========
 
+// Check if user is authenticated
+app.get('/api/check-auth', (req, res) => {
+    if (req.session.user) {
+        res.json({ 
+            authenticated: true, 
+            user: req.session.user 
+        });
+    } else {
+        res.json({ authenticated: false });
+    }
+});
+
 // Login
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
-    
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Username and password required' });
-    }
     
     try {
         const result = await pool.query(
@@ -183,7 +189,7 @@ app.post('/api/login', async (req, res) => {
         );
         
         if (result.rows.length === 0) {
-            return res.status(401).json({ error: 'Invalid credentials' });
+            return res.status(401).json({ error: 'Неверный логин или пароль' });
         }
         
         const user = result.rows[0];
@@ -196,77 +202,62 @@ app.post('/api/login', async (req, res) => {
         
         res.json({ 
             success: true, 
-            user: req.session.user,
-            message: `Добро пожаловать, ${user.full_name}!`
+            user: req.session.user
         });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ error: 'Login failed' });
+        res.status(500).json({ error: 'Ошибка входа' });
     }
 });
 
 // Logout
 app.post('/api/logout', (req, res) => {
     req.session.destroy();
-    res.json({ success: true, message: 'Logged out' });
-});
-
-// Check session
-app.get('/api/check-session', (req, res) => {
-    if (req.session.user) {
-        res.json({ 
-            authenticated: true, 
-            user: req.session.user 
-        });
-    } else {
-        res.json({ authenticated: false });
-    }
+    res.json({ success: true });
 });
 
 // Get all users (ROP only)
-app.get('/api/users', isRop, async (req, res) => {
+app.get('/api/users', requireRop, async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT id, username, full_name, role, created_at FROM users ORDER BY id'
+            'SELECT id, username, full_name, role FROM users ORDER BY id'
         );
         res.json(result.rows);
     } catch (error) {
-        console.error('Get users error:', error);
         res.status(500).json({ error: 'Failed to get users' });
     }
 });
 
 // Change user password (ROP only)
-app.post('/api/users/:id/change-password', isRop, async (req, res) => {
+app.post('/api/users/:id/change-password', requireRop, async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
     
     if (!newPassword || !/^\d{4}$/.test(newPassword)) {
-        return res.status(400).json({ error: 'Password must be 4 digits' });
+        return res.status(400).json({ error: 'Пароль должен быть 4 цифры' });
     }
     
     try {
         await pool.query(
-            'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            'UPDATE users SET password = $1 WHERE id = $2',
             [newPassword, id]
         );
-        res.json({ success: true, message: 'Password updated successfully' });
+        res.json({ success: true });
     } catch (error) {
-        console.error('Change password error:', error);
         res.status(500).json({ error: 'Failed to change password' });
     }
 });
 
 // Create new user (ROP only)
-app.post('/api/users', isRop, async (req, res) => {
+app.post('/api/users', requireRop, async (req, res) => {
     const { username, password, full_name, role } = req.body;
     
     if (!username || !password || !full_name) {
-        return res.status(400).json({ error: 'All fields required' });
+        return res.status(400).json({ error: 'Все поля обязательны' });
     }
     
     if (!/^\d{4}$/.test(password)) {
-        return res.status(400).json({ error: 'Password must be 4 digits' });
+        return res.status(400).json({ error: 'Пароль должен быть 4 цифры' });
     }
     
     try {
@@ -274,30 +265,28 @@ app.post('/api/users', isRop, async (req, res) => {
             'INSERT INTO users (username, password, full_name, role) VALUES ($1, $2, $3, $4)',
             [username.toUpperCase(), password, full_name, role || 'user']
         );
-        res.json({ success: true, message: 'User created successfully' });
+        res.json({ success: true });
     } catch (error) {
-        console.error('Create user error:', error);
-        res.status(500).json({ error: 'Username already exists' });
+        res.status(500).json({ error: 'Пользователь уже существует' });
     }
 });
 
 // Delete user (ROP only)
-app.delete('/api/users/:id', isRop, async (req, res) => {
+app.delete('/api/users/:id', requireRop, async (req, res) => {
     const { id } = req.params;
     
     try {
         await pool.query('DELETE FROM users WHERE id = $1 AND username != $2', [id, 'ROOT']);
-        res.json({ success: true, message: 'User deleted successfully' });
+        res.json({ success: true });
     } catch (error) {
-        console.error('Delete user error:', error);
         res.status(500).json({ error: 'Failed to delete user' });
     }
 });
 
-// ========== PRODUCT ROUTES (with auth check) ==========
+// ========== PRODUCT ROUTES ==========
 
-// Upload endpoint
-app.post('/api/upload', isAuthenticated, upload.single('photo'), async (req, res) => {
+// Upload photo (requires auth)
+app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
@@ -318,15 +307,15 @@ app.post('/api/upload', isAuthenticated, upload.single('photo'), async (req, res
             photoUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
         }
         
-        res.json({ photoUrl: photoUrl });
+        res.json({ photoUrl });
     } catch (error) {
         console.error('Upload error:', error);
         res.status(500).json({ error: 'Upload failed' });
     }
 });
 
-// GET products (no auth needed)
-app.get('/api/products/:category', async (req, res) => {
+// GET products (no auth needed - but user must be logged in to see page)
+app.get('/api/products/:category', requireAuth, async (req, res) => {
     if (!pool) return res.status(503).json([]);
     
     try {
@@ -342,15 +331,9 @@ app.get('/api/products/:category', async (req, res) => {
 });
 
 // POST product (ROP only)
-app.post('/api/products/:category', isRop, async (req, res) => {
-    if (!pool) return res.status(503).json({ error: 'Database not connected' });
-    
+app.post('/api/products/:category', requireRop, async (req, res) => {
     const { category } = req.params;
     const { id, name, strength, origin, desc, photoUrl } = req.body;
-    
-    if (!name || !name.trim()) {
-        return res.status(400).json({ error: 'Name is required' });
-    }
     
     try {
         const result = await pool.query(
@@ -366,7 +349,6 @@ app.post('/api/products/:category', isRop, async (req, res) => {
              RETURNING *`,
             [category, id, name.trim(), strength || 5, origin || null, desc || null, photoUrl || null]
         );
-        
         res.json(result.rows[0]);
     } catch (error) {
         console.error('POST error:', error);
@@ -375,9 +357,7 @@ app.post('/api/products/:category', isRop, async (req, res) => {
 });
 
 // PUT product (ROP only)
-app.put('/api/products/:category/:id', isRop, async (req, res) => {
-    if (!pool) return res.status(503).json({ error: 'Database not connected' });
-    
+app.put('/api/products/:category/:id', requireRop, async (req, res) => {
     const { category, id } = req.params;
     const { name, strength, origin, desc, photoUrl } = req.body;
     
@@ -402,9 +382,7 @@ app.put('/api/products/:category/:id', isRop, async (req, res) => {
 });
 
 // DELETE product (ROP only)
-app.delete('/api/products/:category/:id', isRop, async (req, res) => {
-    if (!pool) return res.status(503).json({ error: 'Database not connected' });
-    
+app.delete('/api/products/:category/:id', requireRop, async (req, res) => {
     const { category, id } = req.params;
     
     try {
@@ -416,7 +394,7 @@ app.delete('/api/products/:category/:id', isRop, async (req, res) => {
         if (result.rows.length === 0) {
             res.status(404).json({ error: 'Product not found' });
         } else {
-            res.json({ success: true, message: 'Deleted successfully' });
+            res.json({ success: true });
         }
     } catch (error) {
         console.error('DELETE error:', error);
@@ -426,34 +404,64 @@ app.delete('/api/products/:category/:id', isRop, async (req, res) => {
 
 // Health check
 app.get('/health', (req, res) => {
-    res.json({
-        status: 'ok',
+    res.json({ 
+        status: 'ok', 
         timestamp: new Date().toISOString(),
-        database: pool ? 'connected' : 'disconnected',
-        cloudinary: process.env.CLOUDINARY_CLOUD_NAME ? 'configured' : 'not configured'
+        database: pool ? 'connected' : 'disconnected'
     });
 });
 
-// Serve HTML
-app.get('/', (req, res) => {
+// Serve HTML - все страницы требуют авторизации
+const requirePageAuth = (req, res, next) => {
+    if (req.session.user) {
+        next();
+    } else {
+        res.sendFile(path.join(__dirname, 'login.html'));
+    }
+};
+
+app.get('/', requirePageAuth, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/:page', (req, res) => {
-    const page = req.params.page;
-    if (page.includes('..') || page.includes('\\')) {
-        return res.status(403).send('Forbidden');
+app.get('/tobacco.html', requirePageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'tobacco.html'));
+});
+
+app.get('/liquids.html', requirePageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'liquids.html'));
+});
+
+app.get('/snus.html', requirePageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'snus.html'));
+});
+
+app.get('/hookah.html', requirePageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'hookah.html'));
+});
+
+app.get('/sales.html', requirePageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'sales.html'));
+});
+
+app.get('/checks.html', requirePageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'checks.html'));
+});
+
+app.get('/cash.html', requirePageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'cash.html'));
+});
+
+app.get('/disposables.html', requirePageAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'disposables.html'));
+});
+
+app.get('/login.html', (req, res) => {
+    if (req.session.user) {
+        res.redirect('/');
+    } else {
+        res.sendFile(path.join(__dirname, 'login.html'));
     }
-    
-    const fs = require('fs');
-    const possibleFiles = [page, `${page}.html`];
-    for (const file of possibleFiles) {
-        const filePath = path.join(__dirname, file);
-        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-            return res.sendFile(filePath);
-        }
-    }
-    res.status(404).send('Page not found');
 });
 
 // Start server
@@ -465,9 +473,9 @@ async function startServer() {
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`📸 Photos: ${process.env.CLOUDINARY_CLOUD_NAME ? 'CLOUDINARY' : 'BASE64'}`);
         console.log(`🔐 Auth: Enabled`);
-        console.log(`👑 ROOT credentials: ROOT / 1234`);
+        console.log(`👑 ROOT: ROOT / 1234`);
+        console.log(`👤 USER: USER / 1111`);
         console.log(`🔗 URL: http://localhost:${PORT}\n`);
     });
 }
