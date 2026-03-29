@@ -1,8 +1,9 @@
-// core.js - полностью обновленная версия
+// core.js - полностью исправленная версия
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
 const API_URL = isBrowser ? window.location.origin : '';
 
-// API Functions
+// ========== API FUNCTIONS ==========
+
 async function apiFetchProducts(category) {
   try {
     const response = await fetch(`${API_URL}/api/products/${category}`);
@@ -62,18 +63,28 @@ async function uploadPhoto(file) {
   formData.append('photo', file);
   
   try {
+    console.log('Uploading photo...', file.name, file.size);
+    
     const response = await fetch(`${API_URL}/api/upload`, {
       method: 'POST',
       body: formData
     });
-    if (!response.ok) throw new Error('Upload failed');
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Upload failed');
+    }
+    
     const data = await response.json();
+    console.log('Upload success:', data.photoUrl);
     return data.photoUrl;
   } catch (error) {
     console.error('Upload error:', error);
     throw error;
   }
 }
+
+// ========== STORAGE FUNCTIONS ==========
 
 async function getCategory(cat) {
   return await apiFetchProducts(cat);
@@ -83,7 +94,7 @@ async function addItem(cat, item) {
   const product = {
     id: item.id || (Date.now() + Math.random()).toString(),
     name: item.name,
-    strength: item.strength,
+    strength: item.strength || 5,
     origin: item.origin || '',
     desc: item.desc || '',
     photoUrl: item.photoUrl || null
@@ -92,13 +103,14 @@ async function addItem(cat, item) {
 }
 
 async function deleteItem(cat, id) {
+  console.log(`Deleting: ${cat}/${id}`);
   return await apiDeleteProduct(cat, id);
 }
 
 async function updateItem(cat, id, data) {
   const product = {
     name: data.name,
-    strength: data.strength,
+    strength: data.strength || 5,
     origin: data.origin || '',
     desc: data.desc || '',
     photoUrl: data.photoUrl || null
@@ -106,11 +118,19 @@ async function updateItem(cat, id, data) {
   return await apiUpdateProduct(cat, id, product);
 }
 
-// Strength labels
+// ========== STRENGTH LABELS ==========
+
 const STRENGTH_LABELS = {
-  1: 'Очень лёгкий', 2: 'Лёгкий', 3: 'Ниже среднего', 4: 'Средний',
-  5: 'Выше среднего', 6: 'Крепкий', 7: 'Очень крепкий',
-  8: 'Мощный', 9: 'Экстремальный', 10: 'Убийственный'
+  1: 'Очень лёгкий',
+  2: 'Лёгкий',
+  3: 'Ниже среднего',
+  4: 'Средний',
+  5: 'Выше среднего',
+  6: 'Крепкий',
+  7: 'Очень крепкий',
+  8: 'Мощный',
+  9: 'Экстремальный',
+  10: 'Убийственный'
 };
 
 const STRENGTH_BADGE_CLASS = {
@@ -120,6 +140,20 @@ const STRENGTH_BADGE_CLASS = {
   7: 'badge-strength-4', 8: 'badge-strength-4',
   9: 'badge-strength-5', 10: 'badge-strength-5'
 };
+
+// ========== HELPER FUNCTIONS ==========
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ========== UI FUNCTIONS ==========
 
 function initAccordions() {
   document.querySelectorAll('.acc-header').forEach(h => {
@@ -180,7 +214,104 @@ function clearSearch(scope) {
   document.querySelectorAll('.accordion').forEach(acc => acc.classList.remove('open'));
 }
 
-// Product Modal with Cloudinary upload
+function renderEmpty(container, icon, title, sub) {
+  container.innerHTML = `
+    <div class="empty-state" data-empty>
+      <div class="empty-icon">${icon}</div>
+      <div class="empty-title">${title}</div>
+      <div class="empty-sub">${sub}</div>
+    </div>
+  `;
+}
+
+// ========== PRODUCT CARD ==========
+
+function renderProductCard(item, category, onDelete, onEdit) {
+  const div = document.createElement('div');
+  div.className = 'product-card';
+  div.dataset.searchable = '';
+  div.dataset.id = item.id;
+  div.dataset.category = category;
+
+  const strength = item.strength || 5;
+  const badgeClass = STRENGTH_BADGE_CLASS[strength] || 'badge-strength-3';
+
+  // Компактные точки крепости
+  const strengthDots = Array.from({length: 10}, (_, i) => {
+    const isActive = i < strength;
+    return `<span class="strength-dot ${isActive ? 'active' : ''}" title="${i+1}/10"></span>`;
+  }).join('');
+
+  div.innerHTML = `
+    <div class="card-actions">
+      <button class="card-action-btn btn-edit" data-action="edit" title="Редактировать">✏️</button>
+      <button class="card-action-btn btn-delete" data-action="delete" title="Удалить">🗑</button>
+    </div>
+    <div class="card-img ${item.photoUrl ? '' : 'no-img'}">
+      ${item.photoUrl ? `<img src="${item.photoUrl}" alt="${escapeHtml(item.name)}" loading="lazy">` : '📦'}
+    </div>
+    <div class="card-body">
+      <div class="card-name">${escapeHtml(item.name)}</div>
+      <div class="card-meta">
+        <span class="badge ${badgeClass}">${STRENGTH_LABELS[strength] || strength}</span>
+        ${item.origin ? `<span class="badge badge-origin">🌍 ${escapeHtml(item.origin)}</span>` : ''}
+      </div>
+      <div class="strength-compact">
+        <span class="strength-label-small">Крепость ${strength}/10</span>
+        <div class="strength-dots">${strengthDots}</div>
+      </div>
+      ${item.desc ? `<div class="card-desc">${escapeHtml(item.desc.substring(0, 80))}${item.desc.length > 80 ? '...' : ''}</div>` : ''}
+    </div>
+  `;
+
+  // Кнопка удаления
+  const deleteBtn = div.querySelector('.btn-delete');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      
+      if (confirm(`❌ Удалить "${item.name}"?\n\nЭто действие нельзя отменить.`)) {
+        try {
+          div.style.opacity = '0.5';
+          div.style.pointerEvents = 'none';
+          
+          await deleteItem(category, item.id);
+          
+          div.style.transition = 'all 0.3s ease';
+          div.style.opacity = '0';
+          div.style.transform = 'scale(0.8)';
+          
+          setTimeout(() => {
+            div.remove();
+            if (onDelete) onDelete();
+          }, 300);
+          
+        } catch (error) {
+          console.error('Delete error:', error);
+          alert('Ошибка при удалении: ' + error.message);
+          div.style.opacity = '1';
+          div.style.pointerEvents = 'auto';
+        }
+      }
+    });
+  }
+
+  // Кнопка редактирования
+  const editBtn = div.querySelector('.btn-edit');
+  if (editBtn) {
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (onEdit) onEdit(item);
+    });
+  }
+
+  return div;
+}
+
+// ========== PRODUCT MODAL ==========
+
 class ProductModal {
   constructor({ category, title, onSave, editItem = null }) {
     this.category = category;
@@ -193,7 +324,8 @@ class ProductModal {
   }
 
   _build() {
-    document.getElementById('productModal')?.remove();
+    const existingModal = document.getElementById('productModal');
+    if (existingModal) existingModal.remove();
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -209,21 +341,21 @@ class ProductModal {
         </div>
         <div class="modal-body">
           <div class="field">
-            <label>Фото товара</label>
+            <label>📷 Фото товара</label>
             <div class="photo-upload" id="photoZone">
               <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp">
               <div class="photo-upload-icon">📷</div>
-              <p>Нажмите или перетащите фото<br><strong>JPG, PNG, WEBP</strong></p>
+              <p>Нажмите или перетащите фото<br><strong>JPG, PNG, WEBP до 5MB</strong></p>
             </div>
             <div id="uploadProgress" style="display:none; margin-top:10px;">
               <progress value="0" max="100" style="width:100%"></progress>
-              <span style="font-size:12px">Загрузка...</span>
+              <span style="font-size:12px">⏳ Загрузка...</span>
             </div>
             <img class="photo-preview" id="photoPreview" ${this.photoUrl ? `src="${this.photoUrl}" style="display:block"` : ''}>
           </div>
           <div class="field">
             <label>Название *</label>
-            <input type="text" id="fieldName" placeholder="Например: Siberia White Dry" value="${this.editItem?.name || ''}">
+            <input type="text" id="fieldName" placeholder="Например: Siberia White Dry" value="${escapeHtml(this.editItem?.name || '')}">
           </div>
           <div class="field">
             <label>Крепость (1-10)</label>
@@ -237,11 +369,11 @@ class ProductModal {
           </div>
           <div class="field">
             <label>Производитель / Страна</label>
-            <input type="text" id="fieldOrigin" placeholder="Например: Россия, Швеция..." value="${this.editItem?.origin || ''}">
+            <input type="text" id="fieldOrigin" placeholder="Например: Россия, Швеция..." value="${escapeHtml(this.editItem?.origin || '')}">
           </div>
           <div class="field">
             <label>Описание</label>
-            <textarea id="fieldDesc" placeholder="Особенности вкуса, формат, совет...">${this.editItem?.desc || ''}</textarea>
+            <textarea id="fieldDesc" placeholder="Особенности вкуса, формат, совет...">${escapeHtml(this.editItem?.desc || '')}</textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -252,192 +384,168 @@ class ProductModal {
     `;
 
     document.body.appendChild(overlay);
-    requestAnimationFrame(() => overlay.classList.add('open'));
+    setTimeout(() => overlay.classList.add('open'), 10);
 
     // Strength slider
     const slider = overlay.querySelector('#fieldStrength');
     const valDisp = overlay.querySelector('#strengthValDisplay');
     const labelDisp = overlay.querySelector('#strengthLabelDisplay');
-    slider.addEventListener('input', () => {
-      valDisp.textContent = slider.value;
-      labelDisp.textContent = STRENGTH_LABELS[slider.value] || '';
-    });
+    
+    if (slider) {
+      slider.addEventListener('input', () => {
+        valDisp.textContent = slider.value;
+        labelDisp.textContent = STRENGTH_LABELS[slider.value] || '';
+      });
+    }
 
     // Photo upload
     const photoInput = overlay.querySelector('#photoInput');
     const photoPreview = overlay.querySelector('#photoPreview');
     const uploadProgress = overlay.querySelector('#uploadProgress');
-    const progressBar = uploadProgress?.querySelector('progress');
     
-    photoInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Файл слишком большой! Максимум 5MB');
-        return;
-      }
-      
-      uploadProgress.style.display = 'block';
-      this.isUploading = true;
-      
-      try {
-        const photoUrl = await uploadPhoto(file);
-        this.photoUrl = photoUrl;
-        photoPreview.src = photoUrl;
-        photoPreview.style.display = 'block';
-      } catch (error) {
-        alert('Ошибка загрузки фото: ' + error.message);
-      } finally {
-        uploadProgress.style.display = 'none';
-        this.isUploading = false;
-      }
-    });
+    if (photoInput) {
+      photoInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        if (file.size > 5 * 1024 * 1024) {
+          alert('❌ Файл слишком большой! Максимум 5MB');
+          return;
+        }
+        
+        if (!file.type.startsWith('image/')) {
+          alert('❌ Пожалуйста, выберите изображение (JPG, PNG, WEBP)');
+          return;
+        }
+        
+        if (uploadProgress) uploadProgress.style.display = 'block';
+        this.isUploading = true;
+        
+        try {
+          const photoUrl = await uploadPhoto(file);
+          this.photoUrl = photoUrl;
+          if (photoPreview) {
+            photoPreview.src = photoUrl;
+            photoPreview.style.display = 'block';
+          }
+          console.log('✅ Photo uploaded:', photoUrl);
+        } catch (error) {
+          console.error('Upload error:', error);
+          alert('❌ Ошибка загрузки фото: ' + error.message);
+        } finally {
+          if (uploadProgress) uploadProgress.style.display = 'none';
+          this.isUploading = false;
+        }
+      });
+    }
 
     // Close modal
-    const close = () => {
+    const closeModal = () => {
       overlay.classList.remove('open');
       setTimeout(() => overlay.remove(), 300);
     };
     
-    overlay.querySelector('#modalCloseBtn').addEventListener('click', close);
-    overlay.querySelector('#modalCancelBtn').addEventListener('click', close);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    const closeBtn = overlay.querySelector('#modalCloseBtn');
+    const cancelBtn = overlay.querySelector('#modalCancelBtn');
+    
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
+    });
 
     // Save
-    overlay.querySelector('#modalSaveBtn').addEventListener('click', async () => {
-      if (this.isUploading) {
-        alert('Подождите, фото загружается...');
-        return;
-      }
-      
-      const name = overlay.querySelector('#fieldName').value.trim();
-      if (!name) {
-        alert('Введите название товара');
-        overlay.querySelector('#fieldName').focus();
-        return;
-      }
-      
-      const item = {
-        id: this.editItem?.id || (Date.now() + Math.random()).toString(),
-        name,
-        strength: parseInt(overlay.querySelector('#fieldStrength').value),
-        origin: overlay.querySelector('#fieldOrigin').value.trim(),
-        desc: overlay.querySelector('#fieldDesc').value.trim(),
-        photoUrl: this.photoUrl
-      };
-      
-      await this.onSave(item);
-      close();
-    });
-  }
-}
-
-// Render product card (fixed strength display)
-function renderProductCard(item, category, onDelete, onEdit) {
-  const div = document.createElement('div');
-  div.className = 'product-card';
-  div.dataset.searchable = '';
-  div.dataset.id = item.id;
-
-  const strength = item.strength || 5;
-  const badgeClass = STRENGTH_BADGE_CLASS[strength] || 'badge-strength-3';
-
-  // Create compact strength display
-  const strengthDots = Array.from({length: 10}, (_, i) => {
-    const isActive = i < strength;
-    return `<span class="strength-dot ${isActive ? 'active' : ''}" title="${i+1}/10"></span>`;
-  }).join('');
-
-  div.innerHTML = `
-    <div class="card-actions">
-      <button class="card-action-btn btn-edit" title="Редактировать">✏️</button>
-      <button class="card-action-btn btn-delete" title="Удалить">🗑</button>
-    </div>
-    <div class="card-img ${item.photoUrl ? '' : 'no-img'}">
-      ${item.photoUrl ? `<img src="${item.photoUrl}" alt="${item.name}">` : '📦'}
-    </div>
-    <div class="card-body">
-      <div class="card-name">${item.name}</div>
-      <div class="card-meta">
-        <span class="badge ${badgeClass}">${STRENGTH_LABELS[strength] || strength}</span>
-        ${item.origin ? `<span class="badge badge-origin">🌍 ${item.origin}</span>` : ''}
-      </div>
-      <div class="strength-compact">
-        <span class="strength-label-small">Крепость ${strength}/10</span>
-        <div class="strength-dots">${strengthDots}</div>
-      </div>
-      ${item.desc ? `<div class="card-desc">${item.desc.substring(0, 80)}${item.desc.length > 80 ? '...' : ''}</div>` : ''}
-    </div>
-  `;
-
-  // Delete button handler
-  const deleteBtn = div.querySelector('.btn-delete');
-  if (deleteBtn) {
-    deleteBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (confirm(`Удалить "${item.name}"?`)) {
-        try {
-          await deleteItem(category, item.id);
-          div.style.opacity = '0';
-          div.style.transform = 'scale(0.9)';
-          setTimeout(() => {
-            div.remove();
-            if (onDelete) onDelete();
-          }, 200);
-        } catch (error) {
-          alert('Ошибка при удалении: ' + error.message);
+    const saveBtn = overlay.querySelector('#modalSaveBtn');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async () => {
+        if (this.isUploading) {
+          alert('⏳ Подождите, фото загружается...');
+          return;
         }
-      }
-    });
+        
+        const nameInput = overlay.querySelector('#fieldName');
+        const name = nameInput ? nameInput.value.trim() : '';
+        
+        if (!name) {
+          alert('❌ Введите название товара');
+          if (nameInput) nameInput.focus();
+          return;
+        }
+        
+        const item = {
+          id: this.editItem?.id || (Date.now() + Math.random()).toString(),
+          name: name,
+          strength: parseInt(overlay.querySelector('#fieldStrength')?.value || 5),
+          origin: overlay.querySelector('#fieldOrigin')?.value.trim() || '',
+          desc: overlay.querySelector('#fieldDesc')?.value.trim() || '',
+          photoUrl: this.photoUrl
+        };
+        
+        console.log('Saving item:', item);
+        
+        try {
+          await this.onSave(item);
+          closeModal();
+        } catch (error) {
+          console.error('Save error:', error);
+          alert('❌ Ошибка сохранения: ' + error.message);
+        }
+      });
+    }
   }
-
-  // Edit button handler
-  const editBtn = div.querySelector('.btn-edit');
-  if (editBtn) {
-    editBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (onEdit) onEdit(item);
-    });
-  }
-
-  return div;
 }
 
-function renderEmpty(container, icon, title, sub) {
-  container.innerHTML = `
-    <div class="empty-state" data-empty>
-      <div class="empty-icon">${icon}</div>
-      <div class="empty-title">${title}</div>
-      <div class="empty-sub">${sub}</div>
-    </div>
-  `;
-}
+// ========== INITIAL DATA ==========
 
-// Load initial data
 async function loadInitialData() {
   const categories = ['tobacco', 'liquids', 'snus', 'disposables'];
   
   for (const cat of categories) {
-    const items = await getCategory(cat);
-    if (items.length === 0) {
-      // Add some initial data for disposables
-      if (cat === 'disposables') {
-        const initialData = [
-          { id: 'disp_1', name: 'Husky', strength: 7, origin: 'Россия', desc: 'Крепкие, со льдом' },
-          { id: 'disp_2', name: 'Lost Mary', strength: 4, origin: 'Китай', desc: 'Лёгкие, фруктовые вкусы' },
-          { id: 'disp_3', name: 'Plonk', strength: 3, origin: 'Россия', desc: 'Премиальные лёгкие' }
-        ];
-        for (const item of initialData) {
-          await addItem(cat, item);
+    try {
+      const items = await getCategory(cat);
+      if (items.length === 0) {
+        if (cat === 'disposables') {
+          const initialData = [
+            { id: 'disp_1', name: 'Husky', strength: 7, origin: 'Россия', desc: 'Крепкие, со льдом. Все модели.' },
+            { id: 'disp_2', name: 'Lost Mary', strength: 4, origin: 'Китай', desc: 'Лёгкие, фруктовые вкусы. От 4000 до 30000 затяжек.' },
+            { id: 'disp_3', name: 'Plonk', strength: 3, origin: 'Россия', desc: 'Премиальные лёгкие. Натуральные ароматы.' },
+            { id: 'disp_4', name: 'Iceberg', strength: 8, origin: 'Россия', desc: 'Крепкие. 6000 затяжек.' },
+            { id: 'disp_5', name: 'Ignite', strength: 3, origin: 'Россия', desc: 'Лёгкие, натуральные ароматы. 10000-25000 затяжек.' }
+          ];
+          for (const item of initialData) {
+            await addItem(cat, item);
+          }
+          console.log(`✅ Added initial data for ${cat}`);
         }
       }
+    } catch (error) {
+      console.error(`Error loading initial data for ${cat}:`, error);
     }
   }
 }
+
+// ========== EXPORTS FOR BROWSER ==========
 
 if (isBrowser) {
   document.addEventListener('DOMContentLoaded', () => {
     loadInitialData();
   });
+}
+
+// Make functions available globally
+if (typeof window !== 'undefined') {
+  window.getCategory = getCategory;
+  window.addItem = addItem;
+  window.deleteItem = deleteItem;
+  window.updateItem = updateItem;
+  window.initAccordions = initAccordions;
+  window.initTabs = initTabs;
+  window.initSearch = initSearch;
+  window.renderProductCard = renderProductCard;
+  window.renderEmpty = renderEmpty;
+  window.ProductModal = ProductModal;
+  window.STRENGTH_LABELS = STRENGTH_LABELS;
+  window.STRENGTH_BADGE_CLASS = STRENGTH_BADGE_CLASS;
+  window.uploadPhoto = uploadPhoto;
 }
