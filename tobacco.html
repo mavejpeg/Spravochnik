@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Табак — Справочник</title>
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -30,7 +30,6 @@
 
 <main>
 
-  <!-- CATALOG -->
   <div class="section active" id="tab-catalog">
     <div class="sec-header">
       <span class="sec-title">🌿 Табак для кальяна</span>
@@ -39,16 +38,13 @@
         Добавить табак
       </button>
     </div>
-
     <div class="alert-bar info">
       <span>📌</span>
-      <span>Крепость указывается по шкале 1–10. Разные чаши по-разному раскрывают один и тот же табак — учитывайте при рекомендации.</span>
+      <span>Крепость указывается по шкале 1–10. Разные чаши по-разному раскрывают один и тот же табак.</span>
     </div>
-
     <div class="cards-grid" id="tobaccoGrid"></div>
   </div>
 
-  <!-- СЫРЬЁ -->
   <div class="section" id="tab-syrye">
     <div class="sec-header"><span class="sec-title">Типы табачного сырья</span></div>
     <div class="two-col">
@@ -71,7 +67,6 @@
     </div>
   </div>
 
-  <!-- СОВЕТЫ -->
   <div class="section" id="tab-tips">
     <div class="sec-header"><span class="sec-title">Советы продавцу</span></div>
     <div class="accordion open">
@@ -94,7 +89,7 @@
 
 </main>
 
-<script src="core.js?v=2"></script>
+<script src="core.js?v=3"></script>
 <script>
   const CATEGORY = 'tobacco';
   let currentUser = null;
@@ -109,27 +104,28 @@
       const response = await fetch('/api/check-auth', { credentials: 'include' });
       const data = await response.json();
       
-      console.log('Auth check:', data);
+      console.log('Auth check response:', data);
       
       if (data.authenticated) {
         currentUser = data.user;
         isRop = (data.user.role === 'rop' || data.user.role === 'root');
+        window.isRopGlobal = isRop;
         
-        // Показываем имя пользователя
+        console.log('User role:', data.user.role, 'isRop:', isRop);
+        
         const userNameSpan = document.getElementById('userName');
         if (userNameSpan) userNameSpan.textContent = data.user.full_name;
         
-        // Показываем кнопку РОП
         const ropBtn = document.getElementById('ropBtn');
         if (ropBtn && isRop) ropBtn.style.display = 'block';
         
-        // Показываем/скрываем кнопку добавления
         const addButton = document.getElementById('btnAddTobacco');
         if (addButton) {
           addButton.style.display = isRop ? 'flex' : 'none';
           console.log('Add button display:', addButton.style.display);
         }
       } else {
+        console.log('Not authenticated, redirecting to login');
         window.location.href = '/login.html';
       }
     } catch (error) {
@@ -139,11 +135,14 @@
   }
   
   async function renderGrid() {
+    console.log('Rendering grid for category:', CATEGORY);
     const grid = document.getElementById('tobaccoGrid');
     const items = await getCategory(CATEGORY);
+    console.log('Items loaded:', items.length);
+    
     grid.innerHTML = '';
 
-    if (!items.length) {
+    if (!items || items.length === 0) {
       renderEmpty(grid, '🌿', 'Каталог пуст', isRop ? 'Нажмите «Добавить табак» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
@@ -165,16 +164,10 @@
         }
       );
       
-      if (!isRop) {
-        const actions = card.querySelector('.card-actions');
-        if (actions) actions.style.display = 'none';
-      }
-      
       grid.appendChild(card);
     }
   }
 
-  // Кнопка добавления
   const addBtn = document.getElementById('btnAddTobacco');
   if (addBtn) {
     addBtn.addEventListener('click', () => {
@@ -195,13 +188,11 @@
     });
   }
 
-  // Выход
   document.getElementById('logoutBtn')?.addEventListener('click', async () => {
     await fetch('/api/logout', { method: 'POST', credentials: 'include' });
     window.location.href = '/login.html';
   });
 
-  // Кнопка управления РОП
   document.getElementById('ropBtn')?.addEventListener('click', () => {
     openRopPanel();
   });
@@ -209,12 +200,11 @@
   async function openRopPanel() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
-    modal.id = 'ropModal';
     modal.innerHTML = `
       <div class="modal" style="max-width: 600px;">
         <div class="modal-header">
           <span class="modal-title">👑 Панель управления</span>
-          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+          <button class="modal-close">✕</button>
         </div>
         <div class="modal-body">
           <div class="field">
@@ -231,12 +221,24 @@
             <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
           </div>
         </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Закрыть</button>
+        </div>
       </div>
     `;
     
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
-    await loadUsers();
+    
+    const closeModal = () => {
+      modal.classList.remove('open');
+      setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    await loadUsers(modal);
     
     document.getElementById('addUserBtn').addEventListener('click', async () => {
       const username = document.getElementById('newUsername').value.trim();
@@ -264,7 +266,7 @@
         document.getElementById('newUsername').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('newFullName').value = '';
-        await loadUsers();
+        await loadUsers(modal);
       } else {
         const error = await response.json();
         alert(error.error);
@@ -272,13 +274,13 @@
     });
   }
 
-  async function loadUsers() {
+  async function loadUsers(modal) {
     const response = await fetch('/api/users', { credentials: 'include' });
     const users = await response.json();
     const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
     const me = await meResponse.json();
     
-    const container = document.getElementById('usersList');
+    const container = modal.querySelector('#usersList');
     if (!container) return;
     
     container.innerHTML = users.map(user => {
@@ -328,7 +330,7 @@
       const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
       if (response.ok) {
         alert('Пользователь удален');
-        await loadUsers();
+        location.reload();
       } else alert('Ошибка удаления');
     }
   };
