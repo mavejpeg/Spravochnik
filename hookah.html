@@ -229,26 +229,53 @@ function openRopPanel() {
 
 async function loadUsers() {
     try {
-        const response = await fetch('/api/users');
+        const response = await fetch('/api/users', { credentials: 'include' });
         const users = await response.json();
         
         const container = document.getElementById('usersList');
         if (!container) return;
         
-        container.innerHTML = users.map(user => `
-            <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                    <div>
-                        <strong>${escapeHtml(user.full_name)}</strong><br>
-                        <span style="font-size: 11px; color: var(--muted);">Логин: ${user.username} | Роль: ${user.role}</span>
-                    </div>
-                    <div style="display: flex; gap: 6px;">
-                        <button onclick="changePassword(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>
-                        ${user.username !== 'ROOT' ? `<button onclick="deleteUser(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
+        // Получаем текущего пользователя
+        const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
+        const me = await meResponse.json();
+        
+        container.innerHTML = users.map(user => {
+            // Определяем, можно ли менять пароль
+            let canChangePassword = false;
+            
+            if (me.user.role === 'root') {
+                // Root может менять пароль всем
+                canChangePassword = true;
+            } else if (me.user.role === 'rop') {
+                // ROP может менять пароль только обычным пользователям
+                if (user.role === 'user') {
+                    canChangePassword = true;
+                }
+            }
+            
+            // Определяем, можно ли удалять
+            let canDelete = false;
+            if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) {
+                canDelete = true;
+            }
+            
+            return `
+                <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <strong>${escapeHtml(user.full_name)}</strong><br>
+                            <span style="font-size: 11px; color: var(--muted);">
+                                Логин: ${user.username} | Роль: ${user.role === 'root' ? '👑 ROOT' : (user.role === 'rop' ? '👑 РОП' : '👤 Пользователь')}
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            ${canChangePassword ? `<button onclick="changePassword(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
+                            ${canDelete ? `<button onclick="deleteUser(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
+                        </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     } catch (error) {
         console.error('Load users error:', error);
     }
