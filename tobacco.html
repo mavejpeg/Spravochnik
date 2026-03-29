@@ -3,8 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Табак — Справочник</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 
@@ -31,7 +34,7 @@
   <div class="section active" id="tab-catalog">
     <div class="sec-header">
       <span class="sec-title">🌿 Табак для кальяна</span>
-      <button class="btn-add" id="btnAddTobacco">
+      <button class="btn-add" id="btnAddTobacco" style="display: none;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
         Добавить табак
       </button>
@@ -51,39 +54,19 @@
     <div class="two-col">
       <div class="info-card" data-searchable>
         <h3>🌱 Virginia</h3>
-        <ul>
-          <li>Лёгкое, сладковатое сырьё</li>
-          <li>Хорошо принимает мягкие аромки (фрукты, ягоды)</li>
-          <li>Невысокая крепость</li>
-          <li>Примеры: Элемент Воздух, Star Line, Moassel Medium</li>
-        </ul>
+        <ul><li>Лёгкое, сладковатое сырьё</li><li>Хорошо принимает мягкие аромки</li><li>Невысокая крепость</li></ul>
       </div>
       <div class="info-card" data-searchable>
         <h3>🍂 Burley</h3>
-        <ul>
-          <li>Тёмное, насыщенное сырьё</li>
-          <li>Агрессивные аромки (ментол, специи, бергамот)</li>
-          <li>Средняя и высокая крепость</li>
-          <li>Примеры: Blackburn, Sibera, Darkside, HiPrime</li>
-        </ul>
+        <ul><li>Тёмное, насыщенное сырьё</li><li>Агрессивные аромки</li><li>Средняя и высокая крепость</li></ul>
       </div>
       <div class="info-card" data-searchable>
         <h3>🍃 Сигарный лист</h3>
-        <ul>
-          <li>Плотный, насыщенный дым</li>
-          <li>Специфический табачный аромат</li>
-          <li>Высокая крепость</li>
-          <li>Примеры: Dogma, Boncha, Hooligan Цветные</li>
-        </ul>
+        <ul><li>Плотный, насыщенный дым</li><li>Специфический табачный аромат</li><li>Высокая крепость</li></ul>
       </div>
       <div class="info-card" data-searchable>
-        <h3>🍵 Чайный лист (бестабачка)</h3>
-        <ul>
-          <li>Без табака — никотин из другого источника</li>
-          <li>Меньше вреда для лёгких</li>
-          <li>Подходит для спортсменов и аллергиков на табак</li>
-          <li>Примеры: Чабако, Хук, Brusko, Летим</li>
-        </ul>
+        <h3>🍵 Чайный лист</h3>
+        <ul><li>Без табака</li><li>Меньше вреда для лёгких</li><li>Подходит для аллергиков</li></ul>
       </div>
     </div>
   </div>
@@ -92,85 +75,66 @@
   <div class="section" id="tab-tips">
     <div class="sec-header"><span class="sec-title">Советы продавцу</span></div>
     <div class="accordion open">
-      <div class="acc-header">
-        <span class="acc-title">Что спросить у покупателя</span>
-        <span class="acc-arrow">▼</span>
-      </div>
+      <div class="acc-header"><span class="acc-title">Что спросить у покупателя</span><span class="acc-arrow">▼</span></div>
       <div class="acc-body">
         <div class="hl info">Какой уровень крепости предпочитает?</div>
         <div class="hl info">Что курит сейчас — нравится или нет?</div>
-        <div class="hl info">Какие вкусы любит — фруктовые, ментоловые, табачные?</div>
-        <div class="hl info">Есть опыт с кальяном или только начинает?</div>
+        <div class="hl info">Какие вкусы любит?</div>
       </div>
     </div>
     <div class="accordion">
-      <div class="acc-header">
-        <span class="acc-title">Жаростойкость</span>
-        <span class="acc-arrow">▼</span>
-      </div>
+      <div class="acc-header"><span class="acc-title">Жаростойкость</span><span class="acc-arrow">▼</span></div>
       <div class="acc-body">
-        <p>Жаростойкий табак — выдерживает перегрев и восстанавливается. Важно для новичков и тех, кто забывает следить за углём.</p>
-        <div class="hl ok">Жаростойкие: Догма, Сибера, Северный, Блэкберн, Рейв</div>
-        <div class="hl warn">Нежаростойкие: МастХефф (Burley из 7 стран), Хулиган — требуют внимания</div>
-      </div>
-    </div>
-    <div class="accordion">
-      <div class="acc-header">
-        <span class="acc-title">Чаши и их влияние на вкус</span>
-        <span class="acc-arrow">▼</span>
-      </div>
-      <div class="acc-body">
-        <table class="ref-table">
-          <tr><th>Чаша</th><th>Эффект</th></tr>
-          <tr><td><strong>Турка / Универсальная</strong></td><td>Баланс вкуса и крепости (5 отверстий)</td></tr>
-          <tr><td><strong>Убивашка</strong></td><td>Усиливает крепость, плотный дым</td></tr>
-          <tr><td><strong>Фанол / Фаннель</strong></td><td>Максимально раскрывает вкус (1 отверстие)</td></tr>
-        </table>
+        <p>Жаростойкий табак — выдерживает перегрев и восстанавливается.</p>
+        <div class="hl ok">Жаростойкие: Догма, Сибера, Северный, Блэкберн</div>
+        <div class="hl warn">Нежаростойкие: МастХефф, Хулиган</div>
       </div>
     </div>
   </div>
 
 </main>
 
-<script src="core.js"></script>
+<script src="core.js?v=2"></script>
 <script>
-  const CATEGORY = 'tobacco'; // измените для каждой страницы
+  const CATEGORY = 'tobacco';
+  let currentUser = null;
   let isRop = false;
 
   initTabs();
   initAccordions();
   initSearch();
   
-  // Проверка прав пользователя
   async function checkPermissions() {
     try {
       const response = await fetch('/api/check-auth', { credentials: 'include' });
       const data = await response.json();
       
-      const addButton = document.getElementById('btnAddTobacco');
+      console.log('Auth check:', data);
       
-      if (data.authenticated && (data.user.role === 'rop' || data.user.role === 'root')) {
-        isRop = true;
-        if (addButton) addButton.style.display = 'flex';
+      if (data.authenticated) {
+        currentUser = data.user;
+        isRop = (data.user.role === 'rop' || data.user.role === 'root');
+        
+        // Показываем имя пользователя
+        const userNameSpan = document.getElementById('userName');
+        if (userNameSpan) userNameSpan.textContent = data.user.full_name;
+        
+        // Показываем кнопку РОП
+        const ropBtn = document.getElementById('ropBtn');
+        if (ropBtn && isRop) ropBtn.style.display = 'block';
+        
+        // Показываем/скрываем кнопку добавления
+        const addButton = document.getElementById('btnAddTobacco');
+        if (addButton) {
+          addButton.style.display = isRop ? 'flex' : 'none';
+          console.log('Add button display:', addButton.style.display);
+        }
       } else {
-        isRop = false;
-        if (addButton) addButton.style.display = 'none';
+        window.location.href = '/login.html';
       }
-      
-      // Показываем имя пользователя
-      const userNameSpan = document.getElementById('userName');
-      if (userNameSpan && data.user) {
-        userNameSpan.textContent = data.user.full_name;
-      }
-      
-      // Показываем кнопку РОП если нужно
-      const ropBtn = document.getElementById('ropBtn');
-      if (ropBtn && data.user && (data.user.role === 'rop' || data.user.role === 'root')) {
-        ropBtn.style.display = 'block';
-      }
-      
     } catch (error) {
       console.error('Permission check error:', error);
+      window.location.href = '/login.html';
     }
   }
   
@@ -180,7 +144,7 @@
     grid.innerHTML = '';
 
     if (!items.length) {
-      renderEmpty(grid, '🌿', 'Каталог пуст', isRop ? 'Нажмите «Добавить» чтобы внести первую позицию' : 'Нет доступных позиций');
+      renderEmpty(grid, '🌿', 'Каталог пуст', isRop ? 'Нажмите «Добавить табак» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
 
@@ -201,7 +165,6 @@
         }
       );
       
-      // Скрываем кнопки редактирования/удаления если не РОП
       if (!isRop) {
         const actions = card.querySelector('.card-actions');
         if (actions) actions.style.display = 'none';
@@ -222,7 +185,7 @@
       }
       new ProductModal({
         category: CATEGORY,
-        title: 'Добавить',
+        title: 'Добавить табак',
         onSave: async (item) => {
           console.log('Saving item:', item);
           await addItem(CATEGORY, item);
@@ -232,226 +195,151 @@
     });
   }
 
-  // Запускаем проверку прав и рендер
-  checkPermissions().then(() => renderGrid());
-</script>
-  
-<script>
-// Информация о пользователе
-async function loadUserInfo() {
-    try {
-        const response = await fetch('/api/check-auth');
-        const data = await response.json();
-        
-        if (data.authenticated) {
-            document.getElementById('userName').textContent = data.user.full_name;
-            if (data.user.role === 'rop') {
-                document.getElementById('ropBtn').style.display = 'block';
-            }
-        }
-    } catch (error) {
-        console.error('Error loading user info:', error);
-    }
-}
-
-// Выход
-document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
+  // Выход
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
     window.location.href = '/login.html';
-});
+  });
 
-// Кнопка управления РОП
-document.getElementById('ropBtn')?.addEventListener('click', () => {
+  // Кнопка управления РОП
+  document.getElementById('ropBtn')?.addEventListener('click', () => {
     openRopPanel();
-});
+  });
 
-function openRopPanel() {
+  async function openRopPanel() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.id = 'ropModal';
     modal.innerHTML = `
-        <div class="modal" style="max-width: 600px;">
-            <div class="modal-header">
-                <span class="modal-title">👑 Панель управления</span>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="field">
-                    <label>➕ Добавить пользователя</label>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
-                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
-                        <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
-                        <button id="addUserBtn" class="btn-add">Добавить</button>
-                    </div>
-                </div>
-                
-                <div class="field">
-                    <label>📋 Список пользователей</label>
-                    <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
-                </div>
-            </div>
+      <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+          <span class="modal-title">👑 Панель управления</span>
+          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
         </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>➕ Добавить пользователя</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
+              <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
+              <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
+              <button id="addUserBtn" class="btn-add">Добавить</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>📋 Список пользователей</label>
+            <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
+          </div>
+        </div>
+      </div>
     `;
     
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
-    
-    loadUsers();
+    await loadUsers();
     
     document.getElementById('addUserBtn').addEventListener('click', async () => {
-        const username = document.getElementById('newUsername').value.trim();
-        const password = document.getElementById('newPassword').value;
-        const full_name = document.getElementById('newFullName').value.trim();
-        
-        if (!username || !password || !full_name) {
-            alert('Заполните все поля');
-            return;
-        }
-        
-        if (!/^\d{4}$/.test(password)) {
-            alert('Пароль должен состоять из 4 цифр');
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, full_name, role: 'user' })
-            });
-            
-            if (response.ok) {
-                alert('Пользователь добавлен');
-                document.getElementById('newUsername').value = '';
-                document.getElementById('newPassword').value = '';
-                document.getElementById('newFullName').value = '';
-                loadUsers();
-            } else {
-                const error = await response.json();
-                alert(error.error);
-            }
-        } catch (error) {
-            alert('Ошибка: ' + error.message);
-        }
-    });
-}
-
-async function loadUsers() {
-    try {
-        const response = await fetch('/api/users', { credentials: 'include' });
-        const users = await response.json();
-        
-        const container = document.getElementById('usersList');
-        if (!container) return;
-        
-        // Получаем текущего пользователя
-        const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
-        const me = await meResponse.json();
-        
-        container.innerHTML = users.map(user => {
-            // Определяем, можно ли менять пароль
-            let canChangePassword = false;
-            
-            if (me.user.role === 'root') {
-                // Root может менять пароль всем
-                canChangePassword = true;
-            } else if (me.user.role === 'rop') {
-                // ROP может менять пароль только обычным пользователям
-                if (user.role === 'user') {
-                    canChangePassword = true;
-                }
-            }
-            
-            // Определяем, можно ли удалять
-            let canDelete = false;
-            if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) {
-                canDelete = true;
-            }
-            
-            return `
-                <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                        <div>
-                            <strong>${escapeHtml(user.full_name)}</strong><br>
-                            <span style="font-size: 11px; color: var(--muted);">
-                                Логин: ${user.username} | Роль: ${user.role === 'root' ? '👑 ROOT' : (user.role === 'rop' ? '👑 РОП' : '👤 Пользователь')}
-                            </span>
-                        </div>
-                        <div style="display: flex; gap: 6px;">
-                            ${canChangePassword ? `<button onclick="changePassword(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
-                            ${canDelete ? `<button onclick="deleteUser(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('Load users error:', error);
-    }
-}
-
-async function changePassword(userId, userName) {
-    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
-    
-    if (!newPassword) return;
-    
-    if (!/^\d{4}$/.test(newPassword)) {
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newPassword').value;
+      const full_name = document.getElementById('newFullName').value.trim();
+      
+      if (!username || !password || !full_name) {
+        alert('Заполните все поля');
+        return;
+      }
+      if (!/^\d{4}$/.test(password)) {
         alert('Пароль должен состоять из 4 цифр');
         return;
-    }
-    
-    try {
-        const response = await fetch(`/api/users/${userId}/change-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ newPassword })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            alert('Пароль успешно изменен');
-        } else {
-            alert(data.error || 'Ошибка смены пароля');
-        }
-    } catch (error) {
-        alert('Ошибка: ' + error.message);
-    }
-}
-
-async function deleteUser(userId) {
-    if (confirm('Удалить пользователя?')) {
-        try {
-            const response = await fetch(`/api/users/${userId}`, {
-                method: 'DELETE'
-            });
-            
-            if (response.ok) {
-                alert('Пользователь удален');
-                loadUsers();
-            } else {
-                const error = await response.json();
-                alert(error.error);
-            }
-        } catch (error) {
-            alert('Ошибка: ' + error.message);
-        }
-    }
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
+      }
+      
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, password, full_name, role: 'user' })
+      });
+      
+      if (response.ok) {
+        alert('Пользователь добавлен');
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('newFullName').value = '';
+        await loadUsers();
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
     });
-}
+  }
 
-loadUserInfo();
+  async function loadUsers() {
+    const response = await fetch('/api/users', { credentials: 'include' });
+    const users = await response.json();
+    const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
+    const me = await meResponse.json();
+    
+    const container = document.getElementById('usersList');
+    if (!container) return;
+    
+    container.innerHTML = users.map(user => {
+      let canChange = false;
+      if (me.user.role === 'root') canChange = true;
+      else if (me.user.role === 'rop' && user.role === 'user') canChange = true;
+      
+      let canDelete = false;
+      if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) canDelete = true;
+      
+      return `
+        <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong>${escapeHtml(user.full_name)}</strong><br>
+              <span style="font-size: 11px;">Логин: ${user.username} | Роль: ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              ${canChange ? `<button onclick="window.changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
+              ${canDelete ? `<button onclick="window.deleteUserById(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.changePasswordUser = async (userId, userName) => {
+    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
+    if (!newPassword) return;
+    if (!/^\d{4}$/.test(newPassword)) {
+      alert('Пароль должен состоять из 4 цифр');
+      return;
+    }
+    const response = await fetch(`/api/users/${userId}/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ newPassword })
+    });
+    if (response.ok) alert('Пароль успешно изменен');
+    else alert('Ошибка смены пароля');
+  };
+
+  window.deleteUserById = async (userId) => {
+    if (confirm('Удалить пользователя?')) {
+      const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
+      if (response.ok) {
+        alert('Пользователь удален');
+        await loadUsers();
+      } else alert('Ошибка удаления');
+    }
+  };
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+
+  // Запуск
+  checkPermissions().then(() => renderGrid());
 </script>
 </body>
 </html>
