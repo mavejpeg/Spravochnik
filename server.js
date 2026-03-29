@@ -1,4 +1,4 @@
-// server.js
+// server.js - исправленное удаление
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -36,12 +36,10 @@ let pool = null;
 
 function initPool() {
   const databaseUrl = process.env.DATABASE_URL;
-  
   if (!databaseUrl) {
     console.error('❌ DATABASE_URL is not set!');
     return null;
   }
-  
   return new Pool({
     connectionString: databaseUrl,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
@@ -51,7 +49,7 @@ function initPool() {
   });
 }
 
-// Initialize database with migration
+// Initialize database
 async function initDatabase() {
   pool = initPool();
   if (!pool) return false;
@@ -60,7 +58,6 @@ async function initDatabase() {
     const client = await pool.connect();
     console.log('✅ Database connected');
     
-    // Create table with all columns
     await client.query(`
       CREATE TABLE IF NOT EXISTS products (
         id SERIAL PRIMARY KEY,
@@ -76,37 +73,12 @@ async function initDatabase() {
       )
     `);
     
-    // Check if photo_url column exists, if not add it
-    const checkColumn = await client.query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'products' AND column_name = 'photo_url'
+    // Add missing columns if needed
+    await client.query(`
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS photo_url TEXT;
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS description TEXT;
     `);
     
-    if (checkColumn.rows.length === 0) {
-      console.log('📸 Adding photo_url column...');
-      await client.query(`
-        ALTER TABLE products ADD COLUMN photo_url TEXT
-      `);
-      console.log('✅ photo_url column added');
-    }
-    
-    // Check if description column exists (might be named differently)
-    const checkDesc = await client.query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'products' AND column_name = 'description'
-    `);
-    
-    if (checkDesc.rows.length === 0) {
-      console.log('📝 Adding description column...');
-      await client.query(`
-        ALTER TABLE products ADD COLUMN description TEXT
-      `);
-      console.log('✅ description column added');
-    }
-    
-    // Create indexes
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
       CREATE INDEX IF NOT EXISTS idx_products_product_id ON products(product_id);
@@ -123,16 +95,12 @@ async function initDatabase() {
 
 // Upload endpoint
 app.post('/api/upload', upload.single('photo'), async (req, res) => {
-  console.log('📸 Upload request');
-  
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
     
     const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-    console.log(`✅ Photo converted, size: ${Math.round(base64.length / 1024)}KB`);
-    
     res.json({ photoUrl: base64 });
   } catch (error) {
     console.error('Upload error:', error);
@@ -140,7 +108,7 @@ app.post('/api/upload', upload.single('photo'), async (req, res) => {
   }
 });
 
-// GET products
+// GET products by category
 app.get('/api/products/:category', async (req, res) => {
   if (!pool) return res.status(503).json([]);
   
@@ -156,7 +124,7 @@ app.get('/api/products/:category', async (req, res) => {
   }
 });
 
-// POST product - FIXED column names
+// POST new product
 app.post('/api/products/:category', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'Database not connected' });
   
@@ -182,7 +150,6 @@ app.post('/api/products/:category', async (req, res) => {
       [category, id, name.trim(), strength || 5, origin || null, desc || null, photoUrl || null]
     );
     
-    console.log(`✅ Saved: ${result.rows[0].name}`);
     res.json(result.rows[0]);
   } catch (error) {
     console.error('POST error:', error);
@@ -190,7 +157,7 @@ app.post('/api/products/:category', async (req, res) => {
   }
 });
 
-// PUT product
+// PUT update product
 app.put('/api/products/:category/:id', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'Database not connected' });
   
@@ -217,27 +184,75 @@ app.put('/api/products/:category/:id', async (req, res) => {
   }
 });
 
-// DELETE product
+// DELETE product - FIXED with better logging
 app.delete('/api/products/:category/:id', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'Database not connected' });
+  console.log('='.repeat(50));
+  console.log('DELETE REQUEST RECEIVED');
+  console.log('Category:', req.params.category);
+  console.log('ID:', req.params.id);
+  console.log('='.repeat(50));
+  
+  if (!pool) {
+    console.log('No database pool');
+    return res.status(503).json({ error: 'Database not connected' });
+  }
   
   const { category, id } = req.params;
   
+  if (!id) {
+    console.log('Missing ID');
+    return res.status(400).json({ error: 'Product ID is required' });
+  }
+  
   try {
-    const result = await pool.query(
+    // First, check if product exists
+    const checkResult = await pool.query(
+      'SELECT * FROM products WHERE category = $1 AND product_id = $2',
+      [category, id]
+    );
+    
+    console.log('Found products:', checkResult.rows.length);
+    
+    if (checkResult.rows.length === 0) {
+      console.log('Product not found in database');
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    console.log('Product to delete:', checkResult.rows[0].name);
+    
+    // Delete the product
+    const deleteResult = await pool.query(
       'DELETE FROM products WHERE category = $1 AND product_id = $2 RETURNING *',
       [category, id]
     );
     
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Product not found' });
-    } else {
-      console.log(`✅ Deleted: ${result.rows[0].name}`);
-      res.json({ message: 'Deleted successfully' });
-    }
+    console.log('Deleted successfully:', deleteResult.rows[0].name);
+    console.log('='.repeat(50));
+    
+    res.json({ 
+      success: true, 
+      message: 'Product deleted successfully',
+      deleted: deleteResult.rows[0]
+    });
+    
   } catch (error) {
     console.error('DELETE error:', error);
     res.status(500).json({ error: 'Delete failed: ' + error.message });
+  }
+});
+
+// Debug endpoint - list all products
+app.get('/api/debug/:category', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'No database' });
+  
+  try {
+    const result = await pool.query(
+      'SELECT category, product_id, name FROM products WHERE category = $1',
+      [req.params.category]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -275,14 +290,12 @@ app.get('/:page', (req, res) => {
 // Start server
 async function startServer() {
   console.log('\n🚀 Starting server...\n');
-  
   const dbReady = await initDatabase();
   
   app.listen(PORT, () => {
     console.log(`\n✅ Server running on port ${PORT}`);
     console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-    console.log(`🔗 URL: http://localhost:${PORT}`);
-    console.log(`📸 Photos: base64 mode\n`);
+    console.log(`🔗 URL: http://localhost:${PORT}\n`);
   });
 }
 
