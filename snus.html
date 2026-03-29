@@ -401,6 +401,7 @@ async function loadUsers() {
         console.error('Load users error:', error);
     }
 }
+  
 async function changePassword(userId, userName) {
     const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
     
@@ -415,14 +416,16 @@ async function changePassword(userId, userName) {
         const response = await fetch(`/api/users/${userId}/change-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ newPassword })
         });
+        
+        const data = await response.json();
         
         if (response.ok) {
             alert('Пароль успешно изменен');
         } else {
-            const error = await response.json();
-            alert(error.error);
+            alert(data.error || 'Ошибка смены пароля');
         }
     } catch (error) {
         alert('Ошибка: ' + error.message);
