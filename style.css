@@ -786,3 +786,44 @@ mark { background: rgba(124,92,252,0.25); color: var(--accent); border-radius: 3
   background: linear-gradient(135deg, rgba(252,92,124,0.15), rgba(252,92,124,0.05));
   color: var(--accent2);
 }
+
+/* Эффекты при наведении на кнопки */
+.card-action-btn {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-action-btn:hover {
+  transform: scale(1.1);
+}
+
+.btn-delete:hover {
+  background: rgba(252,92,124,0.4);
+  color: #ff6b6b;
+}
+
+.btn-edit:hover {
+  background: rgba(124,92,252,0.4);
+  color: #9b7cff;
+}
+
+/* Анимация удаления */
+.product-card {
+  transition: all 0.3s ease;
+}
+
+/* Прогресс бар */
+progress {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+progress::-webkit-progress-bar {
+  background-color: var(--border);
+  border-radius: 10px;
+}
+
+progress::-webkit-progress-value {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 10px;
+}
