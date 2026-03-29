@@ -1,10 +1,11 @@
-// server.js - упрощенная версия с паролем
+// server.js - с хранением сессий в PostgreSQL
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
 const cors = require('cors');
 const multer = require('multer');
 const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 const { v2: cloudinary } = require('cloudinary');
 require('dotenv').config();
 
@@ -20,19 +21,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// Session setup
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'spravochnik_secret_2024',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000
-    }
-}));
-
-// PostgreSQL connection
+// PostgreSQL connection pool
 let pool = null;
 
 function initPool() {
@@ -44,39 +33,13 @@ function initPool() {
     return new Pool({
         connectionString: databaseUrl,
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-        max: 10,
+        max: 20,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 10000,
     });
 }
 
-// Cloudinary configuration
-if (process.env.CLOUDINARY_CLOUD_NAME) {
-    cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET
-    });
-    console.log('✅ Cloudinary configured');
-}
-
-// Multer setup
-const storage = multer.memoryStorage();
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|webp/;
-        const mimetype = allowedTypes.test(file.mimetype);
-        if (mimetype) {
-            cb(null, true);
-        } else {
-            cb(new Error('Only images allowed'));
-        }
-    }
-});
-
-// Initialize database
+// Initialize database and session store
 async function initDatabase() {
     pool = initPool();
     if (!pool) return false;
@@ -113,6 +76,16 @@ async function initDatabase() {
             )
         `);
 
+        // Create session table (for connect-pg-simple)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS "session" (
+                "sid" varchar NOT NULL COLLATE "default",
+                "sess" json NOT NULL,
+                "expire" timestamp(6) NOT NULL,
+                CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+            )
+        `);
+
         // Add columns if missing
         await client.query(`
             ALTER TABLE products ADD COLUMN IF NOT EXISTS photo_url TEXT;
@@ -123,6 +96,7 @@ async function initDatabase() {
         await client.query(`
             CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
             CREATE INDEX IF NOT EXISTS idx_products_product_id ON products(product_id);
+            CREATE INDEX IF NOT EXISTS IDX_session_expire ON "session" ("expire");
         `);
 
         // Insert default users
@@ -139,13 +113,64 @@ async function initDatabase() {
         `);
 
         client.release();
-        console.log('✅ Database ready');
+        console.log('✅ Database tables ready');
         return true;
     } catch (error) {
         console.error('❌ Database init error:', error.message);
         return false;
     }
 }
+
+// Session middleware with PostgreSQL store
+function setupSession() {
+    if (!pool) {
+        console.error('❌ Cannot setup session: no database pool');
+        return null;
+    }
+    
+    return session({
+        store: new pgSession({
+            pool: pool,
+            tableName: 'session',
+            createTableIfMissing: false // Table already created
+        }),
+        secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: true,
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        },
+        name: 'spravochnik.sid'
+    });
+}
+
+// Cloudinary configuration
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+    cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+    console.log('✅ Cloudinary configured');
+}
+
+// Multer setup
+const storage = multer.memoryStorage();
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|webp/;
+        const mimetype = allowedTypes.test(file.mimetype);
+        if (mimetype) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only images allowed'));
+        }
+    }
+});
 
 // ========== AUTH MIDDLEWARE ==========
 function requireAuth(req, res, next) {
@@ -212,8 +237,10 @@ app.post('/api/login', async (req, res) => {
 
 // Logout
 app.post('/api/logout', (req, res) => {
-    req.session.destroy();
-    res.json({ success: true });
+    req.session.destroy((err) => {
+        if (err) console.error('Logout error:', err);
+        res.json({ success: true });
+    });
 });
 
 // Get all users (ROP only)
@@ -224,6 +251,7 @@ app.get('/api/users', requireRop, async (req, res) => {
         );
         res.json(result.rows);
     } catch (error) {
+        console.error('Get users error:', error);
         res.status(500).json({ error: 'Failed to get users' });
     }
 });
@@ -244,6 +272,7 @@ app.post('/api/users/:id/change-password', requireRop, async (req, res) => {
         );
         res.json({ success: true });
     } catch (error) {
+        console.error('Change password error:', error);
         res.status(500).json({ error: 'Failed to change password' });
     }
 });
@@ -267,6 +296,7 @@ app.post('/api/users', requireRop, async (req, res) => {
         );
         res.json({ success: true });
     } catch (error) {
+        console.error('Create user error:', error);
         res.status(500).json({ error: 'Пользователь уже существует' });
     }
 });
@@ -279,6 +309,7 @@ app.delete('/api/users/:id', requireRop, async (req, res) => {
         await pool.query('DELETE FROM users WHERE id = $1 AND username != $2', [id, 'ROOT']);
         res.json({ success: true });
     } catch (error) {
+        console.error('Delete user error:', error);
         res.status(500).json({ error: 'Failed to delete user' });
     }
 });
@@ -314,7 +345,7 @@ app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) =>
     }
 });
 
-// GET products (no auth needed - but user must be logged in to see page)
+// GET products (requires auth)
 app.get('/api/products/:category', requireAuth, async (req, res) => {
     if (!pool) return res.status(503).json([]);
     
@@ -407,11 +438,12 @@ app.get('/health', (req, res) => {
     res.json({ 
         status: 'ok', 
         timestamp: new Date().toISOString(),
-        database: pool ? 'connected' : 'disconnected'
+        database: pool ? 'connected' : 'disconnected',
+        sessionStore: 'postgresql'
     });
 });
 
-// Serve HTML - все страницы требуют авторизации
+// Serve HTML - all pages require auth
 const requirePageAuth = (req, res, next) => {
     if (req.session.user) {
         next();
@@ -470,10 +502,21 @@ async function startServer() {
     
     const dbReady = await initDatabase();
     
+    if (dbReady && pool) {
+        // Setup session with PostgreSQL store
+        const sessionMiddleware = setupSession();
+        if (sessionMiddleware) {
+            app.use(sessionMiddleware);
+            console.log('✅ Session store: PostgreSQL');
+        } else {
+            console.log('⚠️ Session store: Memory (fallback)');
+        }
+    }
+    
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`🔐 Auth: Enabled`);
+        console.log(`🔐 Auth: Enabled (sessions in PostgreSQL)`);
         console.log(`👑 ROOT: ROOT / 1234`);
         console.log(`👤 USER: USER / 1111`);
         console.log(`🔗 URL: http://localhost:${PORT}\n`);
