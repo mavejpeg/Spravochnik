@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Проверки — Справочник</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="index.html">☁ СПРАВОЧНИК</a>
+  <div class="search-wrap">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="search-input" id="searchInput" type="text" placeholder="Поиск...">
+  </div>
+  <a class="home-btn" href="index.html">← Главная</a>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-official">📋 Официальная инструкция</button>
+  <button class="tab-btn" data-tab="tab-practical">💡 Практические советы</button>
+  <button class="tab-btn" data-tab="tab-after">✅ По окончании</button>
+</nav>
+
+<main>
+
+  <!-- OFFICIAL -->
+  <div class="section active" id="tab-official">
+    <div class="sec-header"><span class="sec-title">Роспотребнадзор — порядок действий</span></div>
+    <div class="alert-bar danger">
+      <span>🚨</span>
+      <span><strong>НИЧЕГО НЕ ПОДПИСЫВАТЬ</strong>, пока не прочитали все документы полностью. Фотографировать — вы имеете на это право.</span>
+    </div>
+
+    <div class="steps" data-searchable>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Сообщить руководителю</strong>
+          <span>Немедленно уведомить о прибытии проверяющих из Роспотребнадзора.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Проверить документы инспектора</strong>
+          <span>Служебное удостоверение + приказ (распоряжение) о проверке. Документ должен быть подписан руководителем Роспотребнадзора и заверен печатью.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Проверить содержание приказа</strong>
+          <span>Должны быть: название организации, адрес регистрации, цели и задачи, дата начала, сроки, мероприятия проверки, привлечённые организации (если есть).</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Проверить сроки</strong>
+          <span>При нарушении сроков проведения проверки или их отсутствии — отразить в протоколе.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Аудио / видео / фото</strong>
+          <span>С согласия должностного лица вести запись всей проверки.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRACTICAL -->
+  <div class="section" id="tab-practical">
+    <div class="sec-header"><span class="sec-title">Практические советы</span></div>
+
+    <div class="hl warn" data-searchable style="margin-bottom:12px">Всегда выходя на точку смотрите, какое там ИП. Помните, как зовут вашего директора — должно быть в рабочем телефоне.</div>
+
+    <div class="accordion open" data-searchable>
+      <div class="acc-header"><span class="acc-title">Ключевые правила поведения</span><span class="acc-arrow">▼</span></div>
+      <div class="acc-body">
+        <div class="hl">1. Изучить документы удостоверения — ФИО и орган, какой пришёл (прочее).</div>
+        <div class="hl">2. Изучить приказ о проверке именно вас — там должна быть дата проверки.</div>
+        <div class="hl warn">3. Если изымают — должна быть опись с НАЗВАНИЯМИ, ценами и количеством. Если хотят изъять телефон — говорите пароли. Они должны быть в описи, вы НЕ обязаны давать.</div>
+        <div class="hl">4. Молчите и косите под дурачка. Чем меньше говорите — тем меньше проблем. Не помогать и не знать, где что лежит. Если нужны сертификаты — просто дайте их.</div>
+        <div class="hl">5. Вы работаете официально — кто устроен уже на работу называет дату, кто по договору — первые числа месяца текущего.</div>
+        <div class="hl warn">7. Косите больше под дурака — ваше дело товар продавать, вы простой продавец. Не знаете ответ — не торопитесь и не бойтесь — они не преступники.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AFTER -->
+  <div class="section" id="tab-after">
+    <div class="sec-header"><span class="sec-title">По окончании проверки</span></div>
+    <div class="steps" data-searchable>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Подписать протокол</strong>
+          <span>Сделать копию протокола для себя.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Приложения к акту</strong>
+          <span>Протоколы, объяснения сотрудников и руководителя, документы.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Два экземпляра акта</strong>
+          <span>Один вручают руководителю. Если руководитель отсутствует — ревизоры отправляют акт по юридическому адресу или в форме электронного документа.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Изъятие документов</strong>
+          <span>Сделать копии изъятых документов. Получить расписку о перечне изъятых материалов.</span>
+        </div>
+      </div>
+    </div>
+    <div class="hl info" style="margin-top:12px" data-searchable>Все нарушения, выявленные Роспотребнадзором, должны быть со ссылками на соответствующие нормативные пункты.</div>
+  </div>
+
+</main>
+
+<script src="core.js"></script>
+<script>
+  initTabs();
+  initAccordions();
+  initSearch();
+</script>
+</body>
+</html>

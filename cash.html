@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Касса и маркировка — Справочник</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="index.html">☁ СПРАВОЧНИК</a>
+  <div class="search-wrap">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="search-input" id="searchInput" type="text" placeholder="Поиск...">
+  </div>
+  <a class="home-btn" href="index.html">← Главная</a>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-types">📦 Типы товаров</button>
+  <button class="tab-btn" data-tab="tab-qr">📱 Работа с QR</button>
+  <button class="tab-btn" data-tab="tab-register">🧾 Касса</button>
+</nav>
+
+<main>
+
+  <!-- TYPES -->
+  <div class="section active" id="tab-types">
+    <div class="sec-header"><span class="sec-title">Типы товаров</span></div>
+    <div class="alert-bar danger" data-searchable>
+      <span>🚫</span>
+      <span><strong>НЕ добавлять акцизные и маркированные товары в кассу самостоятельно!</strong> Можно добавлять только безакцизные и немаркированные.</span>
+    </div>
+    <table class="ref-table" data-searchable style="margin-bottom:20px">
+      <tr><th>Тип</th><th>Что входит</th><th>Как проводить</th></tr>
+      <tr>
+        <td><strong>Акцизные</strong></td>
+        <td>Жевательный табак, табак для кальяна</td>
+        <td>Акциз упразднили — заменён QR-кодом. Через QR-сканирование.</td>
+      </tr>
+      <tr>
+        <td><strong>Подакцизные / Маркированные</strong></td>
+        <td>Одноразки, жидкости (с QR-марками)</td>
+        <td>Только через QR-сканирование!</td>
+      </tr>
+      <tr>
+        <td><strong>Безакцизные / Немаркированные</strong></td>
+        <td>Кальяны, устройства, расходники, аксессуары</td>
+        <td>Можно добавлять в кассу самостоятельно</td>
+      </tr>
+    </table>
+    <div class="alert-bar success" data-searchable>
+      <span>✅</span>
+      <span><strong>Жевательный табак и табак для кальянов</strong> выводятся через кассу <strong>после сканирования QR-кода</strong> и только если касса показала товар.</span>
+    </div>
+  </div>
+
+  <!-- QR -->
+  <div class="section" id="tab-qr">
+    <div class="sec-header"><span class="sec-title">Работа с QR-кодами</span></div>
+    <div class="steps" data-searchable>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Сканировать QR-код товара</strong>
+          <span>Навести сканер на марку. Касса должна распознать товар.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Касса показала товар → провести</strong>
+          <span>Всё хорошо — проводим через кассу в обычном режиме.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion" style="margin-top:16px" data-searchable>
+      <div class="acc-header"><span class="acc-title">⚠️ Если касса показала «Добавить товар» или «принадлежит другой организации»</span><span class="acc-arrow">▼</span></div>
+      <div class="acc-body">
+        <div class="hl warn">Товар НЕ добавляем. QR оставляем до завтра — марки добавляются каждый вечер специалистом.</div>
+      </div>
+    </div>
+
+    <div class="accordion" data-searchable>
+      <div class="acc-header"><span class="acc-title">⚠️ Если касса показала «Укажите стоимость в справочнике»</span><span class="acc-arrow">▼</span></div>
+      <div class="acc-body">
+        <div class="steps" style="margin-top:10px">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Идём в справочник кассы</strong><span>Находим этот товар в базе.</span></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Редактировать</strong><span>Нажимаем «Редактировать» и задаём стоимость.</span></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Снова сканируем QR</strong><span>После сохранения — повторно сканируем марку и проводим через кассу.</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="section" id="tab-register">
+    <div class="sec-header"><span class="sec-title">Кассовый аппарат</span></div>
+    <div class="two-col">
+      <div class="info-card" data-searchable>
+        <h3>🔴 Красная касса</h3>
+        <ul>
+          <li>Выдаёт настоящие кассовые чеки</li>
+          <li>Передаёт данные в налоговую каждый вечер</li>
+          <li>Нужно быть крайне серьёзными в использовании</li>
+          <li>Основной инструмент для всех продаж</li>
+        </ul>
+      </div>
+      <div class="info-card" data-searchable>
+        <h3>💳 Банковский терминал</h3>
+        <ul>
+          <li>Выдаёт только СЛИПЫ — не чеки!</li>
+          <li>Слип = подтверждение списания с карты</li>
+          <li>Сам по себе — не кассовый документ</li>
+          <li>Использовать только вместе с кассой</li>
+        </ul>
+      </div>
+    </div>
+    <div class="hl warn" style="margin-top:8px" data-searchable>Красная касса передаёт данные в налоговую каждый вечер — поэтому нужно быть крайне серьёзными в её использовании.</div>
+  </div>
+
+</main>
+
+<script src="core.js"></script>
+<script>
+  initTabs();
+  initAccordions();
+  initSearch();
+</script>
+</body>
+</html>

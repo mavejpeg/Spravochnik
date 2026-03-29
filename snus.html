@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Жевательный табак — Справочник</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="index.html">☁ СПРАВОЧНИК</a>
+  <div class="search-wrap">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="search-input" id="searchInput" type="text" placeholder="Поиск по жев. табаку...">
+  </div>
+  <a class="home-btn" href="index.html">← Главная</a>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-catalog">📦 Каталог</button>
+  <button class="tab-btn" data-tab="tab-howto">📖 Как применять</button>
+  <button class="tab-btn" data-tab="tab-formats">📐 Форматы</button>
+  <button class="tab-btn" data-tab="tab-strength">⚡ По крепости</button>
+</nav>
+
+<main>
+
+  <!-- CATALOG -->
+  <div class="section active" id="tab-catalog">
+    <div class="sec-header">
+      <span class="sec-title">🫙 Жевательный табак</span>
+      <button class="btn-add" id="btnAddSnus">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+        Добавить позицию
+      </button>
+    </div>
+
+    <div class="alert-bar success">
+      <span>✅</span>
+      <span>Жевательный табак (шайба) — бездымный способ потребления никотина. Подходит для спортсменов, аллергиков и тех, кто бросает курить.</span>
+    </div>
+
+    <div class="cards-grid" id="snusGrid"></div>
+  </div>
+
+  <!-- HOW TO -->
+  <div class="section" id="tab-howto">
+    <div class="sec-header"><span class="sec-title">Как применять</span></div>
+    <div class="info-card" style="margin-bottom:16px" data-searchable>
+      <h3>📋 Инструкция для клиента</h3>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body"><strong>Подготовить область</strong><span>Промокнуть область между верхней губой и десной сухой салфеткой для лучшего всасывания.</span></div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body"><strong>Вложить пауч</strong><span>Пауч кладётся между верхней губой и верхней десной. Левая/правая сторона — чередовать.</span></div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body"><strong>Держать 1–15 минут</strong><span>Никотин поступает через слизистую постепенно. Не жевать — не жуётся!</span></div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body"><strong>Утилизировать</strong><span>Выбросить в мусор. Некоторые банки имеют отсек для использованных паучей (крышка).</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="hl warn" data-searchable>Несмотря на название «жевательный» — пауч НЕ жуётся. Некоторые производители (FAVE) пишут «мягко покусывать» — для отвода глаз в легислативе.</div>
+  </div>
+
+  <!-- FORMATS -->
+  <div class="section" id="tab-formats">
+    <div class="sec-header"><span class="sec-title">Форматы паучей</span></div>
+    <div class="two-col">
+      <div class="info-card" data-searchable>
+        <h3>📦 Размеры</h3>
+        <ul>
+          <li><strong>Large</strong> — стандарт, 0.8–1 г, наполненный</li>
+          <li><strong>Slim</strong> — тонкий и широкий, ~1 г, менее заметен</li>
+          <li><strong>Mini</strong> — маленький, ~0.4 г, максимально незаметен</li>
+        </ul>
+      </div>
+      <div class="info-card" data-searchable>
+        <h3>🌿 Типы сырья</h3>
+        <ul>
+          <li><strong>White</strong> — промытый табак, мягкие аромки (малина, черника)</li>
+          <li><strong>Классический тёмный</strong> — менее промытый, агрессивные аромки (ментол, бергамот)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="info-card" data-searchable>
+      <h3>🧮 Как считается крепость пауча</h3>
+      <ul>
+        <li>Крепость сырья ÷ вес одного пауча = крепость пауча</li>
+        <li>Mini ~0.4 г → крепость ≈ –23 мг / пауч (при той же заявленной крепости сырья)</li>
+        <li>За крепость сырья принимаем заявленную производителем — не паучей</li>
+        <li>Slim и Large у большинства производителей одинаковы по весу → одинаковая крепость</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- STRENGTH TABLE -->
+  <div class="section" id="tab-strength">
+    <div class="sec-header"><span class="sec-title">Классификация по крепости</span></div>
+
+    <div class="accordion open" data-searchable>
+      <div class="acc-header"><span class="acc-title">🔥 Крепкие</span><span class="acc-arrow">▼</span></div>
+      <div class="acc-body">
+        <table class="ref-table">
+          <tr><th>Бренд</th><th>Особенности</th></tr>
+          <tr><td><strong>Corvus Crash</strong></td><td>68 мг — самый крепкий</td></tr>
+          <tr><td><strong>Адекс</strong></td><td>Мощный удар</td></tr>
+          <tr><td><strong>ЕРОК Стронг (серые)</strong></td><td>Прямой аналог Siberia</td></tr>
+          <tr><td><strong>HAQMAN</strong></td><td>Премиальный табак</td></tr>
+          <tr><td><strong>СТ (Siberia Town)</strong></td><td>Аналог HAQMAN по крепости</td></tr>
+          <tr><td><strong>Iceberg Strong</strong></td><td>60 мг</td></tr>
+          <tr><td><strong>Husky Strong</strong></td><td>20 мг (ощущается как 50)</td></tr>
+          <tr><td><strong>Ayax Strong Strong</strong></td><td>~55 мг (2 золотых наклейки)</td></tr>
+          <tr><td><strong>Angry Chew</strong></td><td>70 мг (ощущается меньше)</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="accordion" data-searchable>
+      <div class="acc-header"><span class="acc-title">🟡 Средние</span><span class="acc-arrow">▼</span></div>
+      <div class="acc-body">
+        <table class="ref-table">
+          <tr><th>Бренд</th><th>Особенности</th></tr>
+          <tr><td><strong>Корвус Жёлтый</strong></td><td>Золотая середина</td></tr>
+          <tr><td><strong>Siberia вся</strong></td><td>43 мг, классика рынка</td></tr>
+          <tr><td><strong>Angry Birds Chew</strong></td><td>С дыней — крепче</td></tr>
+          <tr><td><strong>Monster Chewer</strong></td><td>СПРЕССОВАННЫЕ листья</td></tr>
+          <tr><td><strong>Dzen Strong</strong></td><td>50 мг</td></tr>
+          <tr><td><strong>Zверь</strong></td><td>40 мг</td></tr>
+          <tr><td><strong>Swag Strong</strong></td><td>★★★★★</td></tr>
+          <tr><td><strong>Drymost</strong></td><td>50 мг</td></tr>
+          <tr><td><strong>Corvus Toss</strong></td><td>~40 мг</td></tr>
+          <tr><td><strong>Iceberg Medium</strong></td><td>40 мг</td></tr>
+          <tr><td><strong>Hismoke Strong</strong></td><td>30 мг</td></tr>
+          <tr><td><strong>ЕРОК Medium (синие)</strong></td><td>Полегче по ощущениям</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="accordion" data-searchable>
+      <div class="acc-header"><span class="acc-title">💨 Лёгкие</span><span class="acc-arrow">▼</span></div>
+      <div class="acc-body">
+        <table class="ref-table">
+          <tr><th>Бренд</th><th>Особенности</th></tr>
+          <tr><td><strong>Husky Soft</strong></td><td>10 мг (ощущается как 30)</td></tr>
+          <tr><td><strong>Swag Medium</strong></td><td>★★★★</td></tr>
+          <tr><td><strong>FAVE</strong></td><td>25–28 мг, сухой</td></tr>
+          <tr><td><strong>Hismoke Classic</strong></td><td>22 мг</td></tr>
+          <tr><td><strong>Dzen Medium</strong></td><td>35–40 мг</td></tr>
+          <tr><td><strong>Корвус Зелёный</strong></td><td>Ниже среднего</td></tr>
+          <tr><td><strong>IceBurn</strong></td><td>Ниже среднего</td></tr>
+          <tr><td><strong>Одинс / ЕРОК Light</strong></td><td>Одинс = ЕРОК. Некоторые вкусы крепче.</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="core.js"></script>
+<script>
+  const CATEGORY = 'tobacco';
+
+  initTabs();
+  initAccordions();
+  initSearch();
+  
+  async function renderGrid() {
+    const grid = document.getElementById('tobaccoGrid');
+    const items = await getCategory(CATEGORY);
+    grid.innerHTML = '';
+
+    if (!items.length) {
+      renderEmpty(grid, '🌿', 'Каталог пуст', 'Нажмите «Добавить табак» чтобы внести первую позицию');
+      return;
+    }
+
+    for (const item of items) {
+      const card = renderProductCard(item, CATEGORY,
+        () => renderGrid(),
+        (it) => {
+          new ProductModal({
+            category: CATEGORY,
+            title: 'Редактировать',
+            editItem: it,
+            onSave: async (data) => {
+              await updateItem(CATEGORY, it.id, data);
+              renderGrid();
+            }
+          });
+        }
+      );
+      grid.appendChild(card);
+    }
+  }
+
+  document.getElementById('btnAddTobacco').addEventListener('click', () => {
+    new ProductModal({
+      category: CATEGORY,
+      title: 'Добавить табак',
+      onSave: async (item) => {
+        await addItem(CATEGORY, item);
+        renderGrid();
+      }
+    });
+  });
+
+  // Initial render
+  renderGrid();
+</script>
+</body>
+</html>

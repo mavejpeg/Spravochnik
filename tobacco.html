@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Табак — Справочник</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="index.html">☁ СПРАВОЧНИК</a>
+  <div class="search-wrap">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="search-input" id="searchInput" type="text" placeholder="Поиск по табакам...">
+  </div>
+  <a class="home-btn" href="index.html">← Главная</a>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-catalog">📦 Каталог</button>
+  <button class="tab-btn" data-tab="tab-syrye">🌿 Типы сырья</button>
+  <button class="tab-btn" data-tab="tab-tips">💡 Советы</button>
+</nav>
+
+<main>
+
+  <!-- CATALOG -->
+  <div class="section active" id="tab-catalog">
+    <div class="sec-header">
+      <span class="sec-title">🌿 Табак для кальяна</span>
+      <button class="btn-add" id="btnAddTobacco">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+        Добавить табак
+      </button>
+    </div>
+
+    <div class="alert-bar info">
+      <span>📌</span>
+      <span>Крепость указывается по шкале 1–10. Разные чаши по-разному раскрывают один и тот же табак — учитывайте при рекомендации.</span>
+    </div>
+
+    <div class="cards-grid" id="tobaccoGrid"></div>
+  </div>
+
+  <!-- СЫРЬЁ -->
+  <div class="section" id="tab-syrye">
+    <div class="sec-header"><span class="sec-title">Типы табачного сырья</span></div>
+    <div class="two-col">
+      <div class="info-card" data-searchable>
+        <h3>🌱 Virginia</h3>
+        <ul>
+          <li>Лёгкое, сладковатое сырьё</li>
+          <li>Хорошо принимает мягкие аромки (фрукты, ягоды)</li>
+          <li>Невысокая крепость</li>
+          <li>Примеры: Элемент Воздух, Star Line, Moassel Medium</li>
+        </ul>
+      </div>
+      <div class="info-card" data-searchable>
+        <h3>🍂 Burley</h3>
+        <ul>
+          <li>Тёмное, насыщенное сырьё</li>
+          <li>Агрессивные аромки (ментол, специи, бергамот)</li>
+          <li>Средняя и высокая крепость</li>
+          <li>Примеры: Blackburn, Sibera, Darkside, HiPrime</li>
+        </ul>
+      </div>
+      <div class="info-card" data-searchable>
+        <h3>🍃 Сигарный лист</h3>
+        <ul>
+          <li>Плотный, насыщенный дым</li>
+          <li>Специфический табачный аромат</li>
+          <li>Высокая крепость</li>
+          <li>Примеры: Dogma, Boncha, Hooligan Цветные</li>
+        </ul>
+      </div>
+      <div class="info-card" data-searchable>
+        <h3>🍵 Чайный лист (бестабачка)</h3>
+        <ul>
+          <li>Без табака — никотин из другого источника</li>
+          <li>Меньше вреда для лёгких</li>
+          <li>Подходит для спортсменов и аллергиков на табак</li>
+          <li>Примеры: Чабако, Хук, Brusko, Летим</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- СОВЕТЫ -->
+  <div class="section" id="tab-tips">
+    <div class="sec-header"><span class="sec-title">Советы продавцу</span></div>
+    <div class="accordion open">
+      <div class="acc-header">
+        <span class="acc-title">Что спросить у покупателя</span>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="hl info">Какой уровень крепости предпочитает?</div>
+        <div class="hl info">Что курит сейчас — нравится или нет?</div>
+        <div class="hl info">Какие вкусы любит — фруктовые, ментоловые, табачные?</div>
+        <div class="hl info">Есть опыт с кальяном или только начинает?</div>
+      </div>
+    </div>
+    <div class="accordion">
+      <div class="acc-header">
+        <span class="acc-title">Жаростойкость</span>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="acc-body">
+        <p>Жаростойкий табак — выдерживает перегрев и восстанавливается. Важно для новичков и тех, кто забывает следить за углём.</p>
+        <div class="hl ok">Жаростойкие: Догма, Сибера, Северный, Блэкберн, Рейв</div>
+        <div class="hl warn">Нежаростойкие: МастХефф (Burley из 7 стран), Хулиган — требуют внимания</div>
+      </div>
+    </div>
+    <div class="accordion">
+      <div class="acc-header">
+        <span class="acc-title">Чаши и их влияние на вкус</span>
+        <span class="acc-arrow">▼</span>
+      </div>
+      <div class="acc-body">
+        <table class="ref-table">
+          <tr><th>Чаша</th><th>Эффект</th></tr>
+          <tr><td><strong>Турка / Универсальная</strong></td><td>Баланс вкуса и крепости (5 отверстий)</td></tr>
+          <tr><td><strong>Убивашка</strong></td><td>Усиливает крепость, плотный дым</td></tr>
+          <tr><td><strong>Фанол / Фаннель</strong></td><td>Максимально раскрывает вкус (1 отверстие)</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="core.js"></script>
+<script>
+  const CATEGORY = 'tobacco';
+
+  initTabs();
+  initAccordions();
+  initSearch();
+  
+  async function renderGrid() {
+    const grid = document.getElementById('tobaccoGrid');
+    const items = await getCategory(CATEGORY);
+    grid.innerHTML = '';
+
+    if (!items.length) {
+      renderEmpty(grid, '🌿', 'Каталог пуст', 'Нажмите «Добавить табак» чтобы внести первую позицию');
+      return;
+    }
+
+    for (const item of items) {
+      const card = renderProductCard(item, CATEGORY,
+        () => renderGrid(),
+        (it) => {
+          new ProductModal({
+            category: CATEGORY,
+            title: 'Редактировать',
+            editItem: it,
+            onSave: async (data) => {
+              await updateItem(CATEGORY, it.id, data);
+              renderGrid();
+            }
+          });
+        }
+      );
+      grid.appendChild(card);
+    }
+  }
+
+  document.getElementById('btnAddTobacco').addEventListener('click', () => {
+    new ProductModal({
+      category: CATEGORY,
+      title: 'Добавить табак',
+      onSave: async (item) => {
+        await addItem(CATEGORY, item);
+        renderGrid();
+      }
+    });
+  });
+
+  // Initial render
+  renderGrid();
+</script>
+</body>
+</html>

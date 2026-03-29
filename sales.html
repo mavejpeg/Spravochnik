@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Скрипты продаж — Справочник</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="index.html">☁ СПРАВОЧНИК</a>
+  <div class="search-wrap">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="search-input" id="searchInput" type="text" placeholder="Поиск...">
+  </div>
+  <a class="home-btn" href="index.html">← Главная</a>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-returns">↩️ Возвраты</button>
+  <button class="tab-btn" data-tab="tab-price">💰 Цена</button>
+  <button class="tab-btn" data-tab="tab-color">🎨 Цвет жидкости</button>
+  <button class="tab-btn" data-tab="tab-upsell">📈 Допродажи</button>
+</nav>
+
+<main>
+
+  <!-- RETURNS -->
+  <div class="section active" id="tab-returns">
+    <div class="sec-header"><span class="sec-title">Возврат картриджа</span></div>
+    <div class="alert-bar danger">
+      <span>⚠️</span><span><strong>Ваше решение — это исключительно ваша ответственность.</strong> При любой подобной ситуации решение самостоятельно не принимаем.</span>
+    </div>
+
+    <div class="steps" data-searchable>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Уточнить правила эксплуатации</strong>
+          <span>Ждать 10 мин после заправки · Не заливать бак до конца и оставлять воздух · Перед зарядкой картридж обязательно вставить · Не делать резкие и длинные затяжки · Не смешивать разные жидкости в баке · Избегать перепадов температур · Не парить под наклоном.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Если человек говорит, что всё соблюдено</strong>
+          <span>Пишем в закуп, объясняем ситуацию, ждём ответ. Если закуп не отвечает — отметить Руслана, чтобы он увидел сообщение.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Постоянный клиент</strong>
+          <span>Если постоянник, который всегда всё нормально — можно пойти навстречу. Но даже в этом случае первым делом написать в закуп.</span>
+        </div>
+      </div>
+    </div>
+    <div class="hl warn" style="margin-top:20px" data-searchable>Возврат невозможен если жидкость осталась в баке.</div>
+  </div>
+
+  <!-- PRICE -->
+  <div class="section" id="tab-price">
+    <div class="sec-header"><span class="sec-title">Отработка возражения по цене</span></div>
+
+    <div class="accordion open" data-searchable>
+      <div class="acc-header"><span class="acc-title">«Почему так дорого?»</span><span class="acc-arrow">▼</span></div>
+      <div class="acc-body">
+        <div class="hl ok">«Вся продукция у нас сертифицирована — вы можете быть уверены, что курите хороший продукт»</div>
+        <div class="hl ok">«Эта жидкость дороже, но гораздо лучше по качеству никотина и с более яркой аромкой. Люди с запросом берут её и возвращаются именно за ней»</div>
+      </div>
+    </div>
+
+    <div class="accordion" data-searchable>
+      <div class="acc-header"><span class="acc-title">«А в другом месте дешевле»</span><span class="acc-arrow">▼</span></div>
+      <div class="acc-body">
+        <div class="hl ok">«Да, эти жидкости действительно стоили дешевле, но сейчас в среднем даже дороже, чем у нас — так что дешевле вы вряд ли найдёте»</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLOR -->
+  <div class="section" id="tab-color">
+    <div class="sec-header"><span class="sec-title">Цвет жидкости</span></div>
+    <div class="hl warn" data-searchable>Не спорить, не ставить человека в глупое положение, не говорить «как правильно» — клиент может быть не первый день в теме и воспримет в штыки.</div>
+    <div class="accordion open" data-searchable>
+      <div class="acc-header"><span class="acc-title">Скрипт</span><span class="acc-arrow">▼</span></div>
+      <div class="acc-body">
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <strong>Сначала помочь выбрать вкус</strong>
+              <span>Не начинать с объяснений — сначала разобраться с выбором. Только потом добавить от себя.</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <strong>Добавить как интересный факт</strong>
+              <span>«Кстати, недавно узнал — цвет ароматизатора вообще ни на что не влияет. Сам ароматизатор может быть и светлым, и тёмным — это зависит от производителя. Если использует усилитель вкуса — он может быть любого цвета»</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <strong>Объяснить про потемнение</strong>
+              <span>«Жидкость темнеет от карамелизации — когда долго стоит или в тепле. Даже светлая жидкость потемнеет через пару дней на солнце. Это нормально»</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPSELL -->
+  <div class="section" id="tab-upsell">
+    <div class="sec-header"><span class="sec-title">Добивание комбо по одноразкам</span></div>
+    <div class="info-card" data-searchable>
+      <h3>🎯 Логика допродажи</h3>
+      <ul>
+        <li>После продажи одноразки — предложить запасной вариант другого вкуса</li>
+        <li>Клиент берёт жижу — предложить картридж / расходник</li>
+        <li>Кальянный табак — предложить уголь или аксессуар</li>
+        <li>Снюс — предложить второй вкус или другую крепость для сравнения</li>
+      </ul>
+    </div>
+    <div class="hl info" style="margin-top:12px" data-searchable>Комбо = основной товар + что-то сопутствующее или альтернативное. Не навязывать, а рекомендовать как опытный.</div>
+  </div>
+
+</main>
+
+<script src="core.js"></script>
+<script>
+  initTabs();
+  initAccordions();
+  initSearch();
+</script>
+</body>
+</html>
