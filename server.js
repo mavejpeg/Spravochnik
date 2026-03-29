@@ -1,4 +1,4 @@
-// server.js - исправленный порядок middleware
+// server.js - session middleware применяется ко всем маршрутам
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -14,6 +14,7 @@ const PORT = process.env.PORT || 3000;
 
 // ========== PostgreSQL connection ==========
 let pool = null;
+let sessionMiddleware = null;
 
 function initPool() {
     const databaseUrl = process.env.DATABASE_URL;
@@ -201,7 +202,8 @@ function protectPage(req, res, next) {
     }
 }
 
-// ========== MIDDLEWARE ORDER (ВАЖНО!) ==========
+// ========== MIDDLEWARE (порядок ВАЖЕН!) ==========
+
 // 1. CORS и JSON парсеры
 app.use(cors({
     origin: true,
@@ -210,14 +212,15 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// 2. Session middleware (ДО всех маршрутов, КРОМЕ статики)
-// Но сначала инициализируем БД и сессии в startServer
+// 2. Session middleware - ПРИМЕНЯЕМ СРАЗУ!
+// sessionMiddleware будет установлен после инициализации БД
+// но мы добавим его в startServer перед определением маршрутов
 
-// ========== STATIC FILES (доступны без авторизации) ==========
+// ========== STATIC FILES ==========
 app.use('/style.css', express.static(path.join(__dirname, 'style.css')));
 app.use('/core.js', express.static(path.join(__dirname, 'core.js')));
 
-// ========== AUTH ROUTES (доступны без авторизации) ==========
+// ========== AUTH ROUTES ==========
 
 // Check if user is authenticated
 app.get('/api/check-auth', (req, res) => {
@@ -233,7 +236,8 @@ app.get('/api/check-auth', (req, res) => {
 
 // Login
 app.post('/api/login', async (req, res) => {
-    console.log('Login attempt:', req.body);
+    console.log('Login attempt:', req.body.username);
+    console.log('Session exists:', !!req.session);
     
     const { username, password } = req.body;
     
@@ -253,10 +257,9 @@ app.post('/api/login', async (req, res) => {
         
         const user = result.rows[0];
         
-        // Проверяем что сессия существует
         if (!req.session) {
             console.error('Session is not available!');
-            return res.status(500).json({ error: 'Session error' });
+            return res.status(500).json({ error: 'Session error - please restart' });
         }
         
         req.session.user = {
@@ -279,7 +282,8 @@ app.post('/api/login', async (req, res) => {
 
 // Simple login for users (only password)
 app.post('/api/simple-login', async (req, res) => {
-    console.log('Simple login attempt with password:', req.body.password);
+    console.log('Simple login attempt with password');
+    console.log('Session exists:', !!req.session);
     
     const { password } = req.body;
     
@@ -301,7 +305,7 @@ app.post('/api/simple-login', async (req, res) => {
         
         if (!req.session) {
             console.error('Session is not available!');
-            return res.status(500).json({ error: 'Session error' });
+            return res.status(500).json({ error: 'Session error - please restart' });
         }
         
         req.session.user = {
@@ -614,11 +618,12 @@ async function startServer() {
     const dbReady = await initDatabase();
     
     if (dbReady && pool) {
-        const sessionMiddleware = setupSession();
+        sessionMiddleware = setupSession();
         if (sessionMiddleware) {
-            // Применяем session middleware ко всем маршрутам
+            // ПРИМЕНЯЕМ SESSION MIDDLEWARE КО ВСЕМ МАРШРУТАМ
             app.use(sessionMiddleware);
             console.log('✅ Session store: PostgreSQL');
+            console.log('✅ Session middleware applied to all routes');
         } else {
             console.log('⚠️ Session store: Memory (fallback)');
         }
