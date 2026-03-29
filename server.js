@@ -1,9 +1,11 @@
-// server.js - с Cloudinary облаком
+// server.js - с авторизацией
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
 const cors = require('cors');
 const multer = require('multer');
+const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 const { v2: cloudinary } = require('cloudinary');
 require('dotenv').config();
 
@@ -11,317 +13,463 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// Cloudinary configuration
-if (process.env.CLOUDINARY_CLOUD_NAME) {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-  });
-  console.log('✅ Cloudinary configured');
-} else {
-  console.log('⚠️ Cloudinary not configured, using base64 mode');
-}
-
-// Multer setup (memory storage for Cloudinary)
-const storage = multer.memoryStorage();
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|webp/;
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (mimetype) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only images allowed (JPG, PNG, WEBP)'));
-    }
-  }
-});
-
-// PostgreSQL connection
+// Session setup
 let pool = null;
 
 function initPool() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    console.error('❌ DATABASE_URL is not set!');
-    return null;
-  }
-  return new Pool({
-    connectionString: databaseUrl,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-  });
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+        console.error('❌ DATABASE_URL is not set!');
+        return null;
+    }
+    return new Pool({
+        connectionString: databaseUrl,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+    });
 }
+
+// Session middleware
+app.use(session({
+    store: new pgSession({
+        pool: pool,
+        tableName: 'session',
+        createTableIfMissing: true
+    }),
+    secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    }
+}));
+
+// Cloudinary configuration
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+    cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+    console.log('✅ Cloudinary configured');
+}
+
+// Multer setup
+const storage = multer.memoryStorage();
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|webp/;
+        const mimetype = allowedTypes.test(file.mimetype);
+        if (mimetype) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only images allowed'));
+        }
+    }
+});
 
 // Initialize database
 async function initDatabase() {
-  pool = initPool();
-  if (!pool) return false;
-  
-  try {
-    const client = await pool.connect();
-    console.log('✅ Database connected');
-    
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS products (
-        id SERIAL PRIMARY KEY,
-        category VARCHAR(50) NOT NULL,
-        product_id VARCHAR(100) UNIQUE NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        strength INTEGER DEFAULT 5,
-        origin VARCHAR(255),
-        description TEXT,
-        photo_url TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    await client.query(`
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS photo_url TEXT;
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS description TEXT;
-    `);
-    
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
-      CREATE INDEX IF NOT EXISTS idx_products_product_id ON products(product_id);
-    `);
-    
-    client.release();
-    console.log('✅ Database ready');
-    return true;
-  } catch (error) {
-    console.error('❌ Database init error:', error.message);
-    return false;
-  }
+    pool = initPool();
+    if (!pool) return false;
+
+    try {
+        const client = await pool.connect();
+        console.log('✅ Database connected');
+
+        // Create products table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS products (
+                id SERIAL PRIMARY KEY,
+                category VARCHAR(50) NOT NULL,
+                product_id VARCHAR(100) UNIQUE NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                strength INTEGER DEFAULT 5,
+                origin VARCHAR(255),
+                description TEXT,
+                photo_url TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Create users table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                full_name VARCHAR(255) NOT NULL,
+                role VARCHAR(20) DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Add columns if missing
+        await client.query(`
+            ALTER TABLE products ADD COLUMN IF NOT EXISTS photo_url TEXT;
+            ALTER TABLE products ADD COLUMN IF NOT EXISTS description TEXT;
+        `);
+
+        // Create indexes
+        await client.query(`
+            CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+            CREATE INDEX IF NOT EXISTS idx_products_product_id ON products(product_id);
+            CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+        `);
+
+        // Insert default ROOT user if not exists
+        await client.query(`
+            INSERT INTO users (username, password, full_name, role) 
+            VALUES ('ROOT', '1234', 'Системный администратор', 'rop')
+            ON CONFLICT (username) DO NOTHING
+        `);
+
+        client.release();
+        console.log('✅ Database ready');
+        return true;
+    } catch (error) {
+        console.error('❌ Database init error:', error.message);
+        return false;
+    }
 }
 
-// Upload endpoint - with Cloudinary
-app.post('/api/upload', upload.single('photo'), async (req, res) => {
-  console.log('📸 Upload request received');
-  
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+// ========== AUTH MIDDLEWARE ==========
+function isAuthenticated(req, res, next) {
+    if (req.session.user) {
+        next();
+    } else {
+        res.status(401).json({ error: 'Unauthorized' });
+    }
+}
+
+function isRop(req, res, next) {
+    if (req.session.user && req.session.user.role === 'rop') {
+        next();
+    } else {
+        res.status(403).json({ error: 'Access denied. ROP only.' });
+    }
+}
+
+// ========== AUTH ROUTES ==========
+
+// Login
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password required' });
     }
     
-    console.log(`File: ${req.file.originalname}, Size: ${Math.round(req.file.size / 1024)}KB`);
-    
-    let photoUrl;
-    
-    // If Cloudinary is configured, upload to Cloudinary
-    if (process.env.CLOUDINARY_CLOUD_NAME) {
-      console.log('Uploading to Cloudinary...');
-      
-      const result = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            folder: 'spravochnik',
-            transformation: [
-              { width: 500, height: 500, crop: 'limit' },
-              { quality: 'auto' }
-            ]
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
+    try {
+        const result = await pool.query(
+            'SELECT * FROM users WHERE username = $1 AND password = $2',
+            [username.toUpperCase(), password]
         );
-        uploadStream.end(req.file.buffer);
-      });
-      
-      photoUrl = result.secure_url;
-      console.log(`✅ Uploaded to Cloudinary: ${photoUrl}`);
-    } else {
-      // Fallback to base64
-      photoUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-      console.log(`✅ Converted to base64, size: ${Math.round(photoUrl.length / 1024)}KB`);
+        
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        
+        const user = result.rows[0];
+        req.session.user = {
+            id: user.id,
+            username: user.username,
+            full_name: user.full_name,
+            role: user.role
+        };
+        
+        res.json({ 
+            success: true, 
+            user: req.session.user,
+            message: `Добро пожаловать, ${user.full_name}!`
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Login failed' });
     }
-    
-    res.json({ photoUrl: photoUrl });
-    
-  } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ error: 'Upload failed: ' + error.message });
-  }
 });
 
-// GET products by category
+// Logout
+app.post('/api/logout', (req, res) => {
+    req.session.destroy();
+    res.json({ success: true, message: 'Logged out' });
+});
+
+// Check session
+app.get('/api/check-session', (req, res) => {
+    if (req.session.user) {
+        res.json({ 
+            authenticated: true, 
+            user: req.session.user 
+        });
+    } else {
+        res.json({ authenticated: false });
+    }
+});
+
+// Get all users (ROP only)
+app.get('/api/users', isRop, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT id, username, full_name, role, created_at FROM users ORDER BY id'
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Get users error:', error);
+        res.status(500).json({ error: 'Failed to get users' });
+    }
+});
+
+// Change user password (ROP only)
+app.post('/api/users/:id/change-password', isRop, async (req, res) => {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+    
+    if (!newPassword || !/^\d{4}$/.test(newPassword)) {
+        return res.status(400).json({ error: 'Password must be 4 digits' });
+    }
+    
+    try {
+        await pool.query(
+            'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [newPassword, id]
+        );
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Change password error:', error);
+        res.status(500).json({ error: 'Failed to change password' });
+    }
+});
+
+// Create new user (ROP only)
+app.post('/api/users', isRop, async (req, res) => {
+    const { username, password, full_name, role } = req.body;
+    
+    if (!username || !password || !full_name) {
+        return res.status(400).json({ error: 'All fields required' });
+    }
+    
+    if (!/^\d{4}$/.test(password)) {
+        return res.status(400).json({ error: 'Password must be 4 digits' });
+    }
+    
+    try {
+        await pool.query(
+            'INSERT INTO users (username, password, full_name, role) VALUES ($1, $2, $3, $4)',
+            [username.toUpperCase(), password, full_name, role || 'user']
+        );
+        res.json({ success: true, message: 'User created successfully' });
+    } catch (error) {
+        console.error('Create user error:', error);
+        res.status(500).json({ error: 'Username already exists' });
+    }
+});
+
+// Delete user (ROP only)
+app.delete('/api/users/:id', isRop, async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        await pool.query('DELETE FROM users WHERE id = $1 AND username != $2', [id, 'ROOT']);
+        res.json({ success: true, message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({ error: 'Failed to delete user' });
+    }
+});
+
+// ========== PRODUCT ROUTES (with auth check) ==========
+
+// Upload endpoint
+app.post('/api/upload', isAuthenticated, upload.single('photo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+        
+        let photoUrl;
+        
+        if (process.env.CLOUDINARY_CLOUD_NAME) {
+            const result = await new Promise((resolve, reject) => {
+                const uploadStream = cloudinary.uploader.upload_stream(
+                    { folder: 'spravochnik', transformation: [{ width: 500, height: 500, crop: 'limit' }] },
+                    (error, result) => error ? reject(error) : resolve(result)
+                );
+                uploadStream.end(req.file.buffer);
+            });
+            photoUrl = result.secure_url;
+        } else {
+            photoUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        }
+        
+        res.json({ photoUrl: photoUrl });
+    } catch (error) {
+        console.error('Upload error:', error);
+        res.status(500).json({ error: 'Upload failed' });
+    }
+});
+
+// GET products (no auth needed)
 app.get('/api/products/:category', async (req, res) => {
-  if (!pool) return res.status(503).json([]);
-  
-  try {
-    const result = await pool.query(
-      'SELECT * FROM products WHERE category = $1 ORDER BY created_at DESC',
-      [req.params.category]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('GET error:', error);
-    res.status(500).json([]);
-  }
-});
-
-// POST new product
-app.post('/api/products/:category', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'Database not connected' });
-  
-  const { category } = req.params;
-  const { id, name, strength, origin, desc, photoUrl } = req.body;
-  
-  if (!name || !name.trim()) {
-    return res.status(400).json({ error: 'Name is required' });
-  }
-  
-  try {
-    const result = await pool.query(
-      `INSERT INTO products (category, product_id, name, strength, origin, description, photo_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (product_id) DO UPDATE SET
-         name = EXCLUDED.name,
-         strength = EXCLUDED.strength,
-         origin = EXCLUDED.origin,
-         description = EXCLUDED.description,
-         photo_url = EXCLUDED.photo_url,
-         updated_at = CURRENT_TIMESTAMP
-       RETURNING *`,
-      [category, id, name.trim(), strength || 5, origin || null, desc || null, photoUrl || null]
-    );
+    if (!pool) return res.status(503).json([]);
     
-    console.log(`✅ Saved: ${result.rows[0].name}`);
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('POST error:', error);
-    res.status(500).json({ error: 'Failed to save: ' + error.message });
-  }
-});
-
-// PUT update product
-app.put('/api/products/:category/:id', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'Database not connected' });
-  
-  const { category, id } = req.params;
-  const { name, strength, origin, desc, photoUrl } = req.body;
-  
-  try {
-    const result = await pool.query(
-      `UPDATE products 
-       SET name = $1, strength = $2, origin = $3, description = $4, photo_url = $5, updated_at = CURRENT_TIMESTAMP
-       WHERE category = $6 AND product_id = $7
-       RETURNING *`,
-      [name, strength || 5, origin || null, desc || null, photoUrl || null, category, id]
-    );
-    
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Product not found' });
-    } else {
-      res.json(result.rows[0]);
+    try {
+        const result = await pool.query(
+            'SELECT * FROM products WHERE category = $1 ORDER BY created_at DESC',
+            [req.params.category]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('GET error:', error);
+        res.status(500).json([]);
     }
-  } catch (error) {
-    console.error('PUT error:', error);
-    res.status(500).json({ error: 'Update failed: ' + error.message });
-  }
 });
 
-// DELETE product
-app.delete('/api/products/:category/:id', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'Database not connected' });
-  
-  const { category, id } = req.params;
-  
-  try {
-    const result = await pool.query(
-      'DELETE FROM products WHERE category = $1 AND product_id = $2 RETURNING *',
-      [category, id]
-    );
+// POST product (ROP only)
+app.post('/api/products/:category', isRop, async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database not connected' });
     
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Product not found' });
-    } else {
-      console.log(`✅ Deleted: ${result.rows[0].name}`);
-      res.json({ success: true, message: 'Deleted successfully' });
+    const { category } = req.params;
+    const { id, name, strength, origin, desc, photoUrl } = req.body;
+    
+    if (!name || !name.trim()) {
+        return res.status(400).json({ error: 'Name is required' });
     }
-  } catch (error) {
-    console.error('DELETE error:', error);
-    res.status(500).json({ error: 'Delete failed: ' + error.message });
-  }
+    
+    try {
+        const result = await pool.query(
+            `INSERT INTO products (category, product_id, name, strength, origin, description, photo_url)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             ON CONFLICT (product_id) DO UPDATE SET
+               name = EXCLUDED.name,
+               strength = EXCLUDED.strength,
+               origin = EXCLUDED.origin,
+               description = EXCLUDED.description,
+               photo_url = EXCLUDED.photo_url,
+               updated_at = CURRENT_TIMESTAMP
+             RETURNING *`,
+            [category, id, name.trim(), strength || 5, origin || null, desc || null, photoUrl || null]
+        );
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('POST error:', error);
+        res.status(500).json({ error: 'Failed to save' });
+    }
 });
 
-// Debug endpoint
-app.get('/api/debug/:category', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'No database' });
-  
-  try {
-    const result = await pool.query(
-      'SELECT category, product_id, name FROM products WHERE category = $1',
-      [req.params.category]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+// PUT product (ROP only)
+app.put('/api/products/:category/:id', isRop, async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database not connected' });
+    
+    const { category, id } = req.params;
+    const { name, strength, origin, desc, photoUrl } = req.body;
+    
+    try {
+        const result = await pool.query(
+            `UPDATE products 
+             SET name = $1, strength = $2, origin = $3, description = $4, photo_url = $5, updated_at = CURRENT_TIMESTAMP
+             WHERE category = $6 AND product_id = $7
+             RETURNING *`,
+            [name, strength || 5, origin || null, desc || null, photoUrl || null, category, id]
+        );
+        
+        if (result.rows.length === 0) {
+            res.status(404).json({ error: 'Product not found' });
+        } else {
+            res.json(result.rows[0]);
+        }
+    } catch (error) {
+        console.error('PUT error:', error);
+        res.status(500).json({ error: 'Update failed' });
+    }
+});
+
+// DELETE product (ROP only)
+app.delete('/api/products/:category/:id', isRop, async (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'Database not connected' });
+    
+    const { category, id } = req.params;
+    
+    try {
+        const result = await pool.query(
+            'DELETE FROM products WHERE category = $1 AND product_id = $2 RETURNING *',
+            [category, id]
+        );
+        
+        if (result.rows.length === 0) {
+            res.status(404).json({ error: 'Product not found' });
+        } else {
+            res.json({ success: true, message: 'Deleted successfully' });
+        }
+    } catch (error) {
+        console.error('DELETE error:', error);
+        res.status(500).json({ error: 'Delete failed' });
+    }
 });
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    database: pool ? 'connected' : 'disconnected',
-    cloudinary: process.env.CLOUDINARY_CLOUD_NAME ? 'configured' : 'not configured'
-  });
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        database: pool ? 'connected' : 'disconnected',
+        cloudinary: process.env.CLOUDINARY_CLOUD_NAME ? 'configured' : 'not configured'
+    });
 });
 
 // Serve HTML
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.get('/:page', (req, res) => {
-  const page = req.params.page;
-  if (page.includes('..') || page.includes('\\')) {
-    return res.status(403).send('Forbidden');
-  }
-  
-  const fs = require('fs');
-  const possibleFiles = [page, `${page}.html`];
-  for (const file of possibleFiles) {
-    const filePath = path.join(__dirname, file);
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      return res.sendFile(filePath);
+    const page = req.params.page;
+    if (page.includes('..') || page.includes('\\')) {
+        return res.status(403).send('Forbidden');
     }
-  }
-  res.status(404).send('Page not found');
+    
+    const fs = require('fs');
+    const possibleFiles = [page, `${page}.html`];
+    for (const file of possibleFiles) {
+        const filePath = path.join(__dirname, file);
+        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+            return res.sendFile(filePath);
+        }
+    }
+    res.status(404).send('Page not found');
 });
 
 // Start server
 async function startServer() {
-  console.log('\n🚀 Starting server...\n');
-  
-  // Show Cloudinary status
-  if (process.env.CLOUDINARY_CLOUD_NAME) {
-    console.log(`📸 Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME}`);
-  } else {
-    console.log('📸 Cloudinary: NOT configured (using base64)');
-  }
-  
-  const dbReady = await initDatabase();
-  
-  app.listen(PORT, () => {
-    console.log(`\n✅ Server running on port ${PORT}`);
-    console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-    console.log(`📸 Photos: ${process.env.CLOUDINARY_CLOUD_NAME ? 'CLOUDINARY' : 'BASE64'}`);
-    console.log(`🔗 URL: http://localhost:${PORT}\n`);
-  });
+    console.log('\n🚀 Starting server...\n');
+    
+    const dbReady = await initDatabase();
+    
+    app.listen(PORT, () => {
+        console.log(`\n✅ Server running on port ${PORT}`);
+        console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
+        console.log(`📸 Photos: ${process.env.CLOUDINARY_CLOUD_NAME ? 'CLOUDINARY' : 'BASE64'}`);
+        console.log(`🔐 Auth: Enabled`);
+        console.log(`👑 ROOT credentials: ROOT / 1234`);
+        console.log(`🔗 URL: http://localhost:${PORT}\n`);
+    });
 }
 
 startServer();
