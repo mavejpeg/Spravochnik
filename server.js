@@ -1,4 +1,4 @@
-// server.js - с хранением пользователей в БД
+// server.js - исправленная версия с правильной защитой страниц
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -12,14 +12,13 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// ========== MIDDLEWARE (порядок ВАЖЕН!) ==========
 app.use(cors({
     origin: true,
     credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(express.static(path.join(__dirname)));
 
 // PostgreSQL connection pool
 let pool = null;
@@ -100,7 +99,7 @@ async function initDatabase() {
             CREATE INDEX IF NOT EXISTS IDX_session_expire ON "session" ("expire");
         `);
 
-        // Insert default users if not exists
+        // Insert default users
         await client.query(`
             INSERT INTO users (username, password, full_name, role) 
             VALUES ('user', '1111', 'Обычный пользователь', 'user')
@@ -121,7 +120,6 @@ async function initDatabase() {
 
         client.release();
         console.log('✅ Database tables ready');
-        console.log('📋 Users in DB: user (1111), rop (1234), root (root123)');
         return true;
     } catch (error) {
         console.error('❌ Database init error:', error.message);
@@ -129,7 +127,7 @@ async function initDatabase() {
     }
 }
 
-// Session middleware with PostgreSQL store
+// Session middleware (ДО статических файлов и маршрутов)
 function setupSession() {
     if (!pool) {
         console.error('❌ Cannot setup session: no database pool');
@@ -146,7 +144,7 @@ function setupSession() {
         resave: false,
         saveUninitialized: false,
         cookie: {
-            secure: process.env.NODE_ENV === 'production',
+            secure: false, // Для Railway http ставим false
             httpOnly: true,
             maxAge: 30 * 24 * 60 * 60 * 1000
         },
@@ -182,6 +180,9 @@ const upload = multer({
 
 // ========== AUTH MIDDLEWARE ==========
 function requireAuth(req, res, next) {
+    if (!req.session) {
+        return res.status(401).json({ error: 'Session not initialized' });
+    }
     if (req.session.user) {
         next();
     } else {
@@ -190,6 +191,9 @@ function requireAuth(req, res, next) {
 }
 
 function requireRop(req, res, next) {
+    if (!req.session) {
+        return res.status(401).json({ error: 'Session not initialized' });
+    }
     if (req.session.user && req.session.user.role === 'rop') {
         next();
     } else {
@@ -197,11 +201,27 @@ function requireRop(req, res, next) {
     }
 }
 
-// ========== AUTH ROUTES ==========
+// Middleware для защиты HTML страниц
+function protectPage(req, res, next) {
+    // Если пользователь авторизован - показываем страницу
+    if (req.session && req.session.user) {
+        next();
+    } else {
+        // Иначе отправляем на страницу входа
+        res.sendFile(path.join(__dirname, 'login.html'));
+    }
+}
+
+// ========== STATIC FILES (но не HTML страницы) ==========
+// Статические файлы (CSS, JS, изображения) доступны без авторизации
+app.use('/style.css', express.static(path.join(__dirname, 'style.css')));
+app.use('/core.js', express.static(path.join(__dirname, 'core.js')));
+
+// ========== AUTH ROUTES (без авторизации) ==========
 
 // Check if user is authenticated
 app.get('/api/check-auth', (req, res) => {
-    if (req.session.user) {
+    if (req.session && req.session.user) {
         res.json({ 
             authenticated: true, 
             user: req.session.user 
@@ -256,7 +276,6 @@ app.post('/api/simple-login', async (req, res) => {
     }
     
     try {
-        // Find user with role 'user' and matching password
         const result = await pool.query(
             'SELECT * FROM users WHERE role = $1 AND password = $2 LIMIT 1',
             ['user', password]
@@ -286,13 +305,19 @@ app.post('/api/simple-login', async (req, res) => {
 
 // Logout
 app.post('/api/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) console.error('Logout error:', err);
+    if (req.session) {
+        req.session.destroy((err) => {
+            if (err) console.error('Logout error:', err);
+            res.json({ success: true });
+        });
+    } else {
         res.json({ success: true });
-    });
+    }
 });
 
-// Get all users (ROP only)
+// ========== USER MANAGEMENT (ROP only) ==========
+
+// Get all users
 app.get('/api/users', requireRop, async (req, res) => {
     try {
         const result = await pool.query(
@@ -305,7 +330,7 @@ app.get('/api/users', requireRop, async (req, res) => {
     }
 });
 
-// Change user password (ROP only)
+// Change user password
 app.post('/api/users/:id/change-password', requireRop, async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
@@ -332,7 +357,7 @@ app.post('/api/users/:id/change-password', requireRop, async (req, res) => {
     }
 });
 
-// Create new user (ROP only)
+// Create new user
 app.post('/api/users', requireRop, async (req, res) => {
     const { username, password, full_name, role } = req.body;
     
@@ -357,7 +382,7 @@ app.post('/api/users', requireRop, async (req, res) => {
     }
 });
 
-// Delete user (ROP only, cannot delete self)
+// Delete user
 app.delete('/api/users/:id', requireRop, async (req, res) => {
     const { id } = req.params;
     const currentUserId = req.session.user.id;
@@ -384,14 +409,9 @@ app.delete('/api/users/:id', requireRop, async (req, res) => {
     }
 });
 
-// Get current user info
-app.get('/api/me', requireAuth, (req, res) => {
-    res.json(req.session.user);
-});
-
 // ========== PRODUCT ROUTES ==========
 
-// Upload photo (requires auth)
+// Upload photo
 app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) => {
     try {
         if (!req.file) {
@@ -420,7 +440,7 @@ app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) =>
     }
 });
 
-// GET products (requires auth)
+// GET products
 app.get('/api/products/:category', requireAuth, async (req, res) => {
     if (!pool) return res.status(503).json([]);
     
@@ -436,7 +456,7 @@ app.get('/api/products/:category', requireAuth, async (req, res) => {
     }
 });
 
-// POST product (ROP only)
+// POST product
 app.post('/api/products/:category', requireRop, async (req, res) => {
     const { category } = req.params;
     const { id, name, strength, origin, desc, photoUrl } = req.body;
@@ -462,7 +482,7 @@ app.post('/api/products/:category', requireRop, async (req, res) => {
     }
 });
 
-// PUT product (ROP only)
+// PUT product
 app.put('/api/products/:category/:id', requireRop, async (req, res) => {
     const { category, id } = req.params;
     const { name, strength, origin, desc, photoUrl } = req.body;
@@ -487,7 +507,7 @@ app.put('/api/products/:category/:id', requireRop, async (req, res) => {
     }
 });
 
-// DELETE product (ROP only)
+// DELETE product
 app.delete('/api/products/:category/:id', requireRop, async (req, res) => {
     const { category, id } = req.params;
     
@@ -518,57 +538,60 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Serve HTML - all pages require auth
-const requirePageAuth = (req, res, next) => {
-    if (req.session.user) {
-        next();
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-};
-
-app.get('/', requirePageAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/tobacco.html', requirePageAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, 'tobacco.html'));
-});
-
-app.get('/liquids.html', requirePageAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, 'liquids.html'));
-});
-
-app.get('/snus.html', requirePageAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, 'snus.html'));
-});
-
-app.get('/hookah.html', requirePageAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, 'hookah.html'));
-});
-
-app.get('/sales.html', requirePageAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, 'sales.html'));
-});
-
-app.get('/checks.html', requirePageAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, 'checks.html'));
-});
-
-app.get('/cash.html', requirePageAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, 'cash.html'));
-});
-
-app.get('/disposables.html', requirePageAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, 'disposables.html'));
-});
-
+// ========== HTML PAGES (защищены) ==========
+// login.html доступна без авторизации
 app.get('/login.html', (req, res) => {
-    if (req.session.user) {
+    if (req.session && req.session.user) {
         res.redirect('/');
     } else {
         res.sendFile(path.join(__dirname, 'login.html'));
     }
+});
+
+// Все остальные HTML страницы требуют авторизации
+app.get('/', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/index.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/tobacco.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'tobacco.html'));
+});
+
+app.get('/liquids.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'liquids.html'));
+});
+
+app.get('/snus.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'snus.html'));
+});
+
+app.get('/hookah.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'hookah.html'));
+});
+
+app.get('/sales.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'sales.html'));
+});
+
+app.get('/checks.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'checks.html'));
+});
+
+app.get('/cash.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'cash.html'));
+});
+
+app.get('/disposables.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'disposables.html'));
+});
+
+// Перенаправление корневого маршрута на index.html
+app.get('/', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Start server
@@ -582,15 +605,17 @@ async function startServer() {
         if (sessionMiddleware) {
             app.use(sessionMiddleware);
             console.log('✅ Session store: PostgreSQL');
+        } else {
+            console.log('⚠️ Session store: Memory (fallback)');
         }
     }
     
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`🔐 Auth: Enabled (users in database)`);
-        console.log(`\n📋 Пользователи в БД:`);
-        console.log(`   👤 Обычный пароль: 1111`);
+        console.log(`🔐 Auth: Enabled (pages protected)`);
+        console.log(`\n📋 Данные для входа:`);
+        console.log(`   👤 Обычный пользователь: пароль 1111`);
         console.log(`   👑 РОП: rop / 1234`);
         console.log(`   👑 ROOT: root / root123`);
         console.log(`\n🔗 URL: http://localhost:${PORT}\n`);
