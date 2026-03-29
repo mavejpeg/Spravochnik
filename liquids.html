@@ -9,8 +9,9 @@
 <body>
 
 <header class="site-header">
-  <a class="logo" href="index.html">☁ СПРАВОЧНИК</a>
+  <a class="logo" href="/">☁ СПРАВОЧНИК</a>
   <div style="flex:1"></div>
+  <a href="/" class="home-btn" style="margin-right: 12px;">🏠 На главную</a>
   <div id="userInfo" style="display: flex; align-items: center; gap: 12px;">
     <span id="userName" style="font-size: 12px; color: var(--text);"></span>
     <button id="ropBtn" class="rop-btn" style="display: none;">👑 Управление</button>
@@ -157,41 +158,53 @@
 
 <script src="core.js"></script>
 <script>
-  const CATEGORY = 'liquids';
+  const CATEGORY = 'tobacco'; // измените для каждой страницы
   let isRop = false;
 
   initTabs();
   initAccordions();
   initSearch();
   
+  // Проверка прав пользователя
   async function checkPermissions() {
     try {
-      const response = await fetch('/api/check-session');
+      const response = await fetch('/api/check-auth', { credentials: 'include' });
       const data = await response.json();
       
-      const addButton = document.getElementById('btnAddLiquid');
+      const addButton = document.getElementById('btnAddTobacco');
       
-      if (data.authenticated && data.user.role === 'rop') {
+      if (data.authenticated && (data.user.role === 'rop' || data.user.role === 'root')) {
         isRop = true;
         if (addButton) addButton.style.display = 'flex';
-        document.body.classList.add('rop-mode');
       } else {
         isRop = false;
         if (addButton) addButton.style.display = 'none';
-        document.body.classList.add('view-mode');
       }
+      
+      // Показываем имя пользователя
+      const userNameSpan = document.getElementById('userName');
+      if (userNameSpan && data.user) {
+        userNameSpan.textContent = data.user.full_name;
+      }
+      
+      // Показываем кнопку РОП если нужно
+      const ropBtn = document.getElementById('ropBtn');
+      if (ropBtn && data.user && (data.user.role === 'rop' || data.user.role === 'root')) {
+        ropBtn.style.display = 'block';
+      }
+      
     } catch (error) {
       console.error('Permission check error:', error);
     }
   }
   
   async function renderGrid() {
-    const grid = document.getElementById('liquidsGrid');
+    const grid = document.getElementById('tobaccoGrid');
     const items = await getCategory(CATEGORY);
     grid.innerHTML = '';
 
     if (!items.length) {
-      renderEmpty(grid, '💧', 'Каталог пуст', isRop ? 'Нажмите «Добавить жидкость» чтобы внести первую позицию' : 'Нет доступных позиций');
+      renderEmpty(grid, '🌿', 'Каталог пуст', isRop ? 'Нажмите «Добавить» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
 
@@ -212,6 +225,7 @@
         }
       );
       
+      // Скрываем кнопки редактирования/удаления если не РОП
       if (!isRop) {
         const actions = card.querySelector('.card-actions');
         if (actions) actions.style.display = 'none';
@@ -221,21 +235,31 @@
     }
   }
 
-  document.getElementById('btnAddLiquid').addEventListener('click', () => {
-    if (!isRop) return;
-    new ProductModal({
-      category: CATEGORY,
-      title: 'Добавить жидкость',
-      onSave: async (item) => {
-        await addItem(CATEGORY, item);
-        renderGrid();
+  // Кнопка добавления
+  const addBtn = document.getElementById('btnAddTobacco');
+  if (addBtn) {
+    addBtn.addEventListener('click', () => {
+      console.log('Add button clicked, isRop:', isRop);
+      if (!isRop) {
+        alert('У вас нет прав для добавления');
+        return;
       }
+      new ProductModal({
+        category: CATEGORY,
+        title: 'Добавить',
+        onSave: async (item) => {
+          console.log('Saving item:', item);
+          await addItem(CATEGORY, item);
+          renderGrid();
+        }
+      });
     });
-  });
+  }
 
-  await checkPermissions();
-  renderGrid();
+  // Запускаем проверку прав и рендер
+  checkPermissions().then(() => renderGrid());
 </script>
+
 <script>
 // Информация о пользователе
 async function loadUserInfo() {
