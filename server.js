@@ -1,4 +1,4 @@
-// server.js - session middleware применяется ко всем маршрутам
+// server.js - полностью исправленный
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -14,7 +14,6 @@ const PORT = process.env.PORT || 3000;
 
 // ========== PostgreSQL connection ==========
 let pool = null;
-let sessionMiddleware = null;
 
 function initPool() {
     const databaseUrl = process.env.DATABASE_URL;
@@ -120,31 +119,6 @@ async function initDatabase() {
     }
 }
 
-// ========== Session middleware setup ==========
-function setupSession() {
-    if (!pool) {
-        console.error('❌ Cannot setup session: no database pool');
-        return null;
-    }
-    
-    return session({
-        store: new pgSession({
-            pool: pool,
-            tableName: 'session',
-            createTableIfMissing: false
-        }),
-        secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
-        resave: false,
-        saveUninitialized: false,
-        cookie: {
-            secure: false,
-            httpOnly: true,
-            maxAge: 30 * 24 * 60 * 60 * 1000
-        },
-        name: 'spravochnik.sid'
-    });
-}
-
 // ========== Cloudinary ==========
 if (process.env.CLOUDINARY_CLOUD_NAME) {
     cloudinary.config({
@@ -170,6 +144,22 @@ const upload = multer({
         }
     }
 });
+
+// ========== MIDDLEWARE ==========
+// CORS и JSON парсеры - ПЕРВЫМИ
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Session middleware - будем добавлять после инициализации БД
+let sessionMiddleware = null;
+
+// ========== STATIC FILES ==========
+app.use('/style.css', express.static(path.join(__dirname, 'style.css')));
+app.use('/core.js', express.static(path.join(__dirname, 'core.js')));
 
 // ========== AUTH MIDDLEWARE ==========
 function requireAuth(req, res, next) {
@@ -202,28 +192,11 @@ function protectPage(req, res, next) {
     }
 }
 
-// ========== MIDDLEWARE (порядок ВАЖЕН!) ==========
-
-// 1. CORS и JSON парсеры
-app.use(cors({
-    origin: true,
-    credentials: true
-}));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// 2. Session middleware - ПРИМЕНЯЕМ СРАЗУ!
-// sessionMiddleware будет установлен после инициализации БД
-// но мы добавим его в startServer перед определением маршрутов
-
-// ========== STATIC FILES ==========
-app.use('/style.css', express.static(path.join(__dirname, 'style.css')));
-app.use('/core.js', express.static(path.join(__dirname, 'core.js')));
-
 // ========== AUTH ROUTES ==========
 
 // Check if user is authenticated
 app.get('/api/check-auth', (req, res) => {
+    console.log('Check auth - session exists:', !!req.session);
     if (req.session && req.session.user) {
         res.json({ 
             authenticated: true, 
@@ -259,7 +232,7 @@ app.post('/api/login', async (req, res) => {
         
         if (!req.session) {
             console.error('Session is not available!');
-            return res.status(500).json({ error: 'Session error - please restart' });
+            return res.status(500).json({ error: 'Session error' });
         }
         
         req.session.user = {
@@ -282,7 +255,7 @@ app.post('/api/login', async (req, res) => {
 
 // Simple login for users (only password)
 app.post('/api/simple-login', async (req, res) => {
-    console.log('Simple login attempt with password');
+    console.log('Simple login attempt');
     console.log('Session exists:', !!req.session);
     
     const { password } = req.body;
@@ -305,7 +278,7 @@ app.post('/api/simple-login', async (req, res) => {
         
         if (!req.session) {
             console.error('Session is not available!');
-            return res.status(500).json({ error: 'Session error - please restart' });
+            return res.status(500).json({ error: 'Session error' });
         }
         
         req.session.user = {
@@ -615,20 +588,45 @@ app.get('/disposables.html', protectPage, (req, res) => {
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
     
+    // 1. Инициализируем БД
     const dbReady = await initDatabase();
     
+    // 2. Создаем session middleware
     if (dbReady && pool) {
-        sessionMiddleware = setupSession();
-        if (sessionMiddleware) {
-            // ПРИМЕНЯЕМ SESSION MIDDLEWARE КО ВСЕМ МАРШРУТАМ
-            app.use(sessionMiddleware);
-            console.log('✅ Session store: PostgreSQL');
-            console.log('✅ Session middleware applied to all routes');
-        } else {
-            console.log('⚠️ Session store: Memory (fallback)');
-        }
+        sessionMiddleware = session({
+            store: new pgSession({
+                pool: pool,
+                tableName: 'session',
+                createTableIfMissing: false
+            }),
+            secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
+            resave: false,
+            saveUninitialized: false,
+            cookie: {
+                secure: false,
+                httpOnly: true,
+                maxAge: 30 * 24 * 60 * 60 * 1000
+            },
+            name: 'spravochnik.sid'
+        });
+        
+        // 3. ПРИМЕНЯЕМ session middleware ко всем маршрутам
+        app.use(sessionMiddleware);
+        console.log('✅ Session store: PostgreSQL');
+        console.log('✅ Session middleware applied to all routes');
+    } else {
+        console.log('⚠️ Session store: Memory (fallback)');
+        // Простой memory store для отладки
+        sessionMiddleware = session({
+            secret: 'fallback_secret',
+            resave: false,
+            saveUninitialized: true,
+            cookie: { secure: false }
+        });
+        app.use(sessionMiddleware);
     }
     
+    // 4. Запускаем сервер
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
