@@ -181,5 +181,195 @@
   await checkPermissions();
   renderGrid();
 </script>
+
+<script>
+// Информация о пользователе
+async function loadUserInfo() {
+    try {
+        const response = await fetch('/api/check-auth');
+        const data = await response.json();
+        
+        if (data.authenticated) {
+            document.getElementById('userName').textContent = data.user.full_name;
+            if (data.user.role === 'rop') {
+                document.getElementById('ropBtn').style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading user info:', error);
+    }
+}
+
+// Выход
+document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+});
+
+// Кнопка управления РОП
+document.getElementById('ropBtn')?.addEventListener('click', () => {
+    openRopPanel();
+});
+
+function openRopPanel() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'ropModal';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <span class="modal-title">👑 Панель управления</span>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="field">
+                    <label>➕ Добавить пользователя</label>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
+                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
+                        <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
+                        <button id="addUserBtn" class="btn-add">Добавить</button>
+                    </div>
+                </div>
+                
+                <div class="field">
+                    <label>📋 Список пользователей</label>
+                    <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    loadUsers();
+    
+    document.getElementById('addUserBtn').addEventListener('click', async () => {
+        const username = document.getElementById('newUsername').value.trim();
+        const password = document.getElementById('newPassword').value;
+        const full_name = document.getElementById('newFullName').value.trim();
+        
+        if (!username || !password || !full_name) {
+            alert('Заполните все поля');
+            return;
+        }
+        
+        if (!/^\d{4}$/.test(password)) {
+            alert('Пароль должен состоять из 4 цифр');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, full_name, role: 'user' })
+            });
+            
+            if (response.ok) {
+                alert('Пользователь добавлен');
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('newFullName').value = '';
+                loadUsers();
+            } else {
+                const error = await response.json();
+                alert(error.error);
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    });
+}
+
+async function loadUsers() {
+    try {
+        const response = await fetch('/api/users');
+        const users = await response.json();
+        
+        const container = document.getElementById('usersList');
+        if (!container) return;
+        
+        container.innerHTML = users.map(user => `
+            <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <strong>${escapeHtml(user.full_name)}</strong><br>
+                        <span style="font-size: 11px; color: var(--muted);">Логин: ${user.username} | Роль: ${user.role}</span>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button onclick="changePassword(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>
+                        ${user.username !== 'ROOT' ? `<button onclick="deleteUser(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Load users error:', error);
+    }
+}
+
+async function changePassword(userId, userName) {
+    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
+    
+    if (!newPassword) return;
+    
+    if (!/^\d{4}$/.test(newPassword)) {
+        alert('Пароль должен состоять из 4 цифр');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/users/${userId}/change-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newPassword })
+        });
+        
+        if (response.ok) {
+            alert('Пароль успешно изменен');
+        } else {
+            const error = await response.json();
+            alert(error.error);
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+async function deleteUser(userId) {
+    if (confirm('Удалить пользователя?')) {
+        try {
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                alert('Пользователь удален');
+                loadUsers();
+            } else {
+                const error = await response.json();
+                alert(error.error);
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+loadUserInfo();
+</script>
+  
 </body>
 </html>
