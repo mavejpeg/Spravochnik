@@ -1,11 +1,12 @@
-// core.js - минимальная рабочая версия
+// core.js - исправленное удаление
 
-// API Functions
 async function getCategory(category) {
   try {
     const response = await fetch(`/api/products/${category}`);
     if (!response.ok) throw new Error('Failed to fetch');
-    return await response.json();
+    const data = await response.json();
+    console.log('Fetched products:', data.map(p => ({ id: p.product_id, name: p.name })));
+    return data;
   } catch (error) {
     console.error('Fetch error:', error);
     return [];
@@ -31,15 +32,23 @@ async function addItem(category, item) {
 }
 
 async function deleteItem(category, id) {
+  console.log('🗑️ Deleting:', { category, id });
+  
   try {
     const response = await fetch(`/api/products/${category}/${id}`, {
       method: 'DELETE'
     });
+    
+    console.log('Delete response status:', response.status);
+    
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to delete');
     }
-    return await response.json();
+    
+    const result = await response.json();
+    console.log('Delete result:', result);
+    return result;
   } catch (error) {
     console.error('Delete error:', error);
     throw error;
@@ -164,22 +173,24 @@ function renderProductCard(item, category, onDelete, onEdit) {
   const div = document.createElement('div');
   div.className = 'product-card';
   
+  // Use product_id as the identifier
+  const productId = item.product_id || item.id;
   const strength = item.strength || 5;
   const badgeClass = STRENGTH_BADGE_CLASS[strength] || 'badge-strength-3';
   
   div.innerHTML = `
     <div class="card-actions">
-      <button class="card-action-btn btn-edit">✏️</button>
-      <button class="card-action-btn btn-delete">🗑</button>
+      <button class="card-action-btn btn-edit" data-id="${productId}">✏️</button>
+      <button class="card-action-btn btn-delete" data-id="${productId}">🗑</button>
     </div>
-    <div class="card-img ${item.photo_url || item.photoUrl ? '' : 'no-img'}">
-      ${(item.photo_url || item.photoUrl) ? `<img src="${item.photo_url || item.photoUrl}" alt="${item.name}">` : '📦'}
+    <div class="card-img ${item.photo_url ? '' : 'no-img'}">
+      ${item.photo_url ? `<img src="${item.photo_url}" alt="${item.name}">` : '📦'}
     </div>
     <div class="card-body">
-      <div class="card-name">${item.name}</div>
+      <div class="card-name">${escapeHtml(item.name)}</div>
       <div class="card-meta">
         <span class="badge ${badgeClass}">${STRENGTH_LABELS[strength]}</span>
-        ${item.origin ? `<span class="badge badge-origin">🌍 ${item.origin}</span>` : ''}
+        ${item.origin ? `<span class="badge badge-origin">🌍 ${escapeHtml(item.origin)}</span>` : ''}
       </div>
       <div class="strength-compact">
         <span>Крепость ${strength}/10</span>
@@ -187,29 +198,57 @@ function renderProductCard(item, category, onDelete, onEdit) {
           ${Array(10).fill().map((_, i) => `<span class="strength-dot ${i < strength ? 'active' : ''}"></span>`).join('')}
         </div>
       </div>
-      ${item.description ? `<div class="card-desc">${item.description.substring(0, 80)}${item.description.length > 80 ? '...' : ''}</div>` : ''}
+      ${item.description ? `<div class="card-desc">${escapeHtml(item.description.substring(0, 80))}${item.description.length > 80 ? '...' : ''}</div>` : ''}
     </div>
   `;
   
-  div.querySelector('.btn-delete').addEventListener('click', async (e) => {
+  // Delete button
+  const deleteBtn = div.querySelector('.btn-delete');
+  deleteBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
-    if (confirm(`Удалить "${item.name}"?`)) {
+    const id = deleteBtn.dataset.id;
+    console.log('Delete clicked for:', category, id);
+    
+    if (confirm(`❌ Удалить "${item.name}"?`)) {
       try {
-        await deleteItem(category, item.product_id || item.id);
-        div.remove();
-        if (onDelete) onDelete();
+        const result = await deleteItem(category, id);
+        console.log('Delete result:', result);
+        if (result.success || result.message) {
+          div.remove();
+          if (onDelete) onDelete();
+        }
       } catch (error) {
-        alert('Ошибка: ' + error.message);
+        console.error('Delete error:', error);
+        alert('Ошибка удаления: ' + error.message);
       }
     }
   });
   
-  div.querySelector('.btn-edit').addEventListener('click', (e) => {
+  // Edit button
+  const editBtn = div.querySelector('.btn-edit');
+  editBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (onEdit) onEdit(item);
+    // Convert item to expected format
+    const editItem = {
+      ...item,
+      id: productId,
+      desc: item.description,
+      photoUrl: item.photo_url
+    };
+    if (onEdit) onEdit(editItem);
   });
   
   return div;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
 }
 
 class ProductModal {
@@ -218,7 +257,7 @@ class ProductModal {
     this.titleText = title;
     this.onSave = onSave;
     this.editItem = editItem;
-    this.photoUrl = editItem?.photo_url || editItem?.photoUrl || null;
+    this.photoUrl = editItem?.photoUrl || editItem?.photo_url || null;
     this._build();
   }
   
@@ -242,12 +281,12 @@ class ProductModal {
           <div class="field">
             <label>📷 Фото</label>
             <input type="file" id="photoInput" accept="image/*">
-            <div id="uploadProgress" style="display:none">Загрузка...</div>
-            ${this.photoUrl ? `<img src="${this.photoUrl}" style="max-width:100%; margin-top:10px">` : ''}
+            <div id="uploadProgress" style="display:none">⏳ Загрузка...</div>
+            ${this.photoUrl ? `<img src="${this.photoUrl}" style="max-width:100%; margin-top:10px; border-radius:8px">` : ''}
           </div>
           <div class="field">
             <label>Название *</label>
-            <input type="text" id="fieldName" value="${this.editItem?.name || ''}">
+            <input type="text" id="fieldName" value="${escapeHtml(this.editItem?.name || '')}" placeholder="Введите название">
           </div>
           <div class="field">
             <label>Крепость (1-10): <span id="strengthVal">${strengthVal}</span></label>
@@ -255,11 +294,11 @@ class ProductModal {
           </div>
           <div class="field">
             <label>Производитель</label>
-            <input type="text" id="fieldOrigin" value="${this.editItem?.origin || ''}">
+            <input type="text" id="fieldOrigin" value="${escapeHtml(this.editItem?.origin || '')}" placeholder="Страна или бренд">
           </div>
           <div class="field">
             <label>Описание</label>
-            <textarea id="fieldDesc">${this.editItem?.description || this.editItem?.desc || ''}</textarea>
+            <textarea id="fieldDesc" placeholder="Особенности, вкусы, советы">${escapeHtml(this.editItem?.desc || this.editItem?.description || '')}</textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -288,6 +327,7 @@ class ProductModal {
       progress.style.display = 'block';
       try {
         this.photoUrl = await uploadPhoto(file);
+        console.log('Photo uploaded');
       } catch (err) {
         alert('Ошибка: ' + err.message);
       } finally {
@@ -315,7 +355,7 @@ class ProductModal {
       }
       
       const item = {
-        id: this.editItem?.product_id || this.editItem?.id || (Date.now() + Math.random()).toString(),
+        id: this.editItem?.id || (Date.now() + Math.random()).toString(),
         name: name,
         strength: parseInt(overlay.querySelector('#fieldStrength').value),
         origin: overlay.querySelector('#fieldOrigin').value.trim(),
@@ -323,10 +363,13 @@ class ProductModal {
         photoUrl: this.photoUrl
       };
       
+      console.log('Saving item:', item);
+      
       try {
         await this.onSave(item);
         close();
       } catch (err) {
+        console.error('Save error:', err);
         alert('Ошибка: ' + err.message);
       }
     });
