@@ -185,6 +185,7 @@ function renderEmpty(container, icon, title, sub) {
   `;
 }
 
+// Обновите renderProductCard - скрывайте кнопки если не РОП
 function renderProductCard(item, category, onDelete, onEdit) {
   const div = document.createElement('div');
   div.className = 'product-card';
@@ -196,8 +197,8 @@ function renderProductCard(item, category, onDelete, onEdit) {
   
   div.innerHTML = `
     <div class="card-actions">
-      <button class="card-action-btn btn-edit" data-id="${productId}">✏️</button>
-      <button class="card-action-btn btn-delete" data-id="${productId}">🗑</button>
+      <button class="card-action-btn btn-edit" data-id="${productId}" style="${window.isRopGlobal ? '' : 'display: none !important;'}">✏️</button>
+      <button class="card-action-btn btn-delete" data-id="${productId}" style="${window.isRopGlobal ? '' : 'display: none !important;'}">🗑</button>
     </div>
     <div class="card-img ${photoUrl ? '' : 'no-img'}">
       ${photoUrl ? `<img src="${photoUrl}" alt="${escapeHtml(item.name)}" loading="lazy">` : '📦'}
@@ -218,39 +219,42 @@ function renderProductCard(item, category, onDelete, onEdit) {
     </div>
   `;
   
-  // Delete button
+  // Кнопка удаления
   const deleteBtn = div.querySelector('.btn-delete');
-  deleteBtn.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    const id = deleteBtn.dataset.id;
-    if (confirm(`❌ Удалить "${item.name}"?`)) {
-      try {
-        await deleteItem(category, id);
-        div.style.transition = 'all 0.3s ease';
-        div.style.opacity = '0';
-        div.style.transform = 'scale(0.8)';
-        setTimeout(() => {
-          div.remove();
-          if (onDelete) onDelete();
-        }, 300);
-      } catch (error) {
-        alert('Ошибка удаления: ' + error.message);
+  if (deleteBtn && window.isRopGlobal) {
+    deleteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (confirm(`❌ Удалить "${item.name}"?`)) {
+        try {
+          await deleteItem(category, productId);
+          div.style.transition = 'all 0.3s ease';
+          div.style.opacity = '0';
+          div.style.transform = 'scale(0.8)';
+          setTimeout(() => {
+            div.remove();
+            if (onDelete) onDelete();
+          }, 300);
+        } catch (error) {
+          alert('Ошибка удаления: ' + error.message);
+        }
       }
-    }
-  });
+    });
+  }
   
-  // Edit button
+  // Кнопка редактирования
   const editBtn = div.querySelector('.btn-edit');
-  editBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const editItem = {
-      ...item,
-      id: productId,
-      desc: item.description,
-      photoUrl: photoUrl
-    };
-    if (onEdit) onEdit(editItem);
-  });
+  if (editBtn && window.isRopGlobal) {
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const editItem = {
+        ...item,
+        id: productId,
+        desc: item.description,
+        photoUrl: photoUrl
+      };
+      if (onEdit) onEdit(editItem);
+    });
+  }
   
   return div;
 }
@@ -496,3 +500,4 @@ window.uploadPhoto = uploadPhoto;
 window.STRENGTH_LABELS = STRENGTH_LABELS;
 window.STRENGTH_BADGE_CLASS = STRENGTH_BADGE_CLASS;
 window.escapeHtml = escapeHtml;
+window.isRopGlobal = false;
