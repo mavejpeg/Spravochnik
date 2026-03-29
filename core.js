@@ -72,6 +72,7 @@ async function uploadPhoto(file) {
   try {
     const response = await fetch('/api/upload', {
       method: 'POST',
+      credentials: 'include',
       body: formData
     });
     
@@ -285,40 +286,33 @@ class ProductModal {
           <button class="modal-close">✕</button>
         </div>
         <div class="modal-body">
-          <!-- PHOTO UPLOAD SECTION -->
           <div class="field">
             <label>📸 Фото товара</label>
-            
-            ${hasPhoto ? `<div class="current-photo-badge">📷 Текущее фото</div>` : ''}
-            
             <div class="photo-upload-area" id="photoUploadArea">
               <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" class="photo-upload-input">
               <div class="photo-upload-icon">📷</div>
               <div class="photo-upload-title">Нажмите или перетащите фото</div>
               <div class="photo-upload-sub">Поддерживаются <strong>JPG, PNG, WEBP</strong> до <strong>5MB</strong></div>
             </div>
-            
-            <div class="photo-upload-progress" id="uploadProgress">
+            <div class="photo-upload-progress" id="uploadProgress" style="display:none;">
               <div class="progress-bar-container">
                 <div class="progress-bar" id="progressBar"></div>
               </div>
-              <span class="progress-text" id="progressText">Загрузка...</span>
+              <span class="progress-text">Загрузка...</span>
             </div>
-            
-            <div class="photo-preview-container" id="photoPreviewContainer">
+            <div class="photo-preview-container" id="photoPreviewContainer" style="${this.photoUrl ? 'display:block' : 'display:none'}">
               <img class="photo-preview" id="photoPreview" src="${this.photoUrl || ''}">
               <button class="photo-remove-btn" id="removePhotoBtn" title="Удалить фото">✕</button>
             </div>
           </div>
           
-          <!-- OTHER FIELDS -->
           <div class="field">
             <label>📝 Название *</label>
-            <input type="text" id="fieldName" value="${escapeHtml(this.editItem?.name || '')}" placeholder="Например: Siberia White Dry">
+            <input type="text" id="fieldName" value="${escapeHtml(this.editItem?.name || '')}" placeholder="Введите название">
           </div>
           
           <div class="field">
-            <label>⚡ Крепость</label>
+            <label>⚡ Крепость (1-10)</label>
             <div class="strength-slider-wrap">
               <div class="strength-display">
                 <span class="strength-val" id="strengthValDisplay">${strengthVal}</span>
@@ -330,29 +324,23 @@ class ProductModal {
           
           <div class="field">
             <label>🏭 Производитель / Страна</label>
-            <input type="text" id="fieldOrigin" value="${escapeHtml(this.editItem?.origin || '')}" placeholder="Например: Россия, Швеция, Китай...">
+            <input type="text" id="fieldOrigin" value="${escapeHtml(this.editItem?.origin || '')}" placeholder="Например: Россия, Швеция">
           </div>
           
           <div class="field">
             <label>📋 Описание</label>
-            <textarea id="fieldDesc" placeholder="Особенности вкуса, формат, советы продавцу...">${escapeHtml(this.editItem?.desc || this.editItem?.description || '')}</textarea>
+            <textarea id="fieldDesc" placeholder="Особенности вкуса, формат, советы">${escapeHtml(this.editItem?.desc || this.editItem?.description || '')}</textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-cancel" id="modalCancelBtn">Отмена</button>
-          <button class="btn-save" id="modalSaveBtn">${this.editItem ? '💾 Сохранить' : '➕ Добавить'}</button>
+          <button class="btn-cancel">Отмена</button>
+          <button class="btn-save">${this.editItem ? '💾 Сохранить' : '➕ Добавить'}</button>
         </div>
       </div>
     `;
     
     document.body.appendChild(overlay);
     setTimeout(() => overlay.classList.add('open'), 10);
-    
-    // Show preview if has photo
-    const previewContainer = overlay.querySelector('#photoPreviewContainer');
-    if (this.photoUrl && previewContainer) {
-      previewContainer.classList.add('active');
-    }
     
     // Strength slider
     const slider = overlay.querySelector('#fieldStrength');
@@ -362,49 +350,62 @@ class ProductModal {
     slider.addEventListener('input', () => {
       valDisp.textContent = slider.value;
       labelDisp.textContent = STRENGTH_LABELS[slider.value] || '';
-      const val = parseInt(slider.value);
-      valDisp.style.color = val <= 3 ? 'var(--accent3)' : val <= 6 ? 'var(--accent4)' : 'var(--accent2)';
     });
     
-    // Photo upload with drag & drop
-    const uploadArea = overlay.querySelector('#photoUploadArea');
+    // Photo upload
     const photoInput = overlay.querySelector('#photoInput');
     const uploadProgress = overlay.querySelector('#uploadProgress');
     const progressBar = overlay.querySelector('#progressBar');
-    const progressText = overlay.querySelector('#progressText');
+    const progressText = overlay.querySelector('.progress-text');
     const photoPreview = overlay.querySelector('#photoPreview');
+    const previewContainer = overlay.querySelector('#photoPreviewContainer');
     const removePhotoBtn = overlay.querySelector('#removePhotoBtn');
     
-    // Drag & drop events
-    uploadArea.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      uploadArea.classList.add('drag-over');
-    });
-    
-    uploadArea.addEventListener('dragleave', () => {
-      uploadArea.classList.remove('drag-over');
-    });
-    
-    uploadArea.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      uploadArea.classList.remove('drag-over');
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('image/')) {
-        await this.uploadFile(file, uploadProgress, progressBar, progressText, photoPreview, previewContainer);
-      } else {
-        alert('❌ Пожалуйста, перетащите изображение (JPG, PNG, WEBP)');
-      }
-    });
-    
     // Click to upload
+    const uploadArea = overlay.querySelector('#photoUploadArea');
     uploadArea.addEventListener('click', () => {
       photoInput.click();
     });
     
     photoInput.addEventListener('change', async (e) => {
       const file = e.target.files[0];
-      if (file) {
-        await this.uploadFile(file, uploadProgress, progressBar, progressText, photoPreview, previewContainer);
+      if (!file) return;
+      
+      if (file.size > 5 * 1024 * 1024) {
+        alert('❌ Файл слишком большой! Максимум 5MB');
+        return;
+      }
+      
+      uploadProgress.style.display = 'block';
+      this.isUploading = true;
+      
+      // Simulate progress
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress = Math.min(progress + 10, 90);
+        if (progressBar) progressBar.style.width = progress + '%';
+        if (progressText) progressText.textContent = `Загрузка ${progress}%...`;
+      }, 100);
+      
+      try {
+        const photoUrl = await uploadPhoto(file);
+        this.photoUrl = photoUrl;
+        photoPreview.src = photoUrl;
+        previewContainer.style.display = 'block';
+        
+        clearInterval(interval);
+        if (progressBar) progressBar.style.width = '100%';
+        if (progressText) progressText.textContent = '✅ Готово!';
+        
+        setTimeout(() => {
+          uploadProgress.style.display = 'none';
+        }, 1000);
+      } catch (error) {
+        clearInterval(interval);
+        alert('❌ Ошибка загрузки: ' + error.message);
+        uploadProgress.style.display = 'none';
+      } finally {
+        this.isUploading = false;
       }
     });
     
@@ -413,8 +414,7 @@ class ProductModal {
       removePhotoBtn.addEventListener('click', () => {
         this.photoUrl = null;
         photoPreview.src = '';
-        previewContainer.classList.remove('active');
-        uploadArea.style.display = 'flex';
+        previewContainer.style.display = 'none';
       });
     }
     
@@ -425,13 +425,13 @@ class ProductModal {
     };
     
     overlay.querySelector('.modal-close').addEventListener('click', closeModal);
-    overlay.querySelector('#modalCancelBtn').addEventListener('click', closeModal);
+    overlay.querySelector('.btn-cancel').addEventListener('click', closeModal);
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) closeModal();
     });
     
     // Save
-    const saveBtn = overlay.querySelector('#modalSaveBtn');
+    const saveBtn = overlay.querySelector('.btn-save');
     saveBtn.addEventListener('click', async () => {
       if (this.isUploading) {
         alert('⏳ Подождите, фото загружается...');
@@ -444,8 +444,6 @@ class ProductModal {
       if (!name) {
         alert('❌ Введите название товара');
         nameInput.focus();
-        nameInput.style.borderColor = 'var(--accent2)';
-        setTimeout(() => nameInput.style.borderColor = '', 2000);
         return;
       }
       
@@ -466,57 +464,21 @@ class ProductModal {
       }
     });
   }
-  
-  async uploadFile(file, progressContainer, progressBar, progressText, preview, previewContainer) {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('❌ Файл слишком большой! Максимум 5MB');
-      return;
-    }
-    
-    if (!file.type.startsWith('image/')) {
-      alert('❌ Пожалуйста, выберите изображение');
-      return;
-    }
-    
-    this.isUploading = true;
-    progressContainer.classList.add('active');
-    
-    // Simulate progress
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress = Math.min(progress + 10, 90);
-      progressBar.style.width = progress + '%';
-      progressText.textContent = `Загрузка ${progress}%...`;
-    }, 100);
-    
-    try {
-      const photoUrl = await uploadPhoto(file);
-      this.photoUrl = photoUrl;
-      
-      clearInterval(interval);
-      progressBar.style.width = '100%';
-      progressText.textContent = '✅ Готово!';
-      
-      setTimeout(() => {
-        progressContainer.classList.remove('active');
-        progressBar.style.width = '0%';
-      }, 1000);
-      
-      preview.src = photoUrl;
-      previewContainer.classList.add('active');
-      
-    } catch (error) {
-      clearInterval(interval);
-      progressText.textContent = '❌ Ошибка загрузки';
-      setTimeout(() => {
-        progressContainer.classList.remove('active');
-      }, 2000);
-      alert('❌ Ошибка загрузки фото: ' + error.message);
-    } finally {
-      this.isUploading = false;
-    }
-  }
 }
+
+// Функция для выхода
+async function logout() {
+  await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+  window.location.href = '/login.html';
+}
+
+// Добавьте обработчик для кнопки выхода после загрузки DOM
+document.addEventListener('DOMContentLoaded', () => {
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', logout);
+  }
+});
 
 // ========== MAKE GLOBAL ==========
 
