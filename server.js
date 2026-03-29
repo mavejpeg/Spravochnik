@@ -1,4 +1,4 @@
-// server.js - упрощенная версия без Cloudinary
+// server.js
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -15,11 +15,11 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// Multer setup for memory storage
+// Multer setup
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|webp/;
     const mimetype = allowedTypes.test(file.mimetype);
@@ -35,12 +35,18 @@ const upload = multer({
 let pool = null;
 
 function initPool() {
-  if (!process.env.DATABASE_URL) {
-    console.error('❌ DATABASE_URL not set');
+  const databaseUrl = process.env.DATABASE_URL;
+  
+  if (!databaseUrl) {
+    console.error('❌ DATABASE_URL is not set!');
+    console.log('Please add PostgreSQL database to your Railway project');
     return null;
   }
+  
+  console.log('📡 Connecting to database...');
+  
   return new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: databaseUrl,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     max: 10,
     idleTimeoutMillis: 30000,
@@ -50,14 +56,14 @@ function initPool() {
 
 // Initialize database
 async function initDatabase() {
-  if (!pool) {
-    pool = initPool();
-    if (!pool) return false;
-  }
+  pool = initPool();
+  if (!pool) return false;
   
   try {
     const client = await pool.connect();
+    console.log('✅ Database connected');
     
+    // Create table
     await client.query(`
       CREATE TABLE IF NOT EXISTS products (
         id SERIAL PRIMARY KEY,
@@ -73,13 +79,14 @@ async function initDatabase() {
       )
     `);
     
+    // Create index
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
       CREATE INDEX IF NOT EXISTS idx_products_product_id ON products(product_id);
     `);
     
     client.release();
-    console.log('✅ Database ready');
+    console.log('✅ Table ready');
     return true;
   } catch (error) {
     console.error('❌ Database init error:', error.message);
@@ -87,34 +94,41 @@ async function initDatabase() {
   }
 }
 
-// Upload endpoint - base64 only (no Cloudinary)
+// Upload endpoint
 app.post('/api/upload', upload.single('photo'), async (req, res) => {
+  console.log('📸 Upload request received');
+  
   try {
     if (!req.file) {
+      console.log('No file uploaded');
       return res.status(400).json({ error: 'No file uploaded' });
     }
     
-    // Convert to base64
     const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-    console.log('✅ Photo converted to base64, size:', Math.round(base64.length / 1024), 'KB');
+    console.log(`✅ Photo converted, size: ${Math.round(base64.length / 1024)}KB`);
     
     res.json({ photoUrl: base64 });
-    
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ error: 'Upload failed: ' + error.message });
   }
 });
 
-// GET all products by category
+// GET products
 app.get('/api/products/:category', async (req, res) => {
-  if (!pool) return res.status(503).json([]);
+  console.log(`📋 GET /api/products/${req.params.category}`);
+  
+  if (!pool) {
+    console.log('No database connection');
+    return res.status(503).json([]);
+  }
   
   try {
     const result = await pool.query(
       'SELECT * FROM products WHERE category = $1 ORDER BY created_at DESC',
       [req.params.category]
     );
+    console.log(`✅ Found ${result.rows.length} products`);
     res.json(result.rows);
   } catch (error) {
     console.error('GET error:', error);
@@ -122,34 +136,21 @@ app.get('/api/products/:category', async (req, res) => {
   }
 });
 
-// GET single product
-app.get('/api/products/:category/:id', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'DB not connected' });
-  
-  try {
-    const result = await pool.query(
-      'SELECT * FROM products WHERE category = $1 AND product_id = $2',
-      [req.params.category, req.params.id]
-    );
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Not found' });
-    } else {
-      res.json(result.rows[0]);
-    }
-  } catch (error) {
-    console.error('GET one error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// POST new product
+// POST product - FIXED
 app.post('/api/products/:category', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'DB not connected' });
+  console.log(`📝 POST /api/products/${req.params.category}`);
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+  
+  if (!pool) {
+    console.log('No database connection');
+    return res.status(503).json({ error: 'Database not connected' });
+  }
   
   const { category } = req.params;
   const { id, name, strength, origin, desc, photoUrl } = req.body;
   
   if (!name || !name.trim()) {
+    console.log('Missing name');
     return res.status(400).json({ error: 'Name is required' });
   }
   
@@ -167,16 +168,22 @@ app.post('/api/products/:category', async (req, res) => {
        RETURNING *`,
       [category, id, name.trim(), strength || 5, origin || null, desc || null, photoUrl || null]
     );
+    
+    console.log(`✅ Product saved: ${result.rows[0].name}`);
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('POST error:', error);
-    res.status(500).json({ error: 'Failed to save' });
+    console.error('❌ POST error:', error);
+    res.status(500).json({ error: 'Failed to save: ' + error.message });
   }
 });
 
-// PUT update product
+// PUT product - FIXED
 app.put('/api/products/:category/:id', async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'DB not connected' });
+  console.log(`✏️ PUT /api/products/${req.params.category}/${req.params.id}`);
+  
+  if (!pool) {
+    return res.status(503).json({ error: 'Database not connected' });
+  }
   
   const { category, id } = req.params;
   const { name, strength, origin, desc, photoUrl } = req.body;
@@ -187,35 +194,31 @@ app.put('/api/products/:category/:id', async (req, res) => {
        SET name = $1, strength = $2, origin = $3, description = $4, photo_url = $5, updated_at = CURRENT_TIMESTAMP
        WHERE category = $6 AND product_id = $7
        RETURNING *`,
-      [name, strength, origin || null, desc || null, photoUrl || null, category, id]
+      [name, strength || 5, origin || null, desc || null, photoUrl || null, category, id]
     );
+    
     if (result.rows.length === 0) {
+      console.log('Product not found');
       res.status(404).json({ error: 'Product not found' });
     } else {
+      console.log(`✅ Product updated: ${result.rows[0].name}`);
       res.json(result.rows[0]);
     }
   } catch (error) {
-    console.error('PUT error:', error);
-    res.status(500).json({ error: 'Update failed' });
+    console.error('❌ PUT error:', error);
+    res.status(500).json({ error: 'Update failed: ' + error.message });
   }
 });
 
-// DELETE product - ИСПРАВЛЕНО
+// DELETE product - FIXED
 app.delete('/api/products/:category/:id', async (req, res) => {
-  console.log('DELETE request received');
-  console.log('Params:', req.params);
+  console.log(`🗑️ DELETE /api/products/${req.params.category}/${req.params.id}`);
   
   if (!pool) {
-    console.error('No database connection');
     return res.status(503).json({ error: 'Database not connected' });
   }
   
   const { category, id } = req.params;
-  
-  if (!category || !id) {
-    console.error('Missing category or id');
-    return res.status(400).json({ error: 'Missing category or id' });
-  }
   
   try {
     const result = await pool.query(
@@ -223,15 +226,15 @@ app.delete('/api/products/:category/:id', async (req, res) => {
       [category, id]
     );
     
-    console.log('Delete result:', result.rowCount);
-    
-    if (result.rowCount === 0) {
+    if (result.rows.length === 0) {
+      console.log('Product not found');
       res.status(404).json({ error: 'Product not found' });
     } else {
-      res.json({ message: 'Deleted successfully', product: result.rows[0] });
+      console.log(`✅ Deleted: ${result.rows[0].name}`);
+      res.json({ message: 'Deleted successfully' });
     }
   } catch (error) {
-    console.error('DELETE error:', error);
+    console.error('❌ DELETE error:', error);
     res.status(500).json({ error: 'Delete failed: ' + error.message });
   }
 });
@@ -241,11 +244,12 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    database: pool ? 'connected' : 'disconnected'
+    database: pool ? 'connected' : 'disconnected',
+    databaseUrl: process.env.DATABASE_URL ? 'set' : 'missing'
   });
 });
 
-// Serve HTML files
+// Serve HTML
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -269,13 +273,16 @@ app.get('/:page', (req, res) => {
 
 // Start server
 async function startServer() {
+  console.log('\n🚀 Starting server...\n');
+  
   const dbReady = await initDatabase();
   
   app.listen(PORT, () => {
-    console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📦 Database: ${dbReady ? '✅ connected' : '❌ not connected'}`);
-    console.log(`📸 Photos: base64 mode (no Cloudinary needed)`);
-    console.log(`\n📱 Open: http://localhost:${PORT}\n`);
+    console.log(`\n✅ Server running on port ${PORT}`);
+    console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
+    console.log(`🔗 URL: http://localhost:${PORT}`);
+    console.log(`🌐 Production: ${process.env.NODE_ENV === 'production' ? 'yes' : 'no'}`);
+    console.log(`📸 Mode: base64 (no Cloudinary)\n`);
   });
 }
 
