@@ -1,4 +1,4 @@
-// server.js - рабочий с PostgreSQL сессиями
+// server.js - с правильной защитой страниц
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -20,7 +20,7 @@ const pool = new Pool({
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-// ========== Сначала создаем таблицы ==========
+// ========== Создаем таблицы ==========
 async function initTables() {
     const client = await pool.connect();
     try {
@@ -75,7 +75,7 @@ async function initTables() {
         
         await client.query(`
             INSERT INTO users (username, password, full_name, role) 
-            VALUES ('root', 'root123', 'Главный администратор', 'rop')
+            VALUES ('root', 'root123', 'Главный администратор', 'root')
             ON CONFLICT (username) DO NOTHING
         `);
 
@@ -149,10 +149,21 @@ function requireRop(req, res, next) {
     }
 }
 
+function requireRoot(req, res, next) {
+    if (req.session.user && req.session.user.role === 'root') {
+        next();
+    } else {
+        res.status(403).json({ error: 'Root only' });
+    }
+}
+
+// Middleware для защиты HTML страниц - ВАЖНО!
 function protectPage(req, res, next) {
+    console.log('Protect page check - user:', req.session.user?.username);
     if (req.session.user) {
         next();
     } else {
+        console.log('Redirecting to login.html');
         res.sendFile(path.join(__dirname, 'login.html'));
     }
 }
@@ -169,7 +180,7 @@ app.get('/api/check-auth', (req, res) => {
 });
 
 app.post('/api/simple-login', async (req, res) => {
-    console.log('Simple login attempt with password:', req.body.password);
+    console.log('Simple login attempt');
     
     const { password } = req.body;
     
@@ -237,42 +248,138 @@ app.post('/api/logout', (req, res) => {
     });
 });
 
-// User management (ROP only)
-app.get('/api/users', requireRop, async (req, res) => {
-    const result = await pool.query('SELECT id, username, full_name, role FROM users');
-    res.json(result.rows);
+// ========== USER MANAGEMENT ==========
+
+// Get all users - для ROOT все, для ROP только user'ов
+app.get('/api/users', async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    try {
+        let result;
+        if (req.session.user.role === 'root') {
+            // Root видит всех пользователей
+            result = await pool.query('SELECT id, username, full_name, role FROM users');
+        } else if (req.session.user.role === 'rop') {
+            // ROP видит только обычных пользователей (не rop и не root)
+            result = await pool.query('SELECT id, username, full_name, role FROM users WHERE role = $1', ['user']);
+        } else {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get users' });
+    }
 });
 
-app.post('/api/users/:id/change-password', requireRop, async (req, res) => {
+// Change user password
+app.post('/api/users/:id/change-password', async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
+    
+    if (!req.session.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
     
     if (!/^\d{4}$/.test(newPassword)) {
         return res.status(400).json({ error: 'Пароль должен быть 4 цифры' });
     }
     
-    await pool.query('UPDATE users SET password = $1 WHERE id = $2', [newPassword, id]);
-    res.json({ success: true });
+    try {
+        // Получаем информацию о пользователе, которому меняем пароль
+        const targetUser = await pool.query('SELECT id, username, role FROM users WHERE id = $1', [id]);
+        
+        if (targetUser.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+        
+        const target = targetUser.rows[0];
+        const currentUser = req.session.user;
+        
+        // Проверка прав
+        let canChange = false;
+        
+        if (currentUser.role === 'root') {
+            // Root может менять пароль любому пользователю
+            canChange = true;
+        } else if (currentUser.role === 'rop') {
+            // ROP может менять пароль только обычным пользователям (role = 'user')
+            if (target.role === 'user') {
+                canChange = true;
+            }
+        }
+        
+        if (!canChange) {
+            return res.status(403).json({ error: 'Нет прав для смены пароля этому пользователю' });
+        }
+        
+        // Меняем пароль
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [newPassword, id]);
+        
+        console.log(`✅ Password changed for user: ${target.username} by ${currentUser.username}`);
+        res.json({ success: true, message: 'Пароль успешно изменен' });
+    } catch (error) {
+        console.error('Change password error:', error);
+        res.status(500).json({ error: 'Ошибка смены пароля' });
+    }
 });
 
-app.post('/api/users', requireRop, async (req, res) => {
+// Create new user (только для ROOT и ROP)
+app.post('/api/users', async (req, res) => {
     const { username, password, full_name, role } = req.body;
+    
+    if (!req.session.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    if (req.session.user.role !== 'root' && req.session.user.role !== 'rop') {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    if (!username || !password || !full_name) {
+        return res.status(400).json({ error: 'Все поля обязательны' });
+    }
     
     if (!/^\d{4}$/.test(password)) {
         return res.status(400).json({ error: 'Пароль должен быть 4 цифры' });
     }
     
-    await pool.query(
-        'INSERT INTO users (username, password, full_name, role) VALUES ($1, $2, $3, $4)',
-        [username.toLowerCase(), password, full_name, role || 'user']
-    );
-    res.json({ success: true });
+    // ROP может создавать только обычных пользователей
+    let finalRole = role || 'user';
+    if (req.session.user.role === 'rop' && finalRole !== 'user') {
+        finalRole = 'user';
+    }
+    
+    try {
+        await pool.query(
+            'INSERT INTO users (username, password, full_name, role) VALUES ($1, $2, $3, $4)',
+            [username.toLowerCase(), password, full_name, finalRole]
+        );
+        res.json({ success: true, message: 'Пользователь создан' });
+    } catch (error) {
+        res.status(500).json({ error: 'Пользователь уже существует' });
+    }
 });
 
-app.delete('/api/users/:id', requireRop, async (req, res) => {
+// Delete user (только для ROOT)
+app.delete('/api/users/:id', async (req, res) => {
     const { id } = req.params;
-    await pool.query('DELETE FROM users WHERE id = $1', [id]);
-    res.json({ success: true });
+    
+    if (!req.session.user || req.session.user.role !== 'root') {
+        return res.status(403).json({ error: 'Только Root может удалять пользователей' });
+    }
+    
+    if (parseInt(id) === req.session.user.id) {
+        return res.status(400).json({ error: 'Нельзя удалить самого себя' });
+    }
+    
+    try {
+        await pool.query('DELETE FROM users WHERE id = $1', [id]);
+        res.json({ success: true, message: 'Пользователь удален' });
+    } catch (error) {
+        res.status(500).json({ error: 'Ошибка удаления' });
+    }
 });
 
 // ========== PRODUCT ROUTES ==========
@@ -342,8 +449,9 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', session: !!req.session.user });
 });
 
-// ========== HTML ROUTES ==========
+// ========== HTML ROUTES - ВАЖНО: защита страниц ==========
 
+// Страница входа - доступна без авторизации
 app.get('/login.html', (req, res) => {
     if (req.session.user) {
         res.redirect('/');
@@ -352,17 +460,46 @@ app.get('/login.html', (req, res) => {
     }
 });
 
+// Главная страница - требует авторизации
 app.get('/', protectPage, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/:page', protectPage, (req, res) => {
-    const page = req.params.page;
-    if (page.endsWith('.html')) {
-        res.sendFile(path.join(__dirname, page));
-    } else {
-        res.sendFile(path.join(__dirname, `${page}.html`));
-    }
+app.get('/index.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Все остальные HTML страницы - требуют авторизации
+app.get('/tobacco.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'tobacco.html'));
+});
+
+app.get('/liquids.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'liquids.html'));
+});
+
+app.get('/snus.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'snus.html'));
+});
+
+app.get('/hookah.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'hookah.html'));
+});
+
+app.get('/sales.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'sales.html'));
+});
+
+app.get('/checks.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'checks.html'));
+});
+
+app.get('/cash.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'cash.html'));
+});
+
+app.get('/disposables.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'disposables.html'));
 });
 
 // ========== START SERVER ==========
@@ -371,10 +508,10 @@ async function start() {
     
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on http://localhost:${PORT}`);
-        console.log(`📋 Пароли из БД:`);
-        console.log(`   👤 user / 1111 (обычный пользователь)`);
-        console.log(`   👑 rop / 1234 (РОП)`);
-        console.log(`   👑 root / root123 (РОП)`);
+        console.log(`\n📋 Роли пользователей:`);
+        console.log(`   👤 user / 1111 - обычный пользователь (только просмотр)`);
+        console.log(`   👑 rop / 1234 - РОП (может управлять обычными пользователями)`);
+        console.log(`   👑 root / root123 - Root (полный доступ)`);
         console.log(`\n🌐 Open: http://localhost:${PORT}\n`);
     });
 }
