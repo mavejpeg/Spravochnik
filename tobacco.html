@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Табак — Справочник</title>
-<link rel="stylesheet" href="style.css?v=4">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Жидкости — Справочник</title>
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -22,8 +24,9 @@
 
 <nav class="tab-nav">
   <button class="tab-btn active" data-tab="tab-catalog">📦 Каталог</button>
-  <button class="tab-btn" data-tab="tab-syrye">🌿 Типы сырья</button>
-  <button class="tab-btn" data-tab="tab-tips">💡 Советы</button>
+  <button class="tab-btn" data-tab="tab-info">ℹ️ Справочник</button>
+  <button class="tab-btn" data-tab="tab-alts">🔄 Альтернативы</button>
+  <button class="tab-btn" data-tab="tab-coils">⚙️ Коилы</button>
 </nav>
 
 <main>
@@ -31,80 +34,79 @@
   <!-- CATALOG -->
   <div class="section active" id="tab-catalog">
     <div class="sec-header">
-      <span class="sec-title">🌿 Табак для кальяна</span>
-      <button class="btn-add" id="btnAddTobacco" style="display: none;">
+      <span class="sec-title">💧 Жидкости — каталог</span>
+      <button class="btn-add" id="btnAddTobacco">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
-        Добавить табак
+        Добавить жидкость
       </button>
     </div>
     <div class="alert-bar info">
-      <span>📌</span>
-      <span>Крепость указывается по шкале 1–10. Разные чаши по-разному раскрывают один и тот же табак.</span>
+      <span>ℹ️</span>
+      <span><strong>Солевые жидкости</strong> накуривают быстрее. <strong>Щелочные</strong> — накопительный эффект.</span>
     </div>
     <div class="cards-grid" id="tobaccoGrid"></div>
   </div>
 
-  <!-- СЫРЬЁ -->
-  <div class="section" id="tab-syrye">
+  <!-- INFO -->
+  <div class="section" id="tab-info">
     <div class="sec-header">
-      <span class="sec-title">Типы табачного сырья</span>
-      <button class="btn-edit-content" data-page="tobacco" data-section="syrye" style="display: none;">✏️ Редактировать</button>
+      <span class="sec-title">Общая информация</span>
     </div>
-    <div id="syrye-content">
+    <div id="info-content">
       <div class="two-col">
         <div class="info-card">
-          <h3>🌱 Virginia</h3>
-          <ul><li>Лёгкое, сладковатое сырьё</li><li>Хорошо принимает мягкие аромки</li><li>Невысокая крепость</li><li>Примеры: Элемент Воздух, Star Line, Moassel Medium</li></ul>
+          <h3>⚗️ Типы жидкостей</h3>
+          <ul><li><strong>Солевые (Salt Nic)</strong> — быстро накуривают, мягче при затяжке, для подов</li><li><strong>Щелочные (Freebase)</strong> — накопительный эффект, для больших устройств</li><li><strong>Безникотиновые (0 мг)</strong> — только вкус, без никотина</li></ul>
         </div>
         <div class="info-card">
-          <h3>🍂 Burley</h3>
-          <ul><li>Тёмное, насыщенное сырьё</li><li>Агрессивные аромки (ментол, специи, бергамот)</li><li>Средняя и высокая крепость</li><li>Примеры: Blackburn, Sibera, Darkside, HiPrime</li></ul>
+          <h3>💡 Уровни никотина</h3>
+          <ul><li>0 мг — нулёвки</li><li>20 мг — стандарт, большинство</li><li>20/50 — два варианта крепости</li><li>50 мг — крепкие</li><li>70+ мг — экстремальные</li></ul>
         </div>
-        <div class="info-card">
-          <h3>🍃 Сигарный лист</h3>
-          <ul><li>Плотный, насыщенный дым</li><li>Специфический табачный аромат</li><li>Высокая крепость</li><li>Примеры: Dogma, Boncha, Hooligan Цветные</li></ul>
+      </div>
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">Black Jack vs Camel — в чём разница?</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="two-col"><div class="info-card"><h3>🐫 Camel</h3><ul><li>1-й план — вкус</li><li>2-й план — табачная нота</li></ul></div><div class="info-card"><h3>🃏 Black Jack</h3><ul><li>1-й план — табак</li><li>2-й план — вкус</li></ul></div></div>
         </div>
-        <div class="info-card">
-          <h3>🍵 Чайный лист (бестабачка)</h3>
-          <ul><li>Без табака — никотин из другого источника</li><li>Меньше вреда для лёгких</li><li>Подходит для спортсменов и аллергиков на табак</li><li>Примеры: Чабако, Хук, Brusko, Летим</li></ul>
+      </div>
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">Почему жидкость темнеет?</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <p>Жидкость темнеет при карамелизации — когда долго стоит или находится в тепле. Цвет не означает плохое качество.</p>
+          <div class="hl ok">Скрипт: «Цвет ароматизатора ни на что не влияет — он может быть светлым и тёмным. Это зависит от производителя»</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- СОВЕТЫ -->
-  <div class="section" id="tab-tips">
+  <!-- ALTERNATIVES -->
+  <div class="section" id="tab-alts">
     <div class="sec-header">
-      <span class="sec-title">Советы продавцу</span>
-      <button class="btn-edit-content" data-page="tobacco" data-section="tips" style="display: none;">✏️ Редактировать</button>
+      <span class="sec-title">Альтернативы</span>
     </div>
-    <div id="tips-content">
+    <div id="alternatives-content">
+      <div class="info-card"><h3>🔄 Чем заменить</h3><ul><li><strong>Брызги</strong> → Провинция, Наркоз, Дуал, Трава, Хром</li><li><strong>Рик и Морти</strong> → Сайонара, Злая Монашка, Ронин</li><li><strong>Vape Cloud</strong> → Хром</li><li><strong>Скала, Монстр, Angry Vape</strong> → Бруско</li><li><strong>Скала</strong> → Чакра</li><li><strong>Тойз</strong> → Антагонист</li></ul></div>
+      <div class="info-card"><h3>🎨 Цвета Хром</h3><ul><li>Розовая — сладкая</li><li>Оранжевая — генетик</li><li>Голубая — холодная</li><li>Белая — классика</li><li>Зелёная — кислая</li></ul></div>
+    </div>
+  </div>
+
+  <!-- COILS -->
+  <div class="section" id="tab-coils">
+    <div class="sec-header">
+      <span class="sec-title">Совместимость испарителей</span>
+    </div>
+    <div id="coils-content">
       <div class="accordion open">
-        <div class="acc-header"><span class="acc-title">Что спросить у покупателя</span><span class="acc-arrow">▼</span></div>
-        <div class="acc-body">
-          <div class="hl info">Какой уровень крепости предпочитает?</div>
-          <div class="hl info">Что курит сейчас — нравится или нет?</div>
-          <div class="hl info">Какие вкусы любит — фруктовые, ментоловые, табачные?</div>
-          <div class="hl info">Есть опыт с кальяном или только начинает?</div>
-        </div>
-      </div>
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">Жаростойкость</span><span class="acc-arrow">▼</span></div>
-        <div class="acc-body">
-          <p>Жаростойкий табак — выдерживает перегрев и восстанавливается. Важно для новичков и тех, кто забывает следить за углём.</p>
-          <div class="hl ok">Жаростойкие: Догма, Сибера, Северный, Блэкберн, Рейв</div>
-          <div class="hl warn">Нежаростойкие: МастХефф (Burley из 7 стран), Хулиган — требуют внимания</div>
-        </div>
-      </div>
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">Чаши и их влияние на вкус</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div>
         <div class="acc-body">
           <table class="ref-table">
-            <tr><th>Чаша</th><th>Эффект</th></tr>
-            <tr><td><strong>Турка / Универсальная</strong></td><td>Баланс вкуса и крепости (5 отверстий)</td></tr>
-            <tr><td><strong>Убивашка</strong></td><td>Усиливает крепость, плотный дым</td></tr>
-            <tr><td><strong>Фанол / Фаннель</strong></td><td>Максимально раскрывает вкус (1 отверстие)</td></tr>
-           </table>
+            <tr><th>Устройство / Платформа</th><th>Тип коила</th><th>Совместимые модели</th></tr>
+             <tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr>
+             <tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco (все модели)</td></tr>
+             <tr><td>X-ross 4</td><td>Сменные картриджи</td><td>0.4, 0.6, 0.8, 1.2 Ом</td></tr>
+             <tr><td>Vmate</td><td>Сменные картриджи</td><td>0.4, 0.7, 1.2 Ом</td></tr>
+          </table>
+          <p style="margin-top:14px; font-size:12px; color:var(--muted)">Серии: Pnp, TW, WM, TPP, PNP-X, Dragy, Argus</p>
         </div>
       </div>
     </div>
@@ -114,75 +116,87 @@
 
 <script src="core.js?v=5"></script>
 <script>
-  const CATEGORY = 'tobacco'; // измените для каждой страницы
+  const CATEGORY = 'tobacco';
   let currentUser = null;
   let isRop = false;
 
-  initTabs();
-  initAccordions();
-  initSearch();
-  
+  // Инициализация табов
+  function initTabs() {
+    const btns = document.querySelectorAll('.tab-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const target = this.dataset.tab;
+        btns.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        const sec = document.getElementById(target);
+        if (sec) sec.classList.add('active');
+      });
+    });
+  }
+
+  // Инициализация аккордеонов
+  function initAccordions() {
+    document.querySelectorAll('.acc-header').forEach(header => {
+      header.addEventListener('click', function() {
+        this.closest('.accordion').classList.toggle('open');
+      });
+    });
+  }
+
+  // Инициализация поиска
+  function initSearch() {
+    const input = document.getElementById('searchInput');
+    if (!input) return;
+    input.addEventListener('input', function() {
+      const val = this.value.toLowerCase();
+      document.querySelectorAll('[data-searchable]').forEach(el => {
+        if (el.textContent.toLowerCase().includes(val)) {
+          el.classList.remove('search-hidden');
+        } else {
+          el.classList.add('search-hidden');
+        }
+      });
+    });
+  }
+
   async function checkPermissions() {
     try {
-      console.log('Checking permissions...');
       const response = await fetch('/api/check-auth', { credentials: 'include' });
       const data = await response.json();
-      
-      console.log('Auth response:', data);
       
       if (data.authenticated) {
         currentUser = data.user;
         isRop = (data.user.role === 'rop' || data.user.role === 'root');
         window.isRopGlobal = isRop;
         
-        console.log('User role:', data.user.role, 'isRop:', isRop);
+        document.getElementById('userName').textContent = data.user.full_name;
         
-        // Показываем имя пользователя
-        const userNameSpan = document.getElementById('userName');
-        if (userNameSpan) userNameSpan.textContent = data.user.full_name;
-        
-        // Показываем кнопку РОП если нужно
         const ropBtn = document.getElementById('ropBtn');
-        if (ropBtn) {
-          ropBtn.style.display = isRop ? 'block' : 'none';
-        }
+        if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
         
-        // Показываем/скрываем кнопку добавления
-        const addButton = document.getElementById('btnAddLiquid');
+        const addButton = document.getElementById('btnAddTobacco');
         if (addButton) {
           addButton.style.display = isRop ? 'flex' : 'none';
-          console.log('Add button display:', addButton.style.display);
-        }
-        
-        // Обновляем счетчики на главной если нужно
-        if (typeof updateAllCounters === 'function') {
-          updateAllCounters();
         }
       } else {
-        console.log('Not authenticated, redirecting to login');
         window.location.href = '/login.html';
       }
     } catch (error) {
-      console.error('Permission check error:', error);
+      console.error('Permission error:', error);
       window.location.href = '/login.html';
     }
   }
   
   async function renderGrid() {
-    console.log('Rendering grid for category:', CATEGORY);
-    const grid = document.getElementById(`${CATEGORY}Grid`);
-    if (!grid) {
-      console.error('Grid element not found for:', CATEGORY);
-      return;
-    }
+    const grid = document.getElementById('tobaccoGrid');
+    if (!grid) return;
     
     const items = await getCategory(CATEGORY);
-    console.log('Items loaded:', items.length);
-    
     grid.innerHTML = '';
 
     if (!items || items.length === 0) {
-      renderEmpty(grid, getCategoryIcon(), 'Каталог пуст', isRop ? 'Нажмите «Добавить» чтобы внести первую позицию' : 'Нет доступных позиций');
+      renderEmpty(grid, '💧', 'Каталог пуст', isRop ? 'Нажмите «Добавить жидкость» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
 
@@ -202,55 +216,29 @@
           });
         }
       );
-      
       grid.appendChild(card);
     }
   }
-  
-  function getCategoryIcon() {
-    const icons = {
-      'tobacco': '🌿',
-      'liquids': '💧',
-      'snus': '🫙',
-      'disposables': '⚡'
-    };
-    return icons[CATEGORY] || '📦';
-  }
-  
+
   // Кнопка добавления
-  const addBtn = document.getElementById(`btnAdd${CATEGORY.charAt(0).toUpperCase() + CATEGORY.slice(1)}`);
+  const addBtn = document.getElementById('btnAddTobacco');
   if (addBtn) {
-    console.log('Add button found, attaching listener');
     addBtn.addEventListener('click', () => {
-      console.log('Add button clicked, isRop:', isRop);
       if (!isRop) {
         alert('У вас нет прав для добавления');
         return;
       }
       new ProductModal({
         category: CATEGORY,
-        title: getModalTitle(),
+        title: 'Добавить жидкость',
         onSave: async (item) => {
-          console.log('Saving item:', item);
           await addItem(CATEGORY, item);
           renderGrid();
         }
       });
     });
-  } else {
-    console.log('Add button not found for:', CATEGORY);
   }
-  
-  function getModalTitle() {
-    const titles = {
-      'tobacco': 'Добавить табак',
-      'liquids': 'Добавить жидкость',
-      'snus': 'Добавить жевательный табак',
-      'disposables': 'Добавить одноразку'
-    };
-    return titles[CATEGORY] || 'Добавить товар';
-  }
-  
+
   // Выход
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
@@ -259,621 +247,14 @@
       window.location.href = '/login.html';
     });
   }
-  
-  // Кнопка управления РОП
+
+  // Кнопка РОП
   const ropBtn = document.getElementById('ropBtn');
   if (ropBtn) {
     ropBtn.addEventListener('click', () => {
       openRopPanel();
     });
   }
-  
-  // Функция открытия панели РОП (как в других файлах)
-  async function openRopPanel() {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal" style="max-width: 600px;">
-        <div class="modal-header">
-          <span class="modal-title">👑 Панель управления</span>
-          <button class="modal-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="field">
-            <label>➕ Добавить пользователя</label>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
-              <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
-              <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
-              <button id="addUserBtn" class="btn-add">Добавить</button>
-            </div>
-          </div>
-          <div class="field">
-            <label>📋 Список пользователей</label>
-            <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel">Закрыть</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    const closeModal = () => {
-      modal.classList.remove('open');
-      setTimeout(() => modal.remove(), 300);
-    };
-    
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
-    await loadUsers(modal);
-    
-    document.getElementById('addUserBtn').addEventListener('click', async () => {
-      const username = document.getElementById('newUsername').value.trim();
-      const password = document.getElementById('newPassword').value;
-      const full_name = document.getElementById('newFullName').value.trim();
-      
-      if (!username || !password || !full_name) {
-        alert('Заполните все поля');
-        return;
-      }
-      if (!/^\d{4}$/.test(password)) {
-        alert('Пароль должен состоять из 4 цифр');
-        return;
-      }
-      
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username, password, full_name, role: 'user' })
-      });
-      
-      if (response.ok) {
-        alert('Пользователь добавлен');
-        document.getElementById('newUsername').value = '';
-        document.getElementById('newPassword').value = '';
-        document.getElementById('newFullName').value = '';
-        await loadUsers(modal);
-      } else {
-        const error = await response.json();
-        alert(error.error);
-      }
-    });
-  }
-  
-  async function loadUsers(modal) {
-    const response = await fetch('/api/users', { credentials: 'include' });
-    const users = await response.json();
-    const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
-    const me = await meResponse.json();
-    
-    const container = modal.querySelector('#usersList');
-    if (!container) return;
-    
-    container.innerHTML = users.map(user => {
-      let canChange = false;
-      if (me.user.role === 'root') canChange = true;
-      else if (me.user.role === 'rop' && user.role === 'user') canChange = true;
-      
-      let canDelete = false;
-      if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) canDelete = true;
-      
-      return `
-        <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-            <div>
-              <strong>${escapeHtml(user.full_name)}</strong><br>
-              <span style="font-size: 11px;">Логин: ${user.username} | Роль: ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
-            </div>
-            <div style="display: flex; gap: 6px;">
-              ${canChange ? `<button onclick="window.changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
-              ${canDelete ? `<button onclick="window.deleteUserById(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-  
-  window.changePasswordUser = async (userId, userName) => {
-    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
-    if (!newPassword) return;
-    if (!/^\d{4}$/.test(newPassword)) {
-      alert('Пароль должен состоять из 4 цифр');
-      return;
-    }
-    const response = await fetch(`/api/users/${userId}/change-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ newPassword })
-    });
-    if (response.ok) alert('Пароль успешно изменен');
-    else alert('Ошибка смены пароля');
-  };
-  
-  window.deleteUserById = async (userId) => {
-    if (confirm('Удалить пользователя?')) {
-      const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
-      if (response.ok) {
-        alert('Пользователь удален');
-        location.reload();
-      } else alert('Ошибка удаления');
-    }
-  };
-  
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
-  }
-  
-  // Запуск
-  checkPermissions().then(() => renderGrid());
-</script>
-
-  // ========== ФУНКЦИИ РЕДАКТИРОВАНИЯ КОНТЕНТА ==========
-  
-  function editContent(page, section) {
-    const contentDiv = document.getElementById(`${section}-content`);
-    const currentHtml = contentDiv.innerHTML;
-    
-    if (section === 'syrye') {
-      editSyryeContent(contentDiv, currentHtml);
-    } else if (section === 'tips') {
-      editTipsContent(contentDiv, currentHtml);
-    }
-  }
-  
-  function editSyryeContent(contentDiv, currentHtml) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
-    
-    const tobaccoTypes = [];
-    const cards = tempDiv.querySelectorAll('.two-col .info-card');
-    cards.forEach(card => {
-      const title = card.querySelector('h3')?.textContent.trim() || '';
-      const items = [];
-      card.querySelectorAll('ul li').forEach(li => items.push(li.textContent.trim()));
-      tobaccoTypes.push({ title, items });
-    });
-    
-    let typesHtml = '';
-    tobaccoTypes.forEach((type, idx) => {
-      let itemsHtml = '';
-      type.items.forEach((item, itemIdx) => {
-        itemsHtml += `
-          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-            <input type="text" class="type-item-${idx}" value="${escapeHtml(item)}" style="flex:1" placeholder="Пункт списка">
-            <button class="remove-item-btn" data-type="${idx}" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-          </div>
-        `;
-      });
-      
-      typesHtml += `
-        <div class="type-group" style="background: var(--surface2); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-          <div class="field">
-            <label>🌿 Название типа сырья</label>
-            <input type="text" class="type-title" value="${escapeHtml(type.title)}" style="width:100%; margin-bottom: 12px;">
-          </div>
-          <div class="field">
-            <label>📋 Характеристики</label>
-            <div id="items-list-${idx}" class="items-list">${itemsHtml}</div>
-            <button class="add-item-btn btn-add" data-type="${idx}" style="margin-top: 8px;">➕ Добавить характеристику</button>
-          </div>
-          <button class="remove-type-btn" style="margin-top: 12px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить тип</button>
-        </div>
-      `;
-    });
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: Типы табачного сырья</span>
-          <button class="modal-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div id="typesContainer">${typesHtml}</div>
-          <button id="addTypeBtn" class="btn-add" style="margin-top: 16px; width: 100%;">➕ Добавить тип сырья</button>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel">Отмена</button>
-          <button class="btn-save">💾 Сохранить</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    function updateTypeIndices() {
-      const types = modal.querySelectorAll('.type-group');
-      types.forEach((type, typeIdx) => {
-        const itemsContainer = type.querySelector('.items-list');
-        const items = itemsContainer.querySelectorAll('div');
-        items.forEach((item, itemIdx) => {
-          const input = item.querySelector('input');
-          if (input) input.className = `type-item-${typeIdx}`;
-          const removeBtn = item.querySelector('.remove-item-btn');
-          if (removeBtn) removeBtn.setAttribute('data-type', typeIdx);
-        });
-        const addBtn = type.querySelector('.add-item-btn');
-        if (addBtn) addBtn.setAttribute('data-type', typeIdx);
-      });
-    }
-    
-    const addTypeBtn = modal.querySelector('#addTypeBtn');
-    if (addTypeBtn) {
-      addTypeBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#typesContainer');
-        const newTypeIndex = modal.querySelectorAll('.type-group').length;
-        const newDiv = document.createElement('div');
-        newDiv.className = 'type-group';
-        newDiv.style.cssText = 'background: var(--surface2); border-radius: 12px; padding: 16px; margin-bottom: 16px;';
-        newDiv.innerHTML = `
-          <div class="field">
-            <label>🌿 Название типа сырья</label>
-            <input type="text" class="type-title" placeholder="Например: 🌱 Virginia" style="width:100%; margin-bottom: 12px;">
-          </div>
-          <div class="field">
-            <label>📋 Характеристики</label>
-            <div id="items-list-${newTypeIndex}" class="items-list"></div>
-            <button class="add-item-btn btn-add" data-type="${newTypeIndex}" style="margin-top: 8px;">➕ Добавить характеристику</button>
-          </div>
-          <button class="remove-type-btn" style="margin-top: 12px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить тип</button>
-        `;
-        
-        const addItemBtn = newDiv.querySelector('.add-item-btn');
-        addItemBtn.addEventListener('click', (e) => {
-          const typeIdx = e.target.getAttribute('data-type');
-          const itemsContainer = newDiv.querySelector(`#items-list-${typeIdx}`);
-          const newItemDiv = document.createElement('div');
-          newItemDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-          newItemDiv.innerHTML = `
-            <input type="text" class="type-item-${typeIdx}" style="flex:1" placeholder="Характеристика">
-            <button class="remove-item-btn" data-type="${typeIdx}" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-          `;
-          newItemDiv.querySelector('.remove-item-btn').addEventListener('click', () => newItemDiv.remove());
-          itemsContainer.appendChild(newItemDiv);
-        });
-        
-        const removeTypeBtn = newDiv.querySelector('.remove-type-btn');
-        removeTypeBtn.addEventListener('click', () => newDiv.remove());
-        
-        container.appendChild(newDiv);
-        updateTypeIndices();
-      });
-    }
-    
-    modal.querySelectorAll('.add-item-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const typeIdx = e.target.getAttribute('data-type');
-        const typeGroup = e.target.closest('.type-group');
-        const itemsContainer = typeGroup.querySelector(`#items-list-${typeIdx}`);
-        const newItemDiv = document.createElement('div');
-        newItemDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-        newItemDiv.innerHTML = `
-          <input type="text" class="type-item-${typeIdx}" style="flex:1" placeholder="Характеристика">
-          <button class="remove-item-btn" data-type="${typeIdx}" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        `;
-        newItemDiv.querySelector('.remove-item-btn').addEventListener('click', () => newItemDiv.remove());
-        itemsContainer.appendChild(newItemDiv);
-      });
-    });
-    
-    modal.querySelectorAll('.remove-item-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('div').remove();
-      });
-    });
-    
-    modal.querySelectorAll('.remove-type-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('.type-group').remove();
-      });
-    });
-    
-    const closeModal = () => {
-      modal.classList.remove('open');
-      setTimeout(() => modal.remove(), 300);
-    };
-    
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
-    modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const typesList = [];
-      modal.querySelectorAll('.type-group').forEach(typeGroup => {
-        const title = typeGroup.querySelector('.type-title').value.trim();
-        const items = [];
-        typeGroup.querySelectorAll('.items-list input').forEach(input => {
-          const val = input.value.trim();
-          if (val) items.push(val);
-        });
-        if (title && items.length > 0) {
-          typesList.push({ title, items });
-        }
-      });
-      
-      let cardsHtml = '';
-      typesList.forEach(type => {
-        let itemsHtml = '';
-        type.items.forEach(item => {
-          itemsHtml += `<li>${escapeHtml(item)}</li>`;
-        });
-        cardsHtml += `
-          <div class="info-card">
-            <h3>${escapeHtml(type.title)}</h3>
-            <ul>${itemsHtml}</ul>
-          </div>
-        `;
-      });
-      
-      const newHtml = `<div class="two-col">${cardsHtml}</div>`;
-      
-      await saveContent('tobacco', 'syrye', newHtml, contentDiv, closeModal);
-    });
-  }
-  
-  function editTipsContent(contentDiv, currentHtml) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
-    
-    // Извлекаем вопросы
-    const questions = [];
-    const questionsDiv = tempDiv.querySelector('.accordion:first-child .acc-body');
-    if (questionsDiv) {
-      questionsDiv.querySelectorAll('.hl.info').forEach(hl => {
-        questions.push(hl.textContent.trim());
-      });
-    }
-    
-    // Извлекаем информацию о жаростойкости
-    let heatText = '';
-    let heatOk = '';
-    let heatWarn = '';
-    const heatAcc = tempDiv.querySelector('.accordion:nth-child(2) .acc-body');
-    if (heatAcc) {
-      const p = heatAcc.querySelector('p');
-      if (p) heatText = p.textContent.trim();
-      const okDiv = heatAcc.querySelector('.hl.ok');
-      if (okDiv) heatOk = okDiv.textContent.trim();
-      const warnDiv = heatAcc.querySelector('.hl.warn');
-      if (warnDiv) heatWarn = warnDiv.textContent.trim();
-    }
-    
-    // Извлекаем таблицу чаш
-    const bowls = [];
-    const bowlRows = tempDiv.querySelectorAll('.accordion:last-child .ref-table tr');
-    for (let i = 1; i < bowlRows.length; i++) {
-      const cells = bowlRows[i].querySelectorAll('td');
-      if (cells.length >= 2) {
-        bowls.push({
-          name: cells[0].textContent.trim(),
-          effect: cells[1].textContent.trim()
-        });
-      }
-    }
-    
-    let questionsHtml = '';
-    questions.forEach((q, idx) => {
-      questionsHtml += `
-        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <input type="text" class="question-item" value="${escapeHtml(q)}" style="flex:1" placeholder="Вопрос покупателю">
-          <button class="remove-question-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        </div>
-      `;
-    });
-    
-    let bowlsHtml = '';
-    bowls.forEach((bowl, idx) => {
-      bowlsHtml += `
-        <div class="bowl-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
-          <input type="text" class="bowl-name" value="${escapeHtml(bowl.name)}" placeholder="Название чаши" style="width:100%; margin-bottom: 8px;">
-          <textarea class="bowl-effect" rows="2" placeholder="Эффект" style="width:100%">${escapeHtml(bowl.effect)}</textarea>
-          <button class="remove-bowl-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
-        </div>
-      `;
-    });
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: Советы продавцу</span>
-          <button class="modal-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="field">
-            <label>💬 Что спросить у покупателя</label>
-            <div id="questionsList">${questionsHtml}</div>
-            <button id="addQuestionBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить вопрос</button>
-          </div>
-          
-          <div class="field">
-            <label>🔥 Жаростойкость (текст)</label>
-            <textarea id="heatText" rows="2">${escapeHtml(heatText)}</textarea>
-          </div>
-          
-          <div class="field">
-            <label>✅ Жаростойкие бренды</label>
-            <input type="text" id="heatOk" value="${escapeHtml(heatOk)}" style="width:100%">
-          </div>
-          
-          <div class="field">
-            <label>⚠️ Нежаростойкие бренды</label>
-            <input type="text" id="heatWarn" value="${escapeHtml(heatWarn)}" style="width:100%">
-          </div>
-          
-          <div class="field">
-            <label>🏺 Чаши и их влияние</label>
-            <div id="bowlsList">${bowlsHtml}</div>
-            <button id="addBowlBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить чашу</button>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel">Отмена</button>
-          <button class="btn-save">💾 Сохранить</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    const addQuestionBtn = modal.querySelector('#addQuestionBtn');
-    if (addQuestionBtn) {
-      addQuestionBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#questionsList');
-        const newDiv = document.createElement('div');
-        newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-        newDiv.innerHTML = `
-          <input type="text" class="question-item" style="flex:1" placeholder="Вопрос покупателю">
-          <button class="remove-question-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        `;
-        newDiv.querySelector('.remove-question-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
-      });
-    }
-    
-    const addBowlBtn = modal.querySelector('#addBowlBtn');
-    if (addBowlBtn) {
-      addBowlBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#bowlsList');
-        const newDiv = document.createElement('div');
-        newDiv.className = 'bowl-item';
-        newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
-        newDiv.innerHTML = `
-          <input type="text" class="bowl-name" placeholder="Название чаши" style="width:100%; margin-bottom: 8px;">
-          <textarea class="bowl-effect" rows="2" placeholder="Эффект" style="width:100%"></textarea>
-          <button class="remove-bowl-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
-        `;
-        newDiv.querySelector('.remove-bowl-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
-      });
-    }
-    
-    modal.querySelectorAll('.remove-question-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('div').remove();
-      });
-    });
-    
-    modal.querySelectorAll('.remove-bowl-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('.bowl-item').remove();
-      });
-    });
-    
-    const closeModal = () => {
-      modal.classList.remove('open');
-      setTimeout(() => modal.remove(), 300);
-    };
-    
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
-    modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const questionsList = Array.from(modal.querySelectorAll('#questionsList input.question-item')).map(i => i.value.trim()).filter(v => v);
-      const heatTextVal = modal.querySelector('#heatText').value;
-      const heatOkVal = modal.querySelector('#heatOk').value;
-      const heatWarnVal = modal.querySelector('#heatWarn').value;
-      
-      const bowlsList = [];
-      modal.querySelectorAll('.bowl-item').forEach(item => {
-        const name = item.querySelector('.bowl-name').value.trim();
-        const effect = item.querySelector('.bowl-effect').value.trim();
-        if (name && effect) {
-          bowlsList.push({ name, effect });
-        }
-      });
-      
-      let questionsHtmlNew = '';
-      questionsList.forEach(q => {
-        questionsHtmlNew += `<div class="hl info">${escapeHtml(q)}</div>`;
-      });
-      
-      let bowlsHtmlNew = '';
-      bowlsList.forEach(bowl => {
-        bowlsHtmlNew += `
-
-
-          <tr><td><strong>${escapeHtml(bowl.name)}</strong></td><td>${escapeHtml(bowl.effect)}</td> </tr>
-        `;
-      });
-      
-      const newHtml = `
-        <div class="accordion open">
-          <div class="acc-header"><span class="acc-title">Что спросить у покупателя</span><span class="acc-arrow">▼</span></div>
-          <div class="acc-body">
-            ${questionsHtmlNew}
-          </div>
-        </div>
-        <div class="accordion">
-          <div class="acc-header"><span class="acc-title">Жаростойкость</span><span class="acc-arrow">▼</span></div>
-          <div class="acc-body">
-            <p>${escapeHtml(heatTextVal)}</p>
-            <div class="hl ok">${escapeHtml(heatOkVal)}</div>
-            <div class="hl warn">${escapeHtml(heatWarnVal)}</div>
-          </div>
-        </div>
-        <div class="accordion">
-          <div class="acc-header"><span class="acc-title">Чаши и их влияние на вкус</span><span class="acc-arrow">▼</span></div>
-          <div class="acc-body">
-            <table class="ref-table">
-              <tr><th>Чаша</th><th>Эффект</th> </tr>
-              ${bowlsHtmlNew}
-            </table>
-          </div>
-        </div>
-      `;
-      
-      await saveContent('tobacco', 'tips', newHtml, contentDiv, closeModal);
-    });
-  }
-  
-  async function saveContent(page, section, newHtml, contentDiv, closeModal) {
-    try {
-      const response = await fetch(`/api/content/${page}/${section}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ content: newHtml })
-      });
-      
-      if (response.ok) {
-        contentDiv.innerHTML = newHtml;
-        alert('✅ Сохранено успешно!');
-        closeModal();
-        initAccordions();
-      } else {
-        alert('❌ Ошибка сохранения');
-      }
-    } catch (error) {
-      alert('❌ Ошибка: ' + error.message);
-    }
-  }
-  
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
-  }
-
-  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
-    window.location.href = '/login.html';
-  });
-
-  document.getElementById('ropBtn')?.addEventListener('click', () => {
-    openRopPanel();
-  });
 
   async function openRopPanel() {
     const modal = document.createElement('div');
@@ -1013,6 +394,15 @@
     }
   };
 
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+
+  // Запуск всех инициализаций
+  initTabs();
+  initAccordions();
+  initSearch();
   checkPermissions().then(() => renderGrid());
 </script>
 </body>
