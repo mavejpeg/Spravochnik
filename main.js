@@ -1048,3 +1048,158 @@ async function addWatermark() {
 
 // Запускаем добавление водяного знака
 addWatermark();
+
+// Обнаружение открытых инструментов разработчика
+function detectDevTools() {
+    let devToolsOpen = false;
+    const element = new Image();
+    
+    Object.defineProperty(element, 'id', {
+        get: function() {
+            devToolsOpen = true;
+            showCopyWarning('⚠️ Обнаружены инструменты разработчика!\nВсе действия логируются');
+            return '';
+        }
+    });
+    
+    setInterval(() => {
+        console.log(element);
+        console.clear();
+        
+        if (devToolsOpen) {
+            // Можно отправить уведомление на сервер
+            fetch('/api/devtools-detected', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ timestamp: new Date().toISOString() })
+            }).catch(e => console.log);
+        }
+        devToolsOpen = false;
+    }, 1000);
+}
+
+detectDevTools();
+
+// ========== ЗАЩИТА ОТ КОПИРОВАНИЯ ==========
+
+function showWarning(message, isError = true) {
+    const oldWarning = document.querySelector('.copy-warning');
+    if (oldWarning) oldWarning.remove();
+    
+    const warning = document.createElement('div');
+    warning.className = 'copy-warning';
+    warning.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: ${isError ? 'rgba(252, 92, 124, 0.95)' : 'rgba(60, 255, 160, 0.95)'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 13px;
+        z-index: 10000;
+        animation: fadeOut 2s forwards;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        font-family: monospace;
+    `;
+    warning.innerHTML = `🔒 ${message}`;
+    document.body.appendChild(warning);
+    
+    setTimeout(() => {
+        if (warning) warning.remove();
+    }, 2000);
+}
+
+// Защита от копирования
+document.addEventListener('copy', function(e) {
+    e.preventDefault();
+    showWarning('📋 КОПИРОВАНИЕ ЗАПРЕЩЕНО!');
+    e.clipboardData.setData('text/plain', '🚫 ДОСТУП ЗАПРЕЩЕН 🚫\nИнформация является конфиденциальной');
+    return false;
+});
+
+document.addEventListener('cut', function(e) {
+    e.preventDefault();
+    showWarning('✂️ ВЫРЕЗАНИЕ ЗАПРЕЩЕНО!');
+    return false;
+});
+
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    showWarning('🔒 КОНТЕКСТНОЕ МЕНЮ ОТКЛЮЧЕНО');
+    return false;
+});
+
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'x' || e.key === 'v')) {
+        e.preventDefault();
+        const action = e.key === 'c' ? 'Копирование' : (e.key === 'x' ? 'Вырезание' : 'Вставка');
+        showWarning(`${action} ЗАПРЕЩЕНО!`);
+        return false;
+    }
+    
+    if (e.key === 'F12') {
+        e.preventDefault();
+        showWarning('🛠️ ИНСТРУМЕНТЫ РАЗРАБОТЧИКА ОТКЛЮЧЕНЫ');
+        return false;
+    }
+    
+    // Запрет на Print Screen
+    if (e.key === 'PrintScreen') {
+        e.preventDefault();
+        showWarning('📸 СКРИНШОТ ЗАПРЕЩЕН!');
+        return false;
+    }
+});
+
+document.addEventListener('dragstart', function(e) {
+    e.preventDefault();
+    showWarning('📎 ПЕРЕТАСКИВАНИЕ ЗАПРЕЩЕНО');
+    return false;
+});
+
+// Добавление водяного знака с данными пользователя
+async function addWatermark() {
+    try {
+        const response = await fetch('/api/check-auth', { credentials: 'include' });
+        const data = await response.json();
+        
+        if (data.authenticated) {
+            const userInfo = data.user;
+            const timestamp = new Date().toLocaleString();
+            const watermarkText = `${userInfo.full_name} | ${userInfo.username} | ${timestamp}`;
+            
+            const watermark = document.createElement('div');
+            watermark.style.cssText = `
+                position: fixed;
+                bottom: 3px;
+                left: 3px;
+                font-size: 7px;
+                color: rgba(150, 150, 150, 0.15);
+                z-index: 9999;
+                pointer-events: none;
+                font-family: monospace;
+                white-space: nowrap;
+            `;
+            watermark.textContent = watermarkText;
+            document.body.appendChild(watermark);
+        }
+    } catch (error) {
+        console.error('Watermark error:', error);
+    }
+}
+
+addWatermark();
+
+// Добавляем CSS анимацию для предупреждения
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeOut {
+        0% { opacity: 1; transform: translateY(0); }
+        70% { opacity: 1; }
+        100% { opacity: 0; transform: translateY(-20px); visibility: hidden; }
+    }
+`;
+document.head.appendChild(style);
