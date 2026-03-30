@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Одноразки — Справочник</title>
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -45,6 +45,7 @@
   <div class="section" id="tab-guide">
     <div class="sec-header">
       <span class="sec-title">Гид по брендам</span>
+      <button class="btn-edit-content" data-page="disposables" data-section="guide" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="guide-content">
       <div class="accordion open"><div class="acc-header"><span class="acc-title">🔥 Крепкие бренды (7-10)</span><span class="acc-arrow">▼</span></div><div class="acc-body"><ul><li><strong>Husky</strong> — все модели крепкие, со льдом</li><li><strong>Iceberg</strong> — 6000 затяжек</li><li><strong>GENG</strong> — 8000/12000 затяжек</li><li><strong>Вака</strong> — 20000 затяжек, самая крепкая</li><li><strong>Fumo</strong> — 22000 затяжек</li><li><strong>Vozol Vista</strong> — 20000 затяжек</li></ul></div></div>
@@ -55,13 +56,13 @@
 
 </main>
 
-<script src="core.js?v=5"></script>
-<script src="catalog.js?v=5"></script>
+<script src="core.js?v=6"></script>
+<script src="utils.js?v=6"></script>
 <script>
   const CATEGORY = 'disposables';
   let isRop = false;
 
-  async function checkLocalPermissions() {
+  async function checkAddButton() {
     const response = await fetch('/api/check-auth', { credentials: 'include' });
     const data = await response.json();
     if (data.authenticated) {
@@ -69,6 +70,12 @@
       window.isRopGlobal = isRop;
       const addButton = document.getElementById('btnAddDisposable');
       if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
+      
+      const editBtns = document.querySelectorAll('.btn-edit-content');
+      editBtns.forEach(btn => {
+        btn.style.display = isRop ? 'inline-flex' : 'none';
+        btn.addEventListener('click', () => editContent(btn.dataset.page, btn.dataset.section));
+      });
     }
   }
   
@@ -122,7 +129,7 @@
     });
   }
 
-  checkLocalPermissions().then(() => renderGrid());
+  checkAddButton().then(() => renderGrid());
 </script>
 </body>
 </html>
