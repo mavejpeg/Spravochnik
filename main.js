@@ -680,8 +680,13 @@ function setupQuizEditors(container) {
     quizEditors.forEach(editor => {
         initQuizEditor(editor);
         
+        // Находим кнопку добавления вопроса
         const addBtn = editor.closest('.editor-item-content')?.querySelector('.add-quiz-question');
         if (addBtn) {
+            // Применяем стили к кнопке
+            addBtn.style.cssText = 'background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 16px; color: var(--accent); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;';
+            addBtn.innerHTML = '➕ Добавить вопрос';
+            
             addBtn.removeEventListener('click', () => handleAddQuestion(editor));
             addBtn.addEventListener('click', () => handleAddQuestion(editor));
         }
@@ -711,9 +716,9 @@ function handleAddQuestion(editor) {
                     <button class="remove-option-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 10px; color: var(--accent2); cursor: pointer;">🗑</button>
                 </div>
             </div>
-            <button class="add-option-btn" style="margin-top: 8px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 6px 12px; color: var(--accent); cursor: pointer;">➕ Добавить вариант</button>
+            <button class="add-option-btn" style="margin-top: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; color: var(--text); cursor: pointer;">➕ Добавить вариант</button>
         </div>
-        <button class="remove-question-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить вопрос</button>
+        <button class="remove-question-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: 1px solid rgba(252,92,124,0.3); border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить вопрос</button>
     `;
     
     setupQuestionHandlers(questionDiv, questionId);
@@ -822,9 +827,9 @@ function initQuizEditor(container) {
                     <div class="quiz-options-editor" style="display: flex; flex-direction: column; gap: 8px;">
                         ${optionsHtml}
                     </div>
-                    <button class="add-option-btn" style="margin-top: 8px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 6px 12px; color: var(--accent); cursor: pointer;">➕ Добавить вариант</button>
+                    <button class="add-option-btn" style="margin-top: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; color: var(--text); cursor: pointer;">➕ Добавить вариант</button>
                 </div>
-                <button class="remove-question-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить вопрос</button>
+                <button class="remove-question-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: 1px solid rgba(252,92,124,0.3); border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить вопрос</button>
             `;
             
             container.appendChild(questionDiv);
