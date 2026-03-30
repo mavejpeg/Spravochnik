@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Обучение новичков — Справочник</title>
-<link rel="stylesheet" href="style.css?v=24">
+<link rel="stylesheet" href="style.css?v=25">
 <style>
   /* Стили для опросников */
   .quiz-block {
@@ -149,12 +149,13 @@
     margin-bottom: 16px;
   }
   
-  /* Стили для details (выпадающие списки) */
+  /* Стили для details (выпадающие списки) - они должны работать */
   details {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 12px;
     margin-bottom: 10px;
+    display: block;
   }
   
   details summary {
@@ -166,25 +167,33 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: var(--surface2);
+    border-radius: 12px;
   }
   
   details summary:hover {
-    background: var(--surface2);
+    background: var(--surface3);
   }
   
-  details[open] summary {
-    border-bottom: 1px solid var(--border);
-    background: var(--surface2);
+  details summary::after {
+    content: "▼";
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+  
+  details[open] summary::after {
+    transform: rotate(180deg);
   }
   
   details .acc-body {
     padding: 16px;
+    border-top: 1px solid var(--border);
   }
   
   .section-content {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
   }
 </style>
 </head>
@@ -306,7 +315,7 @@
       </div>
 
       <!-- ОПРОСНИК ДЕНЬ 1 -->
-      <div class="quiz-block">
+      <div class="quiz-block" id="quiz-day1-block">
         <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 1)</div>
         <div id="quiz-day1-questions"></div>
         <button class="quiz-btn" onclick="checkQuiz('day1')">✅ Проверить ответы</button>
@@ -316,7 +325,7 @@
     </div>
   </div>
 
-  <!-- ДЕНЬ 2 -->
+  <!-- ДЕНЬ 2 (аналогично, с details вместо accordion) -->
   <div class="section" id="tab-day2">
     <div class="sec-header">
       <span class="sec-title">📅 День 2: Кальянная тематика</span>
@@ -396,10 +405,9 @@
           <li><strong>Плотная (оверпак)</strong> — для крепких миксов</li>
           <li><strong>Свободная (андерпак)</strong> — для лёгкого пара</li>
         </ul>
-        <div class="hl info">Примеры миксов:<br>Сладкий: 1 легкий, 2 средних<br>Свежий: 1 крепкий, 1 легкий, 1 средний<br>Кислый: 2 средних, 1 крепкий<br>Десертный: 2 крепких, 1 средний</div>
       </div>
 
-      <div class="quiz-block">
+      <div class="quiz-block" id="quiz-day2-block">
         <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 2)</div>
         <div id="quiz-day2-questions"></div>
         <button class="quiz-btn" onclick="checkQuiz('day2')">✅ Проверить ответы</button>
@@ -430,13 +438,8 @@
         <summary>🧾 Работа с кассой и маркировкой</summary>
         <div class="acc-body">
           <div class="hl warn">ВАЖНО:</div>
-          <ul>
-            <li>Пробивать товар, поиск по названию</li>
-            <li>Скидки: как правильно оформлять</li>
-            <li>Возврат: алгоритм действий</li>
-            <li>Чтение отчетов и структура отчетов</li>
-          </ul>
-          <div class="hl info">Маркированные товары (одноразки, жидкости) — только через QR-сканирование!</div>
+          <ul><li>Пробивать товар, поиск по названию</li><li>Скидки: как правильно оформлять</li><li>Возврат: алгоритм действий</li><li>Чтение отчетов</li></ul>
+          <div class="hl info">Маркированные товары — только через QR-сканирование!</div>
         </div>
       </details>
 
@@ -444,54 +447,32 @@
         <summary>📦 Работа с закупом и накладными</summary>
         <div class="acc-body">
           <div class="hl warn">ПРАВИЛА:</div>
-          <ul>
-            <li>ОДНА НАКЛАДНАЯ — ОДНА ПРИЕМКА (никаких частей)</li>
-            <li>Если не успели принять товар в течение текущего дня или следующего — написать в закуп</li>
-            <li>В комментарии приемки указывать расхождения и примечания</li>
-          </ul>
+          <ul><li>ОДНА НАКЛАДНАЯ — ОДНА ПРИЕМКА</li><li>Если не успели — написать в закуп</li><li>В комментарии указывать расхождения</li></ul>
         </div>
       </details>
 
       <details>
         <summary>💰 Как вести себя с мошенниками</summary>
         <div class="acc-body">
-          <ul>
-            <li>Сначала берем деньги, потом отдаем товар</li>
-            <li>Проверка купюр (на просвет, тактильно)</li>
-            <li>Не начинайте считать сдачу, пока не убедились, что получили деньги в руки</li>
-            <li>Стойте в полоборота (спинкой к товару)</li>
-          </ul>
+          <ul><li>Сначала берем деньги, потом отдаем товар</li><li>Проверка купюр</li><li>Не начинайте считать сдачу, пока не убедились в деньгах</li><li>Стойте в полоборота</li></ul>
         </div>
       </details>
 
       <details>
         <summary>🏛️ Как вести себя с гос.органами</summary>
         <div class="acc-body">
-          <ul>
-            <li>Перед началом рабочего дня знать на каком юр.лице работаете и с какого момента</li>
-            <li>Запоминайте ФИО и орган проверяющих</li>
-            <li>Ничего не подписывать не читая</li>
-            <li>Фотографировать документы — вы имеете право</li>
-            <li>Если изымают — должна быть опись с названиями, ценами и количеством</li>
-          </ul>
+          <ul><li>Знать на каком юр.лице работаете</li><li>Запоминайте ФИО и орган проверяющих</li><li>Ничего не подписывать не читая</li><li>Фотографировать — вы имеете право</li></ul>
         </div>
       </details>
 
       <details>
         <summary>📋 Дисциплинарные моменты</summary>
         <div class="acc-body">
-          <ul>
-            <li>Выкладка товара (по полкам, ценниками вверх)</li>
-            <li>Шторки (закрывать после закрытия)</li>
-            <li>Генеральная уборка (график)</li>
-            <li>Отчеты (ежедневные)</li>
-            <li>Таблички об уходах (обед, перекур)</li>
-            <li>Проверка рабочего телефона</li>
-          </ul>
+          <ul><li>Выкладка товара</li><li>Шторки</li><li>Генеральная уборка</li><li>Отчеты</li><li>Таблички об уходах</li></ul>
         </div>
       </details>
 
-      <div class="quiz-block">
+      <div class="quiz-block" id="quiz-day3-block">
         <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 3)</div>
         <div id="quiz-day3-questions"></div>
         <button class="quiz-btn" onclick="checkQuiz('day3')">✅ Проверить ответы</button>
@@ -511,37 +492,26 @@
       <div class="info-card">
         <h3>🎯 Цели четвертого дня</h3>
         <ul>
-          <li>Проверка знаний по товарной матрице, работе с кассой и маркировкой</li>
+          <li>Проверка знаний по товарной матрице</li>
           <li>Отработка знаний по работе с покупателем</li>
-          <li>Работа с приемкой товара и накладными</li>
-          <li>Новичок работает с продажами (с разбором ошибок)</li>
+          <li>Работа с приемкой товара</li>
+          <li>Новичок работает с продажами</li>
         </ul>
       </div>
 
       <details>
         <summary>✅ Контрольные вопросы</summary>
         <div class="acc-body">
-          <ul>
-            <li>Назовите топ-5 жидкостей и их особенности</li>
-            <li>Какие одноразки крепкие, какие лёгкие?</li>
-            <li>Какой табак для кальяна самый крепкий?</li>
-            <li>Как правильно принимать поставку?</li>
-            <li>Алгоритм действий при проверке гос.органами?</li>
-          </ul>
+          <ul><li>Назовите топ-5 жидкостей</li><li>Какие одноразки крепкие?</li><li>Какой табак самый крепкий?</li><li>Как принимать поставку?</li><li>Алгоритм при проверке гос.органами?</li></ul>
         </div>
       </details>
 
       <div class="info-card">
-        <h3>💡 Скидки и комбо — подробно</h3>
-        <ul>
-          <li>Как предлагать комбо, не называя скидку</li>
-          <li>«У нас сейчас проходит комбо, при покупке второй жидкости будет скидка»</li>
-          <li>«Программа сама рассчитает»</li>
-          <li>После комбо всегда предлагать испаритель или картридж</li>
-        </ul>
+        <h3>💡 Скидки и комбо</h3>
+        <ul><li>Как предлагать комбо, не называя скидку</li><li>«У нас сейчас проходит комбо»</li><li>«Программа сама рассчитает»</li><li>После комбо предлагать испаритель</li></ul>
       </div>
 
-      <div class="quiz-block">
+      <div class="quiz-block" id="quiz-day4-block">
         <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 4)</div>
         <div id="quiz-day4-questions"></div>
         <button class="quiz-btn" onclick="checkQuiz('day4')">✅ Проверить ответы</button>
@@ -558,41 +528,10 @@
       <button class="btn-edit-content" data-page="training" data-section="scripts" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="scripts-content" class="section-content">
-      <details>
-        <summary>🎯 Стандарты общения</summary>
-        <div class="acc-body">
-          <ul>
-            <li>Поздороваться, подняться со стула</li>
-            <li>Общаться доброжелательно, сохранять дистанцию</li>
-            <li>Быть активным, подстраиваться под человека</li>
-          </ul>
-        </div>
-      </details>
-
-      <details>
-        <summary>💧 Скрипт: жидкости</summary>
-        <div class="acc-body">
-          <div class="hl info">Покупатель подошел к стеллажу с жидкостями:</div>
-          <div class="hl ok">«Здравствуйте, что по вкусу вы хотели (кислое или сладкое)? И какая крепость?»</div>
-          <div class="hl info">Если ответ «Не знаю, хочу что-нибудь вкусненькое»:</div>
-          <div class="hl ok">«Давайте попробуем определиться. Фруктовые, ягодные или сладкие десертные?»</div>
-        </div>
-      </details>
-
-      <details>
-        <summary>💨 Скрипт: одноразки</summary>
-        <div class="acc-body">
-          <div class="hl ok">«На какое количество тяг рассматриваете? Крепкую или легкую? Что по вкусу?»</div>
-        </div>
-      </details>
-
-      <details>
-        <summary>🏺 Скрипт: табак для кальяна</summary>
-        <div class="acc-body">
-          <div class="hl ok">«Какую крепость предпочитаете? Лёгкую, среднюю или крепкую?»</div>
-          <div class="hl ok">«По вкусу: фруктовые, ягодные, мятные или табачные?»</div>
-        </div>
-      </details>
+      <details><summary>🎯 Стандарты общения</summary><div class="acc-body"><ul><li>Поздороваться, подняться со стула</li><li>Общаться доброжелательно</li><li>Быть активным</li></ul></div></details>
+      <details><summary>💧 Скрипт: жидкости</summary><div class="acc-body"><div class="hl ok">«Здравствуйте, что по вкусу вы хотели? И какая крепость?»</div></div></details>
+      <details><summary>💨 Скрипт: одноразки</summary><div class="acc-body"><div class="hl ok">«На какое количество тяг? Крепкую или легкую?»</div></div></details>
+      <details><summary>🏺 Скрипт: табак</summary><div class="acc-body"><div class="hl ok">«Какую крепость предпочитаете? По вкусу: фруктовые, ягодные?»</div></div></details>
     </div>
   </div>
 
@@ -603,33 +542,15 @@
       <button class="btn-edit-content" data-page="training" data-section="security" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="security-content" class="section-content">
-      <div class="info-card">
-        <h3>💰 Правила работы с деньгами</h3>
-        <ul>
-          <li>Сначала берем деньги, потом отдаем товар</li>
-          <li>Проверка купюр (на просвет, тактильно)</li>
-          <li>Не начинайте считать сдачу, пока не убедились, что получили деньги в руки</li>
-          <li>Стойте в полоборота (спинкой к товару)</li>
-        </ul>
-      </div>
-
-      <div class="info-card">
-        <h3>🏛️ Работа с гос.органами</h3>
-        <ul>
-          <li>Перед началом рабочего дня знать на каком юр.лице работаете</li>
-          <li>Запоминайте ФИО и орган проверяющих</li>
-          <li>Ничего не подписывать не читая</li>
-          <li>Фотографировать — вы имеете право</li>
-          <li>Если изымают — должна быть опись</li>
-        </ul>
-      </div>
+      <div class="info-card"><h3>💰 Правила работы с деньгами</h3><ul><li>Сначала деньги, потом товар</li><li>Проверка купюр</li><li>Стойте в полоборота</li></ul></div>
+      <div class="info-card"><h3>🏛️ Работа с гос.органами</h3><ul><li>Знать юр.лицо</li><li>Запоминать ФИО проверяющих</li><li>Ничего не подписывать не читая</li></ul></div>
     </div>
   </div>
 
 </main>
 
-<script src="core.js?v=24"></script>
-<script src="main.js?v=24"></script>
+<script src="core.js?v=25"></script>
+<script src="main.js?v=25"></script>
 <script>
 // Инициализация табов
 function initTabs() {
@@ -653,63 +574,63 @@ const quizzes = {
       { text: "Чем отличается солевой никотин от щелочного?", 
         options: ["Солевой быстрее накуривает, мягче", "Щелочной быстрее накуривает", "Нет разницы", "Солевой только для больших устройств"],
         correct: 0,
-        explanation: "Солевой никотин быстрее накуривает и мягче при затяжке, используется в под-системах. Щелочной имеет накопительный эффект, для больших устройств." },
+        explanation: "Солевой никотин быстрее накуривает и мягче при затяжке" },
       { text: "Какие одноразки относятся к крепким?", 
         options: ["Plonk, Ignite", "Vozol 20k, Fumo 18k, GENG", "Lost Mary, Soak", "Все перечисленные"],
         correct: 1,
-        explanation: "К крепким одноразкам относятся: Vozol 20k, Fumo 18k, GENG, HQD, Bubble Moon" },
-      { text: "Какое сопротивление испарителя лучше подходит для солевых жидкостей?", 
+        explanation: "К крепким: Vozol 20k, Fumo 18k, GENG, HQD, Bubble Moon" },
+      { text: "Какое сопротивление для солевых жидкостей?", 
         options: ["0.2-0.4 Ом", "0.6-0.8 Ом", "1.2-1.6 Ом", "Любое"],
         correct: 1,
-        explanation: "Для солевых жидкостей лучше подходят испарители 0.6-0.8 Ом (под-системы)" }
+        explanation: "Для солевых жидкостей лучше 0.6-0.8 Ом" }
     ]
   },
   day2: {
     questions: [
-      { text: "Какой табак для кальяна считается самым крепким?", 
+      { text: "Какой табак считается самым крепким?", 
         options: ["Darkside", "Мастях", "Siberia", "HiPrime"],
         correct: 2,
-        explanation: "Siberia — один из самых крепких табаков на рынке" },
-      { text: "Какая чаша лучше всего раскрывает вкус?", 
+        explanation: "Siberia — очень крепкий табак" },
+      { text: "Какая чаша лучше раскрывает вкус?", 
         options: ["Турка", "Убивашка", "Фанол / Фаннель", "Мелассоуловитель"],
         correct: 2,
-        explanation: "Фанол / Фаннель (с 1 центральным отверстием) максимально раскрывает вкус" },
+        explanation: "Фанол / Фаннель максимально раскрывает вкус" },
       { text: "Для чего нужен мелассоуловитель?", 
-        options: ["Для усиления крепости", "Для сбора лишнего сиропа", "Для охлаждения дыма", "Для розжига углей"],
+        options: ["Усиление крепости", "Сбор лишнего сиропа", "Охлаждение дыма", "Розжиг углей"],
         correct: 1,
-        explanation: "Мелассоуловитель ставится между чашей и шахтой для сбора лишнего сиропа" }
+        explanation: "Мелассоуловитель собирает лишний сироп" }
     ]
   },
   day3: {
     questions: [
-      { text: "Как правильно принимать поставку?", 
-        options: ["Частями по мере поступления", "Одна накладная — одна приемка", "Можно отложить на неделю", "Принимать без проверки"],
+      { text: "Как принимать поставку?", 
+        options: ["Частями", "Одна накладная — одна приемка", "Отложить на неделю", "Без проверки"],
         correct: 1,
-        explanation: "Правило: ОДНА НАКЛАДНАЯ — ОДНА ПРИЕМКА. Никаких частей!" },
-      { text: "Что делать, если не успели принять товар в день поставки?", 
-        options: ["Ничего", "Написать в закуп", "Отложить до следующей недели", "Принять без проверки"],
+        explanation: "ОДНА НАКЛАДНАЯ — ОДНА ПРИЕМКА" },
+      { text: "Что делать, если не успели принять товар?", 
+        options: ["Ничего", "Написать в закуп", "Отложить", "Принять без проверки"],
         correct: 1,
-        explanation: "Если не успели принять товар в течение текущего дня или следующего — написать в закуп" },
+        explanation: "Написать в закуп" },
       { text: "Как вести себя с мошенниками?", 
-        options: ["Сначала отдать товар, потом взять деньги", "Сначала взять деньги, потом отдать товар", "Не проверять купюры", "Отдавать сдачу не считая"],
+        options: ["Сначала отдать товар", "Сначала взять деньги", "Не проверять купюры", "Отдавать сдачу не считая"],
         correct: 1,
-        explanation: "Сначала берем деньги, потом отдаем товар. Обязательно проверяем купюры" }
+        explanation: "Сначала взять деньги, потом отдать товар" }
     ]
   },
   day4: {
     questions: [
-      { text: "Как правильно предлагать комбо?", 
-        options: ["Назвать точную скидку", "Сказать 'программа сама рассчитает'", "Не предлагать вообще", "Предложить только один товар"],
+      { text: "Как предлагать комбо?", 
+        options: ["Назвать скидку", "Сказать 'программа сама рассчитает'", "Не предлагать", "Предложить один товар"],
         correct: 1,
-        explanation: "При предложении комбо скидку называть не нужно, можно сказать что программа сама рассчитает" },
-      { text: "Что обязательно предложить после комбо?", 
-        options: ["Скидочную карту", "Испаритель или картридж", "Чек", "Пакет"],
+        explanation: "Скидку называть не нужно" },
+      { text: "Что предложить после комбо?", 
+        options: ["Скидку", "Испаритель", "Чек", "Пакет"],
         correct: 1,
-        explanation: "После комбо всегда обязательно предлагать испаритель или картридж" },
-      { text: "Какую информацию нужно знать перед началом рабочего дня?", 
+        explanation: "Предложить испаритель или картридж" },
+      { text: "Что знать перед началом дня?", 
         options: ["Погоду", "На каком юр.лице работаешь", "Курс валют", "Новости"],
         correct: 1,
-        explanation: "Перед началом рабочего дня нужно знать на каком юр.лице работаешь и с какого момента" }
+        explanation: "Знать на каком юр.лице работаешь" }
     ]
   }
 };
@@ -723,7 +644,7 @@ function initQuizzes() {
     let html = '';
     quiz.questions.forEach((q, idx) => {
       html += `
-        <div class="quiz-question" data-q="${idx}">
+        <div class="quiz-question">
           <div class="quiz-question-text">${idx + 1}. ${q.text}</div>
           <div class="quiz-options">
             ${q.options.map((opt, optIdx) => `
@@ -756,9 +677,7 @@ function checkQuiz(day) {
     
     if (isCorrect) correctCount++;
     
-    answerDiv.innerHTML = isCorrect ? 
-      `✅ Правильно! ${q.explanation}` : 
-      `❌ Неправильно. ${q.explanation}`;
+    answerDiv.innerHTML = isCorrect ? `✅ ${q.explanation}` : `❌ ${q.explanation}`;
     answerDiv.className = `quiz-answer show ${isCorrect ? 'correct' : 'incorrect'}`;
   });
   
@@ -800,7 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('Training page loaded');
 });
 
-// Глобальные функции для кнопок
+// Глобальные функции
 window.checkQuiz = checkQuiz;
 window.resetQuiz = resetQuiz;
 </script>
