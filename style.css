@@ -2036,3 +2036,74 @@ details[open] summary span {
     color: var(--accent2);
     cursor: pointer;
 }
+
+.btn-delete, .btn-delete-small, .btn-edit, .btn-edit-small {
+    font-size: 16px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-delete, .btn-delete-small {
+    background: rgba(252, 92, 124, 0.15);
+    border: 1px solid rgba(252, 92, 124, 0.3);
+    color: #fc5c7c;
+}
+
+.btn-delete:hover, .btn-delete-small:hover {
+    background: rgba(252, 92, 124, 0.3);
+    transform: scale(1.05);
+}
+
+.btn-edit, .btn-edit-small {
+    background: rgba(124, 92, 252, 0.15);
+    border: 1px solid rgba(124, 92, 252, 0.3);
+    color: #7c5cfc;
+}
+
+.btn-edit:hover, .btn-edit-small:hover {
+    background: rgba(124, 92, 252, 0.3);
+    transform: scale(1.05);
+}
+
+/* Увеличенные иконки в карточке товара */
+.card-actions .card-action-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Кнопки в производителях */
+.manufacturer-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.manufacturer-actions .btn-edit,
+.manufacturer-actions .btn-delete {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+    border-radius: 8px;
+}
+
+/* Кнопки в линейках */
+.line-header .btn-edit-small,
+.line-header .btn-delete-small {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
