@@ -75,14 +75,29 @@ async function loadUserInfo() {
         
         if (data.authenticated) {
             if (userNameSpan) userNameSpan.textContent = data.user.full_name;
-            isRop = (data.user.role === 'rop' || data.user.role === 'root');
+            const isRop = (data.user.role === 'rop' || data.user.role === 'root');
+            
+            // ЭТО САМОЕ ВАЖНОЕ - устанавливаем глобальную переменную
             window.isRopGlobal = isRop;
+            
             if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
             
+            // Показываем кнопки редактирования контента
             const editBtns = document.querySelectorAll('.btn-edit-content');
             editBtns.forEach(btn => {
                 btn.style.display = isRop ? 'inline-flex' : 'none';
             });
+            
+            // Показываем кнопку добавления если она есть
+            const addBtn = document.querySelector('.btn-add');
+            if (addBtn) addBtn.style.display = isRop ? 'flex' : 'none';
+            
+            // Добавляем класс для body
+            if (isRop) {
+                document.body.classList.add('rop-mode');
+            } else {
+                document.body.classList.add('user-mode');
+            }
         } else {
             window.location.href = '/login.html';
         }
