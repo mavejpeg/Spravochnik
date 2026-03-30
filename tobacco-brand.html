@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Бренд — Справочник</title>
+<link rel="stylesheet" href="/css/main.css">
+<style>
+.brand-hero{display:flex;align-items:center;gap:18px;padding:20px 0 24px;border-bottom:1px solid var(--border);margin-bottom:24px}
+.brand-hero-logo{width:72px;height:72px;border-radius:14px;overflow:hidden;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0}
+.brand-hero-logo img{width:100%;height:100%;object-fit:cover}
+.brand-hero-name{font-family:'Unbounded',sans-serif;font-size:clamp(16px,3vw,24px);font-weight:900;color:var(--strong)}
+.brand-hero-desc{font-size:13px;color:var(--text2);margin-top:5px;line-height:1.5}
+.brand-hero-actions{margin-left:auto;display:flex;gap:8px;flex-shrink:0}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <a class="logo" href="/">☁</a>
+  <nav class="tab-nav" style="border:none;padding:0;background:transparent;flex:1">
+    <button class="tab-btn active" data-tab="tab-products">📦 Позиции</button>
+    <button class="tab-btn" data-tab="tab-notes">📝 Заметки</button>
+  </nav>
+  <span id="roleBadge" class="role-badge">...</span>
+  <a class="btn-home" href="/tobacco">← Бренды</a>
+</header>
+
+<main>
+  <div class="brand-hero" id="brandHero">
+    <div class="loader"><div class="spinner"></div></div>
+  </div>
+
+  <!-- PRODUCTS -->
+  <div class="section active" id="tab-products">
+    <div class="sec-header">
+      <span class="sec-title" id="productsTitle">Позиции</span>
+      <button class="btn btn-primary editor-only" style="display:none" id="btnAddProduct">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+        Добавить позицию
+      </button>
+    </div>
+    <div class="cards-grid" id="productsGrid">
+      <div class="loader"><div class="spinner"></div> Загрузка...</div>
+    </div>
+  </div>
+
+  <!-- NOTES / dynamic blocks -->
+  <div class="section" id="tab-notes">
+    <div class="sec-header"><span class="sec-title">Заметки о бренде</span></div>
+    <div id="notes-content-blocks"></div>
+    <div class="editor-only" style="display:none;margin-top:12px">
+      <button class="btn btn-ghost btn-sm" id="btnAddNotesBlock">➕ Добавить блок</button>
+    </div>
+  </div>
+</main>
+
+<script src="/js/app.js"></script>
+<script>
+const brandId = window.location.pathname.split('/').pop();
+let brandData = null;
+
+async function loadBrand() {
+  try {
+    const brands = await api.get('/api/brands');
+    brandData = brands.find(b => String(b.id) === String(brandId));
+    if (!brandData) { document.getElementById('brandHero').innerHTML = '<span style="color:var(--accent2)">Бренд не найден</span>'; return; }
+
+    document.title = `${brandData.name} — Справочник`;
+    document.getElementById('brandHero').innerHTML = `
+      <div class="brand-hero-logo">${brandData.logo_url ? `<img src="${brandData.logo_url}" alt="${brandData.name}">` : '🌿'}</div>
+      <div>
+        <div class="brand-hero-name">${brandData.name}</div>
+        ${brandData.description ? `<div class="brand-hero-desc">${brandData.description}</div>` : ''}
+      </div>
+      ${canEdit() ? `<div class="brand-hero-actions editor-only">
+        <button class="btn btn-secondary btn-sm" id="btnEditBrand">✏️ Редактировать бренд</button>
+      </div>` : ''}
+    `;
+    document.getElementById('btnEditBrand')?.addEventListener('click', () => {
+      new BrandModal({ brand: brandData, onSave: loadBrand });
+    });
+  } catch (e) {
+    document.getElementById('brandHero').innerHTML = `<span style="color:var(--accent2)">${e.message}</span>`;
+  }
+}
+
+async function loadProducts() {
+  const grid = document.getElementById('productsGrid');
+  try {
+    const items = await api.get(`/api/products?brand_id=${brandId}`);
+    grid.innerHTML = '';
+    if (!items.length) { showEmpty(grid, '🌿', 'Позиций нет', 'Добавьте первую позицию бренда'); return; }
+    items.forEach(item => {
+      grid.appendChild(buildProductCard(item,
+        it => new ProductModal({ title: '✏️ Редактировать', item: it, category: 'tobacco', brandId, onSave: loadProducts }),
+        loadProducts
+      ));
+    });
+  } catch (e) { grid.innerHTML = `<div class="loader"><span style="color:var(--accent2)">${e.message}</span></div>`; }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadBrand();
+  loadProducts();
+  loadContentSection('notes-content-blocks', `tobacco-brand-${brandId}`, 'notes');
+});
+
+document.getElementById('btnAddProduct')?.addEventListener('click', () => {
+  new ProductModal({ title: '➕ Добавить позицию', category: 'tobacco', brandId, onSave: loadProducts });
+});
+
+document.getElementById('btnAddNotesBlock')?.addEventListener('click', () => {
+  document.body.dataset.page = `tobacco-brand-${brandId}`;
+  document.body.dataset.section = 'notes';
+  openBlockEditor(null, () => loadContentSection('notes-content-blocks', `tobacco-brand-${brandId}`, 'notes'));
+});
+</script>
+</body>
+</html>
