@@ -2327,3 +2327,40 @@ details[open] summary span {
   transform: scale(1.02);
   filter: brightness(1.05);
 }
+
+body {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Разрешаем выделение только в полях ввода (чтобы пользователи могли логиниться) */
+input, textarea, select, [contenteditable="true"] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+/* Предупреждение при попытке скопировать */
+.copy-warning {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(252, 92, 124, 0.95);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    z-index: 10000;
+    animation: fadeOut 2s forwards;
+    backdrop-filter: blur(10px);
+    border-left: 3px solid var(--accent2);
+}
+
+@keyframes fadeOut {
+    0% { opacity: 1; transform: translateY(0); }
+    70% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-20px); visibility: hidden; }
+}
