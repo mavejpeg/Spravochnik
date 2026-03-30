@@ -199,7 +199,11 @@ function renderProductCard(item, category, onDelete, onEdit) {
   
   const strengthLabel = getStrengthLabel(category, strength);
   const badgeClass = getStrengthBadgeClass(category, strength);
+  
+  // ВАЖНО: проверяем глобальную переменную
   const canEdit = window.isRopGlobal === true;
+  
+  console.log('Rendering card:', item.name, 'canEdit:', canEdit, 'isRopGlobal:', window.isRopGlobal);
   
   let strengthDisplay = '';
   if (category === 'liquids' || category === 'disposables') {
@@ -239,7 +243,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
   `;
   
   const deleteBtn = div.querySelector('.btn-delete');
-  if (deleteBtn && canEdit) {
+  if (deleteBtn) {
     deleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       if (confirm(`❌ Удалить "${item.name}"?`)) {
@@ -255,7 +259,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
   }
   
   const editBtn = div.querySelector('.btn-edit');
-  if (editBtn && canEdit) {
+  if (editBtn) {
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       const editItem = {
@@ -271,7 +275,6 @@ function renderProductCard(item, category, onDelete, onEdit) {
   
   return div;
 }
-
 // ========== PRODUCT MODAL ==========
 class ProductModal {
   constructor({ category, title, onSave, editItem = null }) {
