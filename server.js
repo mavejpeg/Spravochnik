@@ -10,6 +10,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const pgSession = require('connect-pg-simple')(session);
 
 console.log('\n🚀 STARTING SERVER...\n');
 
@@ -174,17 +175,23 @@ app.use(express.static(path.join(__dirname)));
 
 // ========== SESSION MIDDLEWARE ==========
 app.use(session({
+    store: new pgSession({
+        pool: pool,
+        tableName: 'session',
+        createTableIfMissing: true
+    }),
     secret: 'spravochnik_secret_key_2024',
     resave: false,
     saveUninitialized: false,
     cookie: {
         secure: false,
         httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
+        maxAge: 30 * 24 * 60 * 60 * 1000,
         sameSite: 'lax'
     },
     name: 'spravochnik.sid'
 }));
+
 
 // ========== AUTH MIDDLEWARE ==========
 function requireAuth(req, res, next) {
