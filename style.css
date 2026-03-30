@@ -2107,3 +2107,55 @@ details[open] summary span {
     align-items: center;
     justify-content: center;
 }
+
+/* Компактный выбор цветовой градации */
+.strength-color-options {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.strength-color-option {
+    flex: 1;
+    min-width: 100px;
+    cursor: pointer;
+}
+
+.strength-color-option input {
+    display: none;
+}
+
+.strength-color-option .option-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 30px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.strength-color-option .color-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+.strength-color-option .option-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.strength-color-option input:checked + .option-content {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+}
+
+.strength-color-option.light .color-dot { background: #3cffa0; box-shadow: 0 0 4px #3cffa0; }
+.strength-color-option.medium .color-dot { background: #fcb830; box-shadow: 0 0 4px #fcb830; }
+.strength-color-option.strong .color-dot { background: #fc5c7c; box-shadow: 0 0 4px #fc5c7c; }
