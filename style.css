@@ -2398,3 +2398,49 @@ img {
     display: block;
     max-height: none;
 }
+
+.card-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+    z-index: 10;
+    background: rgba(0,0,0,0.6);
+    padding: 4px;
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+}
+
+.card-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-edit {
+    background: rgba(124, 92, 252, 0.8);
+    color: white;
+}
+
+.btn-edit:hover {
+    background: var(--accent);
+    transform: scale(1.05);
+}
+
+.btn-delete {
+    background: rgba(252, 92, 124, 0.8);
+    color: white;
+}
+
+.btn-delete:hover {
+    background: var(--accent2);
+    transform: scale(1.05);
+}
