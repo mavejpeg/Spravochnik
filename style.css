@@ -2364,3 +2364,18 @@ input, textarea, select, [contenteditable="true"] {
     70% { opacity: 1; }
     100% { opacity: 0; transform: translateY(-20px); visibility: hidden; }
 }
+
+/* Защита изображений от сохранения */
+.card-img img {
+    pointer-events: none;
+    -webkit-user-drag: none;
+    user-drag: none;
+}
+
+/* Запрет на сохранение изображений */
+img {
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
