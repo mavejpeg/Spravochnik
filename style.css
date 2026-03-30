@@ -2159,3 +2159,22 @@ details[open] summary span {
 .strength-color-option.light .color-dot { background: #3cffa0; box-shadow: 0 0 4px #3cffa0; }
 .strength-color-option.medium .color-dot { background: #fcb830; box-shadow: 0 0 4px #fcb830; }
 .strength-color-option.strong .color-dot { background: #fc5c7c; box-shadow: 0 0 4px #fc5c7c; }
+
+.rich-editor ul, 
+.rich-editor ol {
+    margin: 8px 0;
+    padding-left: 24px;
+}
+
+.rich-editor li {
+    margin: 4px 0;
+    line-height: 1.5;
+}
+
+.rich-editor ul {
+    list-style-type: disc;
+}
+
+.rich-editor ol {
+    list-style-type: decimal;
+}
