@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Обучение новичков — Справочник</title>
-<link rel="stylesheet" href="style.css?v=23">
+<link rel="stylesheet" href="style.css?v=24">
 <style>
   /* Стили для опросников */
   .quiz-block {
@@ -145,15 +145,46 @@
     margin-left: 10px;
   }
   
-  /* Отступы */
+  .gap-16 {
+    margin-bottom: 16px;
+  }
+  
+  /* Стили для details (выпадающие списки) */
+  details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+  }
+  
+  details summary {
+    cursor: pointer;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: var(--accent);
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  details summary:hover {
+    background: var(--surface2);
+  }
+  
+  details[open] summary {
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  
+  details .acc-body {
+    padding: 16px;
+  }
+  
   .section-content {
     display: flex;
     flex-direction: column;
     gap: 20px;
-  }
-  
-  .gap-16 {
-    margin-bottom: 16px;
   }
 </style>
 </head>
@@ -200,18 +231,18 @@
 
       <div class="gap-16"></div>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">💧 Жидкости: виды никотина</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>💧 Жидкости: виды никотина</summary>
         <div class="acc-body">
           <div class="hl info">Солевой никотин (Salt Nic) — быстро накуривает, мягче при затяжке, для подов</div>
           <div class="hl info">Щелочной никотин (Freebase) — накопительный эффект, для больших устройств</div>
           <div class="hl info">Пропиленгликоль (PG) — отвечает за передачу вкуса и удар по горлу</div>
           <div class="hl info">Глицерин (VG) — отвечает за густоту пара</div>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">🏷️ Топовые жидкости</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>🏷️ Топовые жидкости</summary>
         <div class="acc-body">
           <ul>
             <li><strong>Рик и Морти</strong> — топ продаж</li>
@@ -221,10 +252,10 @@
             <li><strong>Генг</strong> — стабильное качество</li>
           </ul>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">💰 Маржинальные позиции жидкостей</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>💰 Маржинальные позиции жидкостей</summary>
         <div class="acc-body">
           <ul>
             <li><strong>Хаски</strong> — бюджетный сегмент</li>
@@ -238,10 +269,10 @@
             <li><strong>Вейл Клауд</strong> — облачные жидкости</li>
           </ul>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">⚡ Одноразки: классификация по крепости</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>⚡ Одноразки: классификация по крепости</summary>
         <div class="acc-body">
           <div class="hl warn">КРЕПКИЕ:</div>
           <ul><li>Vozol 20k, Fumo 18k, GENG, HQD, Bubble Moon</li></ul>
@@ -251,10 +282,10 @@
           <ul><li>KRZ, Inflave Strong, Funky Lands</li></ul>
           <div class="hl warn">⚠️ Важно: держать на зарядке не более 40 минут!</div>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">🔧 Сопротивление испарителей</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>🔧 Сопротивление испарителей</summary>
         <div class="acc-body">
           <ul>
             <li><strong>0.6-0.8 Ом</strong> — для солевых жидкостей (под-системы)</li>
@@ -262,7 +293,7 @@
             <li><strong>1.0-1.2 Ом</strong> — для крепких солей (MTL)</li>
           </ul>
         </div>
-      </div>
+      </details>
 
       <div class="info-card">
         <h3>📝 Проверка знаний (вопросы)</h3>
@@ -275,7 +306,7 @@
       </div>
 
       <!-- ОПРОСНИК ДЕНЬ 1 -->
-      <div class="quiz-block" id="quiz-day1">
+      <div class="quiz-block">
         <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 1)</div>
         <div id="quiz-day1-questions"></div>
         <button class="quiz-btn" onclick="checkQuiz('day1')">✅ Проверить ответы</button>
@@ -301,8 +332,8 @@
         </ul>
       </div>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">🌿 Табаки: топы рынка и крепости</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>🌿 Табаки: топы рынка и крепости</summary>
         <div class="acc-body">
           <ul>
             <li><strong>Мастях</strong> — классика, средняя крепость</li>
@@ -316,10 +347,10 @@
             <li><strong>Чабака</strong> — чайный лист</li>
           </ul>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">🏺 Виды чаш и их применение</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>🏺 Виды чаш и их применение</summary>
         <div class="acc-body">
           <ul>
             <li><strong>Турка / Универсальная</strong> — баланс вкуса и крепости (5 отверстий)</li>
@@ -329,10 +360,10 @@
           </ul>
           <div class="hl info">Срок службы чаши: 6-12 месяцев при правильном уходе</div>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">🔧 Аксессуары и их применение</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>🔧 Аксессуары и их применение</summary>
         <div class="acc-body">
           <ul>
             <li><strong>Мелассоуловитель</strong> — защита от затекания сиропа</li>
@@ -344,10 +375,10 @@
             <li><strong>Печка-плитка</strong> — для розжига углей</li>
           </ul>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">🫙 Жевательный табак: классификация</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>🫙 Жевательный табак: классификация</summary>
         <div class="acc-body">
           <div class="hl warn">КРЕПКИЕ:</div>
           <ul><li>Oden's, Siberia, Monster, Angry, Corvus</li></ul>
@@ -356,7 +387,7 @@
           <div class="hl info">ЛЁГКИЕ:</div>
           <ul><li>Trava, FAVE, Hismoke</li></ul>
         </div>
-      </div>
+      </details>
 
       <div class="info-card">
         <h3>🍃 Виды забивок кальяна</h3>
@@ -368,8 +399,7 @@
         <div class="hl info">Примеры миксов:<br>Сладкий: 1 легкий, 2 средних<br>Свежий: 1 крепкий, 1 легкий, 1 средний<br>Кислый: 2 средних, 1 крепкий<br>Десертный: 2 крепких, 1 средний</div>
       </div>
 
-      <!-- ОПРОСНИК ДЕНЬ 2 -->
-      <div class="quiz-block" id="quiz-day2">
+      <div class="quiz-block">
         <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 2)</div>
         <div id="quiz-day2-questions"></div>
         <button class="quiz-btn" onclick="checkQuiz('day2')">✅ Проверить ответы</button>
@@ -396,8 +426,8 @@
         </ul>
       </div>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">🧾 Работа с кассой и маркировкой</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>🧾 Работа с кассой и маркировкой</summary>
         <div class="acc-body">
           <div class="hl warn">ВАЖНО:</div>
           <ul>
@@ -408,10 +438,10 @@
           </ul>
           <div class="hl info">Маркированные товары (одноразки, жидкости) — только через QR-сканирование!</div>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">📦 Работа с закупом и накладными</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>📦 Работа с закупом и накладными</summary>
         <div class="acc-body">
           <div class="hl warn">ПРАВИЛА:</div>
           <ul>
@@ -420,10 +450,10 @@
             <li>В комментарии приемки указывать расхождения и примечания</li>
           </ul>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">💰 Как вести себя с мошенниками</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>💰 Как вести себя с мошенниками</summary>
         <div class="acc-body">
           <ul>
             <li>Сначала берем деньги, потом отдаем товар</li>
@@ -432,10 +462,10 @@
             <li>Стойте в полоборота (спинкой к товару)</li>
           </ul>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">🏛️ Как вести себя с гос.органами</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>🏛️ Как вести себя с гос.органами</summary>
         <div class="acc-body">
           <ul>
             <li>Перед началом рабочего дня знать на каком юр.лице работаете и с какого момента</li>
@@ -445,10 +475,10 @@
             <li>Если изымают — должна быть опись с названиями, ценами и количеством</li>
           </ul>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">📋 Дисциплинарные моменты</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>📋 Дисциплинарные моменты</summary>
         <div class="acc-body">
           <ul>
             <li>Выкладка товара (по полкам, ценниками вверх)</li>
@@ -459,10 +489,9 @@
             <li>Проверка рабочего телефона</li>
           </ul>
         </div>
-      </div>
+      </details>
 
-      <!-- ОПРОСНИК ДЕНЬ 3 -->
-      <div class="quiz-block" id="quiz-day3">
+      <div class="quiz-block">
         <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 3)</div>
         <div id="quiz-day3-questions"></div>
         <button class="quiz-btn" onclick="checkQuiz('day3')">✅ Проверить ответы</button>
@@ -489,8 +518,8 @@
         </ul>
       </div>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">✅ Контрольные вопросы</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>✅ Контрольные вопросы</summary>
         <div class="acc-body">
           <ul>
             <li>Назовите топ-5 жидкостей и их особенности</li>
@@ -500,7 +529,7 @@
             <li>Алгоритм действий при проверке гос.органами?</li>
           </ul>
         </div>
-      </div>
+      </details>
 
       <div class="info-card">
         <h3>💡 Скидки и комбо — подробно</h3>
@@ -512,8 +541,7 @@
         </ul>
       </div>
 
-      <!-- ОПРОСНИК ДЕНЬ 4 -->
-      <div class="quiz-block" id="quiz-day4">
+      <div class="quiz-block">
         <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 4)</div>
         <div id="quiz-day4-questions"></div>
         <button class="quiz-btn" onclick="checkQuiz('day4')">✅ Проверить ответы</button>
@@ -530,8 +558,8 @@
       <button class="btn-edit-content" data-page="training" data-section="scripts" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="scripts-content" class="section-content">
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">🎯 Стандарты общения</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>🎯 Стандарты общения</summary>
         <div class="acc-body">
           <ul>
             <li>Поздороваться, подняться со стула</li>
@@ -539,33 +567,32 @@
             <li>Быть активным, подстраиваться под человека</li>
           </ul>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">💧 Скрипт: жидкости</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>💧 Скрипт: жидкости</summary>
         <div class="acc-body">
           <div class="hl info">Покупатель подошел к стеллажу с жидкостями:</div>
           <div class="hl ok">«Здравствуйте, что по вкусу вы хотели (кислое или сладкое)? И какая крепость?»</div>
           <div class="hl info">Если ответ «Не знаю, хочу что-нибудь вкусненькое»:</div>
           <div class="hl ok">«Давайте попробуем определиться. Фруктовые, ягодные или сладкие десертные?»</div>
-          <div class="hl info">После выбора направления — дать 3 варианта на выбор с презентацией</div>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">💨 Скрипт: одноразки</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>💨 Скрипт: одноразки</summary>
         <div class="acc-body">
           <div class="hl ok">«На какое количество тяг рассматриваете? Крепкую или легкую? Что по вкусу?»</div>
         </div>
-      </div>
+      </details>
 
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">🏺 Скрипт: табак для кальяна</span><span class="acc-arrow">▼</span></div>
+      <details>
+        <summary>🏺 Скрипт: табак для кальяна</summary>
         <div class="acc-body">
           <div class="hl ok">«Какую крепость предпочитаете? Лёгкую, среднюю или крепкую?»</div>
           <div class="hl ok">«По вкусу: фруктовые, ягодные, мятные или табачные?»</div>
         </div>
-      </div>
+      </details>
     </div>
   </div>
 
@@ -601,9 +628,24 @@
 
 </main>
 
-<script src="core.js?v=23"></script>
-<script src="main.js?v=23"></script>
+<script src="core.js?v=24"></script>
+<script src="main.js?v=24"></script>
 <script>
+// Инициализация табов
+function initTabs() {
+  const btns = document.querySelectorAll('.tab-btn');
+  btns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const target = this.dataset.tab;
+      btns.forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      const sec = document.getElementById(target);
+      if (sec) sec.classList.add('active');
+    });
+  });
+}
+
 // Данные для опросников
 const quizzes = {
   day1: {
@@ -751,26 +793,11 @@ function resetQuiz(day) {
   resultDiv.classList.remove('show', 'success', 'fail');
 }
 
-// Инициализация аккордеонов для details/summary
-function initDetailsAccordions() {
-  const details = document.querySelectorAll('details');
-  details.forEach(detail => {
-    const summary = detail.querySelector('summary');
-    if (summary && !detail.classList.contains('converted')) {
-      summary.addEventListener('click', (e) => {
-        e.preventDefault();
-        detail.open = !detail.open;
-      });
-      detail.classList.add('converted');
-    }
-  });
-}
-
-// Запуск после загрузки
+// Инициализация
 document.addEventListener('DOMContentLoaded', () => {
+  initTabs();
   initQuizzes();
-  initDetailsAccordions();
-  console.log('Training page loaded with quizzes');
+  console.log('Training page loaded');
 });
 
 // Глобальные функции для кнопок
