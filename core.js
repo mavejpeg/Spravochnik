@@ -1,4 +1,6 @@
-// core.js - полная версия
+// core.js - полная исправленная версия
+
+// ========== CONSTANTS ==========
 const QUALITY_SETTINGS = {
   premium: { name: 'Премиум', icon: '💎', color: 'var(--accent)' },
   medium: { name: 'Средний класс', icon: '⭐', color: 'var(--accent4)' },
@@ -19,16 +21,20 @@ const STRENGTH_BADGE_CLASS = {
   9: 'badge-strength-5', 10: 'badge-strength-5'
 };
 
+// ========== HELPER FUNCTIONS ==========
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
 }
 
+// ========== API FUNCTIONS ==========
 async function getCategory(category) {
   try {
     const response = await fetch(`/api/products/${category}`, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch');
-    return await response.json();
+    const data = await response.json();
+    console.log(`Loaded ${category}:`, data.length);
+    return data;
   } catch (error) {
     console.error('Fetch error:', error);
     return [];
@@ -115,12 +121,10 @@ async function uploadPhoto(file) {
       credentials: 'include',
       body: formData
     });
-    
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Upload failed');
     }
-    
     const data = await response.json();
     return data.photoUrl;
   } catch (error) {
@@ -129,6 +133,7 @@ async function uploadPhoto(file) {
   }
 }
 
+// ========== UI FUNCTIONS ==========
 function renderEmpty(container, icon, title, sub) {
   container.innerHTML = `
     <div class="empty-state">
@@ -164,9 +169,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
       <div class="card-name">${escapeHtml(item.name)}</div>
       <div class="card-meta">
         <span class="badge ${badgeClass}">${STRENGTH_LABELS[strength]}</span>
-        <span class="badge quality-badge ${qualityClass}" style="background: ${quality.color}20; color: ${quality.color};">
-          ${quality.icon} ${quality.name}
-        </span>
+        <span class="badge quality-badge ${qualityClass}" style="background: ${quality.color}20; color: ${quality.color};">${quality.icon} ${quality.name}</span>
         ${item.origin ? `<span class="badge badge-origin">🌍 ${escapeHtml(item.origin)}</span>` : ''}
       </div>
       <div class="strength-compact">
@@ -213,6 +216,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
   return div;
 }
 
+// ========== PRODUCT MODAL ==========
 class ProductModal {
   constructor({ category, title, onSave, editItem = null }) {
     this.category = category;
@@ -314,6 +318,9 @@ class ProductModal {
     const removePhotoBtn = overlay.querySelector('#removePhotoBtn');
     
     if (photoInput) {
+      const uploadArea = overlay.querySelector('#photoUploadArea');
+      uploadArea.addEventListener('click', () => photoInput.click());
+      
       photoInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -375,6 +382,7 @@ class ProductModal {
   }
 }
 
+// ========== EXPORTS ==========
 window.getCategory = getCategory;
 window.addItem = addItem;
 window.deleteItem = deleteItem;
