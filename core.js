@@ -19,7 +19,15 @@ async function addItem(category, item) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(item)
+      body: JSON.stringify({
+        id: item.id,
+        name: item.name,
+        strength: item.strength,
+        quality_class: item.quality_class || 'medium',  // <--- ДОБАВИТЬ
+        origin: item.origin,
+        desc: item.desc,
+        photoUrl: item.photoUrl
+      })
     });
     if (!response.ok) {
       const error = await response.json();
@@ -55,7 +63,14 @@ async function updateItem(category, id, data) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        name: data.name,
+        strength: data.strength,
+        quality_class: data.quality_class || 'medium',  // <--- ДОБАВИТЬ
+        origin: data.origin,
+        desc: data.desc,
+        photoUrl: data.photoUrl
+      })
     });
     if (!response.ok) {
       const error = await response.json();
@@ -105,6 +120,12 @@ const STRENGTH_LABELS = {
   8: 'Мощный',
   9: 'Экстремальный',
   10: 'Убийственный'
+};
+
+const QUALITY_CLASSES = {
+  premium: { name: 'Премиум', icon: '💎', color: 'var(--accent)' },
+  medium: { name: 'Средний класс', icon: '⭐', color: 'var(--accent4)' },
+  economy: { name: 'Эконом', icon: '📦', color: 'var(--accent3)' }
 };
 
 const STRENGTH_BADGE_CLASS = {
@@ -223,6 +244,7 @@ class ProductModal {
     this.onSave = onSave;
     this.editItem = editItem;
     this.photoUrl = editItem?.photoUrl || editItem?.photo_url || null;
+    this.qualityClass = editItem?.quality_class || 'medium';
     this.isUploading = false;
     this._build();
   }
@@ -238,6 +260,17 @@ class ProductModal {
     const strengthVal = this.editItem?.strength || 5;
     const hasPhoto = this.photoUrl ? true : false;
     
+    // Опции для выбора класса качества
+    const qualityOptions = [
+      { value: 'premium', label: '💎 Премиум', selected: this.qualityClass === 'premium' },
+      { value: 'medium', label: '⭐ Средний класс', selected: this.qualityClass === 'medium' },
+      { value: 'economy', label: '📦 Эконом', selected: this.qualityClass === 'economy' }
+    ];
+    
+    const qualityHtml = qualityOptions.map(opt => 
+      `<option value="${opt.value}" ${opt.selected ? 'selected' : ''}>${opt.label}</option>`
+    ).join('');
+    
     overlay.innerHTML = `
       <div class="modal">
         <div class="modal-header">
@@ -245,6 +278,7 @@ class ProductModal {
           <button class="modal-close">✕</button>
         </div>
         <div class="modal-body">
+          <!-- Фото товара -->
           <div class="field">
             <label>📸 Фото товара</label>
             <div class="photo-upload-area" id="photoUploadArea">
@@ -265,27 +299,41 @@ class ProductModal {
             </div>
           </div>
           
+          <!-- Название -->
           <div class="field">
             <label>📝 Название *</label>
             <input type="text" id="fieldName" value="${escapeHtml(this.editItem?.name || '')}" placeholder="Введите название">
           </div>
           
-          <div class="field">
-            <label>⚡ Крепость (1-10)</label>
-            <div class="strength-slider-wrap">
-              <div class="strength-display">
-                <span class="strength-val" id="strengthValDisplay">${strengthVal}</span>
-                <span class="strength-label-text" id="strengthLabelDisplay">${STRENGTH_LABELS[strengthVal]}</span>
+          <div class="row" style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <!-- Крепость -->
+            <div class="field" style="flex: 1;">
+              <label>⚡ Крепость (1-10)</label>
+              <div class="strength-slider-wrap">
+                <div class="strength-display">
+                  <span class="strength-val" id="strengthValDisplay">${strengthVal}</span>
+                  <span class="strength-label-text" id="strengthLabelDisplay">${STRENGTH_LABELS[strengthVal]}</span>
+                </div>
+                <input type="range" id="fieldStrength" min="1" max="10" value="${strengthVal}">
               </div>
-              <input type="range" id="fieldStrength" min="1" max="10" value="${strengthVal}">
+            </div>
+            
+            <!-- Класс качества -->
+            <div class="field" style="flex: 1;">
+              <label>🏷️ Класс качества</label>
+              <select id="fieldQuality" class="product-class-select" style="width:100%; padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px;">
+                ${qualityHtml}
+              </select>
             </div>
           </div>
           
+          <!-- Производитель -->
           <div class="field">
             <label>🏭 Производитель / Страна</label>
             <input type="text" id="fieldOrigin" value="${escapeHtml(this.editItem?.origin || '')}" placeholder="Например: Россия, Швеция">
           </div>
           
+          <!-- Описание -->
           <div class="field">
             <label>📋 Описание</label>
             <textarea id="fieldDesc" rows="4" placeholder="Особенности вкуса, формат, советы">${escapeHtml(this.editItem?.desc || this.editItem?.description || '')}</textarea>
@@ -301,6 +349,7 @@ class ProductModal {
     document.body.appendChild(overlay);
     setTimeout(() => overlay.classList.add('open'), 10);
     
+    // Strength slider
     const slider = overlay.querySelector('#fieldStrength');
     const valDisp = overlay.querySelector('#strengthValDisplay');
     const labelDisp = overlay.querySelector('#strengthLabelDisplay');
@@ -309,9 +358,12 @@ class ProductModal {
       slider.addEventListener('input', () => {
         valDisp.textContent = slider.value;
         labelDisp.textContent = STRENGTH_LABELS[slider.value] || '';
+        const val = parseInt(slider.value);
+        valDisp.style.color = val <= 3 ? 'var(--accent3)' : val <= 6 ? 'var(--accent4)' : 'var(--accent2)';
       });
     }
     
+    // Photo upload (оставляем как было)
     const photoInput = overlay.querySelector('#photoInput');
     const uploadProgress = overlay.querySelector('#uploadProgress');
     const progressBar = overlay.querySelector('#progressBar');
@@ -332,6 +384,11 @@ class ProductModal {
         
         if (file.size > 5 * 1024 * 1024) {
           alert('❌ Файл слишком большой! Максимум 5MB');
+          return;
+        }
+        
+        if (!file.type.startsWith('image/')) {
+          alert('❌ Пожалуйста, выберите изображение');
           return;
         }
         
@@ -377,6 +434,7 @@ class ProductModal {
       });
     }
     
+    // Close modal
     const closeModal = () => {
       overlay.classList.remove('open');
       setTimeout(() => overlay.remove(), 300);
@@ -391,6 +449,7 @@ class ProductModal {
       if (e.target === overlay) closeModal();
     });
     
+    // ========== СОХРАНЕНИЕ - ЗДЕСЬ ДОБАВЛЯЕМ quality_class ==========
     const saveBtn = overlay.querySelector('.btn-save');
     if (saveBtn) {
       saveBtn.addEventListener('click', async () => {
@@ -412,6 +471,7 @@ class ProductModal {
           id: this.editItem?.id || (Date.now() + Math.random()).toString(),
           name: name,
           strength: parseInt(overlay.querySelector('#fieldStrength')?.value || 5),
+          quality_class: overlay.querySelector('#fieldQuality')?.value || 'medium',  // <--- ЭТО СТРОКА, КОТОРУЮ НУЖНО ДОБАВИТЬ
           origin: overlay.querySelector('#fieldOrigin')?.value.trim() || '',
           desc: overlay.querySelector('#fieldDesc')?.value.trim() || '',
           photoUrl: this.photoUrl
