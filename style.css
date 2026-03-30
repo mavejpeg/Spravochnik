@@ -2498,3 +2498,62 @@ details .acc-body {
     padding: 16px;
     border-top: 1px solid var(--border);
 }
+
+/* Стили для кнопок в редакторе опросников */
+.add-quiz-question {
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.add-quiz-question:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.add-option-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: var(--text);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.add-option-btn:hover {
+    background: var(--surface3);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.remove-question-btn, .remove-option-btn {
+    background: rgba(252, 92, 124, 0.15);
+    border: 1px solid rgba(252, 92, 124, 0.3);
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: var(--accent2);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.remove-question-btn:hover, .remove-option-btn:hover {
+    background: rgba(252, 92, 124, 0.3);
+    transform: scale(1.02);
+}
