@@ -164,13 +164,6 @@ function editContent(page, section) {
                 contentDiv.innerHTML = newContent;
                 alert('✅ Сохранено успешно!');
                 closeModal();
-                // Переинициализируем аккордеоны
-                document.querySelectorAll('.acc-header').forEach(header => {
-                    header.removeEventListener('click', () => {});
-                    header.addEventListener('click', function() {
-                        this.closest('.accordion').classList.toggle('open');
-                    });
-                });
             } else {
                 alert('❌ Ошибка сохранения');
             }
