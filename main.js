@@ -1,4 +1,4 @@
-// main.js - полная версия с визуальным редактором
+// main.js - полная версия с визуальным редактором и опросниками
 let isRop = false;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -193,6 +193,7 @@ function openVisualEditor(page, section) {
     setupRichEditors(editorArea);
     setupListEditors(editorArea);
     setupStepsEditors(editorArea);
+    setupQuizEditors(editorArea);
     
     const closeModal = () => {
         modal.classList.remove('open');
@@ -389,7 +390,9 @@ function convertElementToEditorItem(el) {
             const optionSpans = q.querySelectorAll('.quiz-option span');
             optionSpans.forEach(opt => options.push(opt.textContent.trim()));
             const correct = q.querySelector('input[type="radio"]:checked')?.value || 0;
-            questions.push({ text, options, correct: parseInt(correct) });
+            if (text && options.length) {
+                questions.push({ text, options, correct: parseInt(correct) });
+            }
         });
         return `
             <div class="editor-item quiz-item" data-type="quiz">
@@ -664,67 +667,170 @@ function setupStepsEditors(container) {
     });
 }
 
-function setupQuizEditors(container) {
-    const quizEditors = container.querySelectorAll('.quiz-editor');
-    quizEditors.forEach(editor => {
-        const addBtn = editor.closest('.editor-item-content')?.querySelector('.add-quiz-question');
-        if (addBtn) {
-            addBtn.addEventListener('click', () => {
-                initQuizEditor(editor);
-                const newQuestion = document.createElement('div');
-                newQuestion.className = 'quiz-question-editor';
-                newQuestion.innerHTML = `
-                    <input type="text" class="quiz-question-text" placeholder="Вопрос">
-                    <div class="quiz-options-editor">
-                        <div class="quiz-option-editor">
-                            <input type="text" placeholder="Вариант ответа">
-                            <input type="radio" name="correct" value="0">
-                        </div>
-                    </div>
-                    <button class="add-option-btn">➕ Добавить вариант</button>
-                    <button class="remove-question-btn">🗑 Удалить вопрос</button>
-                `;
-                editor.appendChild(newQuestion);
-            });
-        }
-        
-        initQuizEditor(editor);
-    });
-}
-
-function initQuizEditor(container) {
-    const questions = JSON.parse(container.dataset.questions || '[]');
-    if (questions.length === 0) {
-        container.innerHTML = '<div class="quiz-placeholder">Нажмите "Добавить вопрос" чтобы создать опросник</div>';
-    } else {
-        let html = '';
-        questions.forEach((q, idx) => {
-            html += `
-                <div class="quiz-question-editor">
-                    <input type="text" class="quiz-question-text" value="${escapeHtml(q.text)}" placeholder="Вопрос">
-                    <div class="quiz-options-editor">
-                        ${q.options.map((opt, optIdx) => `
-                            <div class="quiz-option-editor">
-                                <input type="text" value="${escapeHtml(opt)}" placeholder="Вариант ответа">
-                                <input type="radio" name="correct_${idx}" value="${optIdx}" ${q.correct === optIdx ? 'checked' : ''}>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <button class="add-option-btn">➕ Добавить вариант</button>
-                    <button class="remove-question-btn">🗑 Удалить вопрос</button>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    }
-}
-
 function updateStepNumbers(editor) {
     const steps = editor.querySelectorAll('.step-item');
     steps.forEach((step, idx) => {
         const numSpan = step.querySelector('.step-num-display');
         if (numSpan) numSpan.textContent = idx + 1;
     });
+}
+
+function setupQuizEditors(container) {
+    const quizEditors = container.querySelectorAll('.quiz-editor');
+    quizEditors.forEach(editor => {
+        initQuizEditor(editor);
+        
+        const addBtn = editor.closest('.editor-item-content')?.querySelector('.add-quiz-question');
+        if (addBtn) {
+            addBtn.removeEventListener('click', () => handleAddQuestion(editor));
+            addBtn.addEventListener('click', () => handleAddQuestion(editor));
+        }
+    });
+}
+
+function handleAddQuestion(editor) {
+    const questionId = Date.now();
+    const questionDiv = document.createElement('div');
+    questionDiv.className = 'quiz-question-editor';
+    questionDiv.dataset.id = questionId;
+    questionDiv.style.cssText = 'background: var(--surface2); border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 3px solid var(--accent);';
+    questionDiv.innerHTML = `
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 6px; font-size: 12px; color: var(--muted);">📝 Вопрос:</label>
+            <input type="text" class="quiz-question-text" placeholder="Введите вопрос" style="width: 100%; padding: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
+        </div>
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 6px; font-size: 12px; color: var(--muted);">📋 Варианты ответов:</label>
+            <div class="quiz-options-editor" style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="quiz-option-editor" style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" placeholder="Вариант ответа" style="flex: 1; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="radio" name="correct_${questionId}" value="0" class="correct-radio">
+                        <span style="font-size: 12px; color: var(--accent3);">✓ Правильный</span>
+                    </label>
+                    <button class="remove-option-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 10px; color: var(--accent2); cursor: pointer;">🗑</button>
+                </div>
+            </div>
+            <button class="add-option-btn" style="margin-top: 8px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 6px 12px; color: var(--accent); cursor: pointer;">➕ Добавить вариант</button>
+        </div>
+        <button class="remove-question-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить вопрос</button>
+    `;
+    
+    setupQuestionHandlers(questionDiv, questionId);
+    
+    const placeholder = editor.querySelector('.quiz-placeholder');
+    if (placeholder) placeholder.remove();
+    
+    editor.appendChild(questionDiv);
+}
+
+function setupQuestionHandlers(questionDiv, questionId) {
+    const addOptionBtn = questionDiv.querySelector('.add-option-btn');
+    if (addOptionBtn) {
+        addOptionBtn.addEventListener('click', () => {
+            const optionsContainer = questionDiv.querySelector('.quiz-options-editor');
+            const optionCount = optionsContainer.querySelectorAll('.quiz-option-editor').length;
+            const newOption = document.createElement('div');
+            newOption.className = 'quiz-option-editor';
+            newOption.style.cssText = 'display: flex; gap: 10px; align-items: center; margin-top: 8px;';
+            newOption.innerHTML = `
+                <input type="text" placeholder="Вариант ответа" style="flex: 1; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="radio" name="correct_${questionId}" value="${optionCount}" class="correct-radio">
+                    <span style="font-size: 12px; color: var(--accent3);">✓ Правильный</span>
+                </label>
+                <button class="remove-option-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 10px; color: var(--accent2); cursor: pointer;">🗑</button>
+            `;
+            optionsContainer.appendChild(newOption);
+            setupOptionHandlers(newOption, questionId);
+        });
+    }
+    
+    const removeQuestionBtn = questionDiv.querySelector('.remove-question-btn');
+    if (removeQuestionBtn) {
+        removeQuestionBtn.addEventListener('click', () => {
+            questionDiv.remove();
+        });
+    }
+    
+    const optionEditors = questionDiv.querySelectorAll('.quiz-option-editor');
+    optionEditors.forEach(option => {
+        setupOptionHandlers(option, questionId);
+    });
+}
+
+function setupOptionHandlers(optionDiv, questionId) {
+    const radio = optionDiv.querySelector('.correct-radio');
+    const removeBtn = optionDiv.querySelector('.remove-option-btn');
+    
+    if (radio) {
+        const index = Array.from(optionDiv.parentNode.children).indexOf(optionDiv);
+        radio.value = index;
+    }
+    
+    if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+            const container = optionDiv.parentNode;
+            optionDiv.remove();
+            const remainingOptions = container.querySelectorAll('.quiz-option-editor');
+            remainingOptions.forEach((opt, newIdx) => {
+                const radioBtn = opt.querySelector('.correct-radio');
+                if (radioBtn) radioBtn.value = newIdx;
+            });
+        });
+    }
+}
+
+function initQuizEditor(container) {
+    const questions = JSON.parse(container.dataset.questions || '[]');
+    container.innerHTML = '';
+    
+    if (questions.length === 0) {
+        container.innerHTML = `
+            <div class="quiz-placeholder" style="text-align: center; padding: 40px; color: var(--muted);">
+                📋 Нажмите "Добавить вопрос" чтобы создать опросник
+            </div>
+        `;
+    } else {
+        questions.forEach((q, idx) => {
+            const questionId = Date.now() + idx;
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'quiz-question-editor';
+            questionDiv.style.cssText = 'background: var(--surface2); border-radius: 12px; padding: 16px; margin-bottom: 16px; border-left: 3px solid var(--accent);';
+            
+            let optionsHtml = '';
+            q.options.forEach((opt, optIdx) => {
+                optionsHtml += `
+                    <div class="quiz-option-editor" style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
+                        <input type="text" value="${escapeHtml(opt)}" placeholder="Вариант ответа" style="flex: 1; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                            <input type="radio" name="correct_${questionId}" value="${optIdx}" class="correct-radio" ${q.correct === optIdx ? 'checked' : ''}>
+                            <span style="font-size: 12px; color: var(--accent3);">✓ Правильный</span>
+                        </label>
+                        <button class="remove-option-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 10px; color: var(--accent2); cursor: pointer;">🗑</button>
+                    </div>
+                `;
+            });
+            
+            questionDiv.innerHTML = `
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 12px; color: var(--muted);">📝 Вопрос:</label>
+                    <input type="text" class="quiz-question-text" value="${escapeHtml(q.text)}" placeholder="Введите вопрос" style="width: 100%; padding: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 12px; color: var(--muted);">📋 Варианты ответов:</label>
+                    <div class="quiz-options-editor" style="display: flex; flex-direction: column; gap: 8px;">
+                        ${optionsHtml}
+                    </div>
+                    <button class="add-option-btn" style="margin-top: 8px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 6px 12px; color: var(--accent); cursor: pointer;">➕ Добавить вариант</button>
+                </div>
+                <button class="remove-question-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить вопрос</button>
+            `;
+            
+            container.appendChild(questionDiv);
+            setupQuestionHandlers(questionDiv, questionId);
+        });
+    }
 }
 
 function setupRemoveButtons(container) {
@@ -767,18 +873,18 @@ function initTableEditor(container) {
     const rows = JSON.parse(container.dataset.rows || '[]');
     if (rows.length === 0) rows.push(['', '']);
     
-    let html = '<table class="editor-table"><thead>  <tr>';
+    let html = '<table class="editor-table"><thead>   \\(';
     for (let i = 0; i < rows[0].length; i++) {
         html += `<th><input type="text" class="table-header" value="${escapeHtml(rows[0][i] || '')}" placeholder="Заголовок ${i+1}"></th>`;
     }
-    html += '<th style="width:40px;"></th>  </tr></thead><tbody>';
+    html += '<th style="width:40px;"></th>   </thead><tbody>';
     for (let i = 1; i < rows.length; i++) {
-        html += '  <tr>';
+        html += '   <tr>';
         for (let j = 0; j < rows[i].length; j++) {
             html += `<td><input type="text" class="table-cell" value="${escapeHtml(rows[i][j] || '')}" placeholder="Значение"></td>`;
         }
         html += `<td><button class="remove-table-row">🗑</button></td>`;
-        html += '  </tr>';
+        html += '   </tr>';
     }
     html += '</tbody></table>';
     container.innerHTML = html;
@@ -907,7 +1013,7 @@ function convertEditorToHtml(editorArea) {
                 }
                 break;
             case 'quiz':
-                const questions = [];
+                const questionsData = [];
                 const questionEditors = item.querySelectorAll('.quiz-question-editor');
                 questionEditors.forEach(q => {
                     const text = q.querySelector('.quiz-question-text')?.value.trim() || '';
@@ -916,13 +1022,13 @@ function convertEditorToHtml(editorArea) {
                     optionInputs.forEach(opt => options.push(opt.value.trim()));
                     const correctRadio = q.querySelector('input[type="radio"]:checked');
                     const correct = correctRadio ? parseInt(correctRadio.value) : 0;
-                    if (text && options.length) {
-                        questions.push({ text, options, correct });
+                    if (text && options.length >= 2) {
+                        questionsData.push({ text, options, correct });
                     }
                 });
-                if (questions.length) {
+                if (questionsData.length) {
                     let quizHtml = '<div class="quiz-block"><div class="quiz-title">📋 Опросник</div>';
-                    questions.forEach((q, idx) => {
+                    questionsData.forEach((q, idx) => {
                         quizHtml += `
                             <div class="quiz-question">
                                 <div class="quiz-question-text">${idx + 1}. ${escapeHtml(q.text)}</div>
@@ -938,8 +1044,8 @@ function convertEditorToHtml(editorArea) {
                             </div>
                         `;
                     });
-                    quizHtml += `<button class="quiz-btn" onclick="checkQuiz(this)">✅ Проверить ответы</button>
-                                 <button class="quiz-btn quiz-reset" onclick="resetQuiz(this)">🔄 Сбросить</button>
+                    quizHtml += `<button class="quiz-btn" onclick="checkQuizInline(this)">✅ Проверить ответы</button>
+                                 <button class="quiz-btn quiz-reset" onclick="resetQuizInline(this)">🔄 Сбросить</button>
                                  <div class="quiz-result"></div></div>`;
                     html += quizHtml;
                 }
@@ -949,6 +1055,52 @@ function convertEditorToHtml(editorArea) {
     
     return html;
 }
+
+// Глобальные функции для проверки опросников
+window.checkQuizInline = function(btn) {
+    const quizBlock = btn.closest('.quiz-block');
+    const questions = quizBlock.querySelectorAll('.quiz-question');
+    let correctCount = 0;
+    const answers = [];
+    
+    questions.forEach((q, idx) => {
+        const selected = q.querySelector('input[type="radio"]:checked');
+        const answerDiv = q.querySelector('.quiz-answer');
+        const isCorrect = selected && selected.value === '0';
+        
+        if (isCorrect) correctCount++;
+        
+        if (answerDiv) {
+            answerDiv.innerHTML = isCorrect ? '✅ Правильно!' : '❌ Неправильно.';
+            answerDiv.classList.add('show');
+            answerDiv.classList.add(isCorrect ? 'correct' : 'incorrect');
+        }
+    });
+    
+    const resultDiv = quizBlock.querySelector('.quiz-result');
+    const total = questions.length;
+    const percentage = Math.round((correctCount / total) * 100);
+    
+    resultDiv.innerHTML = `Результат: ${correctCount} из ${total} (${percentage}%)`;
+    resultDiv.classList.add('show');
+    resultDiv.classList.add(percentage >= 70 ? 'success' : 'fail');
+};
+
+window.resetQuizInline = function(btn) {
+    const quizBlock = btn.closest('.quiz-block');
+    const radios = quizBlock.querySelectorAll('input[type="radio"]');
+    radios.forEach(radio => radio.checked = false);
+    
+    const answers = quizBlock.querySelectorAll('.quiz-answer');
+    answers.forEach(ans => {
+        ans.innerHTML = '';
+        ans.classList.remove('show', 'correct', 'incorrect');
+    });
+    
+    const resultDiv = quizBlock.querySelector('.quiz-result');
+    resultDiv.innerHTML = '';
+    resultDiv.classList.remove('show', 'success', 'fail');
+};
 
 // ========== ПАНЕЛЬ УПРАВЛЕНИЯ РОП ==========
 
@@ -1064,7 +1216,7 @@ async function loadUsersList(modal) {
 }
 
 window.changePasswordUser = async function(userId, userName) {
-    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
+    const newPassword = prompt(`Введите новый пароль (4 цифры) para пользователя ${userName}`);
     if (!newPassword) return;
     if (!/^\d{4}$/.test(newPassword)) {
         alert('Пароль должен быть 4 цифры');
