@@ -191,7 +191,7 @@
     <a href="tobacco.html" class="hub-card tab">
       <div class="hub-icon">🌿</div>
       <div class="hub-label">Табак для кальяна</div>
-      <div class="hub-sub">Бренды, крепость, сырьё, особенности</div>
+      <div class="hub-sub">Производители, линейки, вкусы</div>
       <div class="hub-count" id="cnt-tobacco">Загрузка...</div>
     </a>
 
@@ -285,9 +285,9 @@ async function openRopPanel() {
             <div class="modal-body">
                 <div class="field">
                     <label>➕ Добавить пользователя</label>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 8px;">
                         <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
-                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
+                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width:100px">
                         <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
                         <button id="addUserBtn" class="btn-add">Добавить</button>
                     </div>
@@ -369,10 +369,10 @@ async function loadUsers(modal) {
         
         return `
             <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <strong>${escapeHtml(user.full_name)}</strong><br>
-                        <span style="font-size: 11px;">Логин: ${user.username} | Роль: ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
+                        <span style="font-size: 11px;">${user.username} | ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
                     </div>
                     <div style="display: flex; gap: 6px;">
                         ${canChange ? `<button onclick="window.changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
@@ -398,7 +398,7 @@ window.changePasswordUser = async (userId, userName) => {
         body: JSON.stringify({ newPassword })
     });
     if (response.ok) alert('Пароль успешно изменен');
-    else alert('Ошибка смены пароля');
+    else alert('Ошибка');
 };
 
 window.deleteUserById = async (userId) => {
@@ -407,7 +407,7 @@ window.deleteUserById = async (userId) => {
         if (response.ok) {
             alert('Пользователь удален');
             location.reload();
-        } else alert('Ошибка удаления');
+        } else alert('Ошибка');
     }
 };
 
@@ -418,9 +418,9 @@ function escapeHtml(str) {
 
 // Подсчет позиций
 async function updateCounters() {
-    const categories = ['tobacco', 'liquids', 'snus', 'disposables'];
+    // Для жидкостей, снюса, одноразок - считаем продукты
+    const categories = ['liquids', 'snus', 'disposables'];
     const elements = {
-        'tobacco': 'cnt-tobacco',
         'liquids': 'cnt-liquids',
         'snus': 'cnt-snus',
         'disposables': 'cnt-disposables'
@@ -437,6 +437,18 @@ async function updateCounters() {
         } catch (e) {
             console.error('Error updating counter:', e);
         }
+    }
+    
+    // Для табака - считаем производителей
+    try {
+        const response = await fetch('/api/manufacturers', { credentials: 'include' });
+        const manufacturers = await response.json();
+        const el = document.getElementById('cnt-tobacco');
+        if (el) {
+            el.textContent = manufacturers.length ? `${manufacturers.length} производителей` : 'Пусто — добавьте первого';
+        }
+    } catch (e) {
+        console.error('Error updating tobacco counter:', e);
     }
 }
 
