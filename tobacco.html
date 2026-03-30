@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Табак для кальяна — Справочник</title>
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 
@@ -34,7 +34,7 @@
 
 </main>
 
-<script src="core.js?v=13"></script>
+<script src="core.js?v=14"></script>
 <script>
   let isRop = false;
 
@@ -205,21 +205,27 @@
           </div>
           <div class="field">
             <label>🎨 Цветовая градация (крепость)</label>
-            <div style="display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap;">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 12px; border-radius: 20px; ${editData?.strength_color === 'light' ? 'background: rgba(60,255,160,0.2);' : ''}">
+            <div class="strength-color-options">
+              <label class="strength-color-option light">
                 <input type="radio" name="strengthColor" value="light" ${editData?.strength_color === 'light' || (!editData && !editData?.strength_color) ? 'checked' : ''}>
-                <span style="display: inline-block; width: 20px; height: 20px; background: #3cffa0; border-radius: 4px;"></span>
-                🟢 Лёгкий (1-3)
+                <div class="option-content">
+                  <span class="color-dot"></span>
+                  <span class="option-text">🟢 Лёгкий (1-3)</span>
+                </div>
               </label>
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 12px; border-radius: 20px; ${editData?.strength_color === 'medium' ? 'background: rgba(252,184,48,0.2);' : ''}">
+              <label class="strength-color-option medium">
                 <input type="radio" name="strengthColor" value="medium" ${editData?.strength_color === 'medium' ? 'checked' : ''}>
-                <span style="display: inline-block; width: 20px; height: 20px; background: #fcb830; border-radius: 4px;"></span>
-                🟡 Средний (4-6)
+                <div class="option-content">
+                  <span class="color-dot"></span>
+                  <span class="option-text">🟡 Средний (4-6)</span>
+                </div>
               </label>
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 12px; border-radius: 20px; ${editData?.strength_color === 'strong' ? 'background: rgba(252,92,124,0.2);' : ''}">
+              <label class="strength-color-option strong">
                 <input type="radio" name="strengthColor" value="strong" ${editData?.strength_color === 'strong' ? 'checked' : ''}>
-                <span style="display: inline-block; width: 20px; height: 20px; background: #fc5c7c; border-radius: 4px;"></span>
-                🔴 Крепкий (7-10)
+                <div class="option-content">
+                  <span class="color-dot"></span>
+                  <span class="option-text">🔴 Крепкий (7-10)</span>
+                </div>
               </label>
             </div>
           </div>
@@ -251,7 +257,6 @@
     const richEditor = modal.querySelector('.rich-editor');
     const formatBtns = modal.querySelectorAll('.format-btn');
     
-    // Функция для обновления подсветки активных кнопок
     function updateActiveButtons() {
       formatBtns.forEach(btn => {
         const format = btn.dataset.format;
@@ -277,12 +282,10 @@
       });
     }
     
-    // Обновляем подсветку при изменениях
     richEditor.addEventListener('keyup', updateActiveButtons);
     richEditor.addEventListener('mouseup', updateActiveButtons);
     richEditor.addEventListener('click', updateActiveButtons);
     
-    // Обработчики кнопок
     formatBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -346,7 +349,6 @@
         if (response.ok) {
           alert(isEdit ? 'Сохранено' : 'Линейка добавлена');
           closeModal();
-          // Обновляем отображение
           const container = document.getElementById(`lines-${manufacturerId}`);
           if (container && container.style.display === 'block') {
             container.style.display = 'none';
@@ -363,7 +365,6 @@
       }
     });
     
-    // Обновляем подсветку при загрузке
     setTimeout(updateActiveButtons, 100);
   }
 
@@ -645,6 +646,113 @@
 .btn-edit-small, .btn-delete-small { background: transparent; border: none; padding: 4px 8px; cursor: pointer; font-size: 12px; border-radius: 6px; }
 .btn-edit-small { color: var(--accent); }
 .btn-delete-small { color: var(--accent2); }
+
+/* Компактный выбор цветовой градации */
+.strength-color-options {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.strength-color-option {
+    flex: 1;
+    min-width: 100px;
+    cursor: pointer;
+}
+
+.strength-color-option input {
+    display: none;
+}
+
+.strength-color-option .option-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 30px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.strength-color-option .color-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+.strength-color-option .option-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.strength-color-option input:checked + .option-content {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+}
+
+.strength-color-option.light .color-dot { background: #3cffa0; box-shadow: 0 0 4px #3cffa0; }
+.strength-color-option.medium .color-dot { background: #fcb830; box-shadow: 0 0 4px #fcb830; }
+.strength-color-option.strong .color-dot { background: #fc5c7c; box-shadow: 0 0 4px #fc5c7c; }
+
+/* Увеличенные иконки */
+.btn-delete, .btn-delete-small, .btn-edit, .btn-edit-small {
+    font-size: 16px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-delete, .btn-delete-small {
+    background: rgba(252, 92, 124, 0.15);
+    border: 1px solid rgba(252, 92, 124, 0.3);
+    color: #fc5c7c;
+}
+
+.btn-delete:hover, .btn-delete-small:hover {
+    background: rgba(252, 92, 124, 0.3);
+    transform: scale(1.05);
+}
+
+.btn-edit, .btn-edit-small {
+    background: rgba(124, 92, 252, 0.15);
+    border: 1px solid rgba(124, 92, 252, 0.3);
+    color: #7c5cfc;
+}
+
+.btn-edit:hover, .btn-edit-small:hover {
+    background: rgba(124, 92, 252, 0.3);
+    transform: scale(1.05);
+}
+
+.manufacturer-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.manufacturer-actions .btn-edit,
+.manufacturer-actions .btn-delete {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+}
+
+.line-header .btn-edit-small,
+.line-header .btn-delete-small {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    padding: 0;
+}
 </style>
 </body>
 </html>
