@@ -1,4 +1,4 @@
-// server.js - упрощенная версия с memory store
+// server.js - исправленная версия
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -161,12 +161,18 @@ const upload = multer({
 });
 
 // ========== MIDDLEWARE ==========
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ 
+    origin: true, 
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
-// ========== SESSION MIDDLEWARE (memory store) ==========
+// ========== SESSION MIDDLEWARE ==========
 app.use(session({
     secret: 'spravochnik_secret_key_2024',
     resave: false,
@@ -174,13 +180,15 @@ app.use(session({
     cookie: {
         secure: false,
         httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
+        sameSite: 'lax'
     },
     name: 'spravochnik.sid'
 }));
 
 // ========== AUTH MIDDLEWARE ==========
 function requireAuth(req, res, next) {
+    console.log('requireAuth - session user:', req.session?.user?.username);
     if (req.session && req.session.user) {
         next();
     } else {
@@ -205,6 +213,7 @@ function requireRoot(req, res, next) {
 }
 
 function protectPage(req, res, next) {
+    console.log('protectPage - session user:', req.session?.user?.username);
     if (req.session && req.session.user) {
         next();
     } else {
@@ -225,11 +234,10 @@ app.get('/main.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'main.js'));
 });
 
-
-
 // ========== AUTH ROUTES ==========
 
 app.get('/api/check-auth', (req, res) => {
+    console.log('check-auth - session user:', req.session?.user?.username);
     if (req.session && req.session.user) {
         res.json({ authenticated: true, user: req.session.user });
     } else {
@@ -264,8 +272,12 @@ app.post('/api/simple-login', async (req, res) => {
             role: user.role
         };
         
-        console.log('Simple login success:', user.username);
-        res.json({ success: true, user: req.session.user });
+        // Сохраняем сессию явно
+        req.session.save((err) => {
+            if (err) console.error('Session save error:', err);
+            console.log('Simple login success:', user.username);
+            res.json({ success: true, user: req.session.user });
+        });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -295,8 +307,11 @@ app.post('/api/login', async (req, res) => {
             role: user.role
         };
         
-        console.log('Login success:', user.username);
-        res.json({ success: true, user: req.session.user });
+        req.session.save((err) => {
+            if (err) console.error('Session save error:', err);
+            console.log('Login success:', user.username);
+            res.json({ success: true, user: req.session.user });
+        });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -420,6 +435,91 @@ app.delete('/api/users/:id', requireRoot, async (req, res) => {
     }
 });
 
+// ========== PRODUCT ROUTES ==========
+
+app.get('/api/count/:category', requireAuth, async (req, res) => {
+    const { category } = req.params;
+    try {
+        const result = await pool.query(
+            'SELECT COUNT(*) FROM products WHERE category = $1',
+            [category]
+        );
+        res.json({ count: parseInt(result.rows[0].count) });
+    } catch (error) {
+        console.error('Count error:', error);
+        res.json({ count: 0 });
+    }
+});
+
+app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file' });
+    
+    let photoUrl;
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+        const result = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                { folder: 'spravochnik' },
+                (err, result) => err ? reject(err) : resolve(result)
+            ).end(req.file.buffer);
+        });
+        photoUrl = result.secure_url;
+    } else {
+        photoUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    }
+    res.json({ photoUrl });
+});
+
+app.get('/api/products/:category', requireAuth, async (req, res) => {
+    const result = await pool.query(
+        'SELECT * FROM products WHERE category = $1 ORDER BY created_at DESC',
+        [req.params.category]
+    );
+    res.json(result.rows);
+});
+
+app.post('/api/products/:category', requireRop, async (req, res) => {
+    const { category } = req.params;
+    const { id, name, strength, quality_class, origin, desc, photoUrl } = req.body;
+    
+    const result = await pool.query(
+        `INSERT INTO products (category, product_id, name, strength, quality_class, origin, description, photo_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (product_id) DO UPDATE SET
+           name = EXCLUDED.name, 
+           strength = EXCLUDED.strength,
+           quality_class = EXCLUDED.quality_class,
+           origin = EXCLUDED.origin, 
+           description = EXCLUDED.description,
+           photo_url = EXCLUDED.photo_url
+         RETURNING *`,
+        [category, id, name, strength || 5, quality_class || 'medium', origin, desc, photoUrl]
+    );
+    res.json(result.rows[0]);
+});
+
+app.put('/api/products/:category/:id', requireRop, async (req, res) => {
+    const { category, id } = req.params;
+    const { name, strength, quality_class, origin, desc, photoUrl } = req.body;
+    
+    const result = await pool.query(
+        `UPDATE products 
+         SET name=$1, strength=$2, quality_class=$3, origin=$4, description=$5, photo_url=$6
+         WHERE category=$7 AND product_id=$8 RETURNING *`,
+        [name, strength || 5, quality_class || 'medium', origin, desc, photoUrl, category, id]
+    );
+    res.json(result.rows[0]);
+});
+
+app.delete('/api/products/:category/:id', requireRop, async (req, res) => {
+    const { category, id } = req.params;
+    await pool.query('DELETE FROM products WHERE category=$1 AND product_id=$2', [category, id]);
+    res.json({ success: true });
+});
+
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', session: !!req.session });
+});
+
 // ========== CONTENT MANAGEMENT ==========
 
 app.get('/api/content/:page/:section', async (req, res) => {
@@ -451,22 +551,6 @@ app.post('/api/content/:page/:section', requireRop, async (req, res) => {
     } catch (error) {
         console.error('Save content error:', error);
         res.status(500).json({ error: 'Failed to save content' });
-    }
-});
-
-// ========== COUNT ==========
-
-app.get('/api/count/:category', requireAuth, async (req, res) => {
-    const { category } = req.params;
-    try {
-        const result = await pool.query(
-            'SELECT COUNT(*) FROM products WHERE category = $1',
-            [category]
-        );
-        res.json({ count: parseInt(result.rows[0].count) });
-    } catch (error) {
-        console.error('Count error:', error);
-        res.json({ count: 0 });
     }
 });
 
@@ -610,77 +694,6 @@ app.delete('/api/lines/:id', requireRop, async (req, res) => {
         console.error('Delete line error:', error);
         res.status(500).json({ error: 'Failed to delete line' });
     }
-});
-
-// ========== PRODUCT ROUTES ==========
-
-app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file' });
-    
-    let photoUrl;
-    if (process.env.CLOUDINARY_CLOUD_NAME) {
-        const result = await new Promise((resolve, reject) => {
-            cloudinary.uploader.upload_stream(
-                { folder: 'spravochnik' },
-                (err, result) => err ? reject(err) : resolve(result)
-            ).end(req.file.buffer);
-        });
-        photoUrl = result.secure_url;
-    } else {
-        photoUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-    }
-    res.json({ photoUrl });
-});
-
-app.get('/api/products/:category', requireAuth, async (req, res) => {
-    const result = await pool.query(
-        'SELECT * FROM products WHERE category = $1 ORDER BY created_at DESC',
-        [req.params.category]
-    );
-    res.json(result.rows);
-});
-
-app.post('/api/products/:category', requireRop, async (req, res) => {
-    const { category } = req.params;
-    const { id, name, strength, quality_class, origin, desc, photoUrl } = req.body;
-    
-    const result = await pool.query(
-        `INSERT INTO products (category, product_id, name, strength, quality_class, origin, description, photo_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         ON CONFLICT (product_id) DO UPDATE SET
-           name = EXCLUDED.name, 
-           strength = EXCLUDED.strength,
-           quality_class = EXCLUDED.quality_class,
-           origin = EXCLUDED.origin, 
-           description = EXCLUDED.description,
-           photo_url = EXCLUDED.photo_url
-         RETURNING *`,
-        [category, id, name, strength || 5, quality_class || 'medium', origin, desc, photoUrl]
-    );
-    res.json(result.rows[0]);
-});
-
-app.put('/api/products/:category/:id', requireRop, async (req, res) => {
-    const { category, id } = req.params;
-    const { name, strength, quality_class, origin, desc, photoUrl } = req.body;
-    
-    const result = await pool.query(
-        `UPDATE products 
-         SET name=$1, strength=$2, quality_class=$3, origin=$4, description=$5, photo_url=$6
-         WHERE category=$7 AND product_id=$8 RETURNING *`,
-        [name, strength || 5, quality_class || 'medium', origin, desc, photoUrl, category, id]
-    );
-    res.json(result.rows[0]);
-});
-
-app.delete('/api/products/:category/:id', requireRop, async (req, res) => {
-    const { category, id } = req.params;
-    await pool.query('DELETE FROM products WHERE category=$1 AND product_id=$2', [category, id]);
-    res.json({ success: true });
-});
-
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', session: !!req.session });
 });
 
 // ========== HTML ROUTES ==========
