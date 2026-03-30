@@ -1,4 +1,5 @@
 // main.js - полная версия с визуальным редактором
+let isRop = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Main.js loaded');
@@ -35,9 +36,8 @@ function initAccordions() {
                 const title = header.querySelector('.acc-title')?.innerHTML || '';
                 const details = document.createElement('details');
                 const summary = document.createElement('summary');
-                summary.innerHTML = title;
-                summary.style.cssText = 'cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none; display: flex; justify-content: space-between; align-items: center;';
-                summary.innerHTML = title + '<span style="font-size: 12px;">▼</span>';
+                summary.innerHTML = title + '<span style="float: right;">▼</span>';
+                summary.style.cssText = 'cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none;';
                 details.appendChild(summary);
                 details.appendChild(body.cloneNode(true));
                 details.style.cssText = 'background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px;';
@@ -75,9 +75,14 @@ async function loadUserInfo() {
         
         if (data.authenticated) {
             if (userNameSpan) userNameSpan.textContent = data.user.full_name;
-            const isRop = (data.user.role === 'rop' || data.user.role === 'root');
+            isRop = (data.user.role === 'rop' || data.user.role === 'root');
             window.isRopGlobal = isRop;
             if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
+            
+            const editBtns = document.querySelectorAll('.btn-edit-content');
+            editBtns.forEach(btn => {
+                btn.style.display = isRop ? 'inline-flex' : 'none';
+            });
         } else {
             window.location.href = '/login.html';
         }
@@ -660,12 +665,12 @@ function initTableEditor(container) {
     for (let i = 1; i < rows.length; i++) {
         html += '  <tr>';
         for (let j = 0; j < rows[i].length; j++) {
-            html += `<td><input type="text" class="table-cell" value="${escapeHtml(rows[i][j] || '')}" placeholder="Значение"></td>`;
+            html += `。<input type="text" class="table-cell" value="${escapeHtml(rows[i][j] || '')}" placeholder="Значение">。`;
         }
-        html += `<td><button class="remove-table-row">🗑</button></td>`;
-        html += '  </tr>';
+        html += `。<button class="remove-table-row">🗑</button>。`;
+        html += '   </tr>';
     }
-    html += '</tbody>  </table>';
+    html += '</tbody>   </table>';
     container.innerHTML = html;
     
     container.querySelectorAll('.remove-table-row').forEach(btn => {
@@ -740,15 +745,15 @@ function convertEditorToHtml(editorArea) {
             case 'table':
                 const tableData = JSON.parse(item.querySelector('.table-editor')?.dataset.rows || '[]');
                 if (tableData.length > 1) {
-                    let tableHtml = '<table class="ref-table"><thead>  <tr>';
+                    let tableHtml = '<table class="ref-table"><thead>   <tr>';
                     tableData[0].forEach(cell => tableHtml += `<th>${escapeHtml(cell)}</th>`);
-                    tableHtml += '  </tr></thead><tbody>';
+                    tableHtml += '   </tr></thead><tbody>';
                     for (let i = 1; i < tableData.length; i++) {
-                        tableHtml += '  <tr>';
-                        tableData[i].forEach(cell => tableHtml += `  <td>${escapeHtml(cell)}</td>`);
-                        tableHtml += '  </tr>';
+                        tableHtml += '   <tr>';
+                        tableData[i].forEach(cell => tableHtml += `   <td>${escapeHtml(cell)}</td>`);
+                        tableHtml += '   </tr>';
                     }
-                    tableHtml += '</tbody>  </table>';
+                    tableHtml += '</tbody>   </table>';
                     html += tableHtml;
                 }
                 break;
@@ -811,9 +816,9 @@ async function openRopPanel() {
             <div class="modal-body">
                 <div class="field">
                     <label>➕ Добавить пользователя</label>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 8px;">
                         <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
-                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
+                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width:100px">
                         <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
                         <button id="addUserBtn" class="btn-add">Добавить</button>
                     </div>
@@ -852,7 +857,7 @@ async function openRopPanel() {
             return;
         }
         if (!/^\d{4}$/.test(password)) {
-            alert('Пароль должен состоять из 4 цифр');
+            alert('Пароль должен быть 4 цифры');
             return;
         }
         
@@ -895,10 +900,10 @@ async function loadUsersList(modal) {
         
         return `
             <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <strong>${escapeHtml(user.full_name)}</strong><br>
-                        <span style="font-size: 11px;">Логин: ${user.username} | Роль: ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
+                        <span style="font-size: 11px;">${user.username} | ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
                     </div>
                     <div style="display: flex; gap: 6px;">
                         ${canChange ? `<button onclick="window.changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
@@ -914,7 +919,7 @@ window.changePasswordUser = async function(userId, userName) {
     const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
     if (!newPassword) return;
     if (!/^\d{4}$/.test(newPassword)) {
-        alert('Пароль должен состоять из 4 цифр');
+        alert('Пароль должен быть 4 цифры');
         return;
     }
     const response = await fetch(`/api/users/${userId}/change-password`, {
@@ -924,7 +929,7 @@ window.changePasswordUser = async function(userId, userName) {
         body: JSON.stringify({ newPassword })
     });
     if (response.ok) alert('Пароль успешно изменен');
-    else alert('Ошибка смены пароля');
+    else alert('Ошибка');
 };
 
 window.deleteUserById = async function(userId) {
@@ -933,7 +938,7 @@ window.deleteUserById = async function(userId) {
         if (response.ok) {
             alert('Пользователь удален');
             location.reload();
-        } else alert('Ошибка удаления');
+        } else alert('Ошибка');
     }
 };
 
