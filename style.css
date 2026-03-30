@@ -2444,3 +2444,11 @@ img {
     background: var(--accent2);
     transform: scale(1.05);
 }
+
+.hub-card.training {
+  border-color: rgba(124, 92, 252, 0.15);
+}
+.hub-card.training .hub-icon {
+  background: linear-gradient(135deg, rgba(124, 92, 252, 0.15), rgba(124, 92, 252, 0.05));
+  color: var(--accent);
+}
