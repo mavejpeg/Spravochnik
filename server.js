@@ -741,33 +741,42 @@ app.get('/api/lines/:id', requireAuth, async (req, res) => {
 
 app.post('/api/lines', requireRop, async (req, res) => {
     const { manufacturer_id, name, description, strength_color } = req.body;
+    console.log('Creating line:', { manufacturer_id, name, description, strength_color });
+    
     if (!manufacturer_id || !name) {
         return res.status(400).json({ error: 'Manufacturer ID and name are required' });
     }
     try {
         const result = await pool.query(
             'INSERT INTO lines (manufacturer_id, name, description, strength_color) VALUES ($1, $2, $3, $4) RETURNING *',
-            [manufacturer_id, name, description, strength_color || 'medium']
+            [manufacturer_id, name, description || '', strength_color || 'medium']
         );
+        console.log('Line created:', result.rows[0]);
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Create line error:', error);
-        res.status(500).json({ error: 'Failed to create line' });
+        res.status(500).json({ error: 'Failed to create line: ' + error.message });
     }
 });
 
 app.put('/api/lines/:id', requireRop, async (req, res) => {
     const { id } = req.params;
     const { name, description, strength_color } = req.body;
+    console.log('Updating line:', { id, name, description, strength_color });
+    
     try {
         const result = await pool.query(
             'UPDATE lines SET name = $1, description = $2, strength_color = $3 WHERE id = $4 RETURNING *',
-            [name, description, strength_color || 'medium', id]
+            [name, description || '', strength_color || 'medium', id]
         );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Line not found' });
+        }
+        console.log('Line updated:', result.rows[0]);
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Update line error:', error);
-        res.status(500).json({ error: 'Failed to update line' });
+        res.status(500).json({ error: 'Failed to update line: ' + error.message });
     }
 });
 
