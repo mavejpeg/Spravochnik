@@ -711,6 +711,17 @@ app.get('/disposables.html', protectPage, (req, res) => {
     res.sendFile(path.join(__dirname, 'disposables.html'));
 });
 
+// Count manufacturers for tobacco page
+app.get('/api/count/manufacturers', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT COUNT(*) FROM manufacturers');
+        res.json({ count: parseInt(result.rows[0].count) });
+    } catch (error) {
+        console.error('Count manufacturers error:', error);
+        res.json({ count: 0 });
+    }
+});
+
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
