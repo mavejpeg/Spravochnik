@@ -1386,3 +1386,33 @@ progress::-webkit-progress-value {
   background: rgba(252, 92, 124, 0.4);
   transform: scale(1.02);
 }
+
+.badge-class {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-weight: 500;
+}
+
+/* Стили для выбора класса в модальном окне */
+.product-class-select {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.product-class-select:hover {
+  border-color: var(--accent);
+}
+
+.product-class-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Стили для разных классов в карточке */
+.card-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
