@@ -82,10 +82,10 @@
 
 </main>
 
-<script src="core.js?v=6"></script>
-<script src="utils.js?v=6"></script>
+<script src="core.js"></script>
+<script src="main.js"></script>
 <script>
-  const CATEGORY = 'liquids';
+  const CATEGORY = 'liquids'; // измените для каждой страницы
   let isRop = false;
 
   // Проверка прав для кнопки добавления
@@ -97,13 +97,6 @@
       window.isRopGlobal = isRop;
       const addButton = document.getElementById('btnAddLiquid');
       if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
-      
-      // Показываем кнопки редактирования контента
-      const editBtns = document.querySelectorAll('.btn-edit-content');
-      editBtns.forEach(btn => {
-        btn.style.display = isRop ? 'inline-flex' : 'none';
-        btn.addEventListener('click', () => editContent(btn.dataset.page, btn.dataset.section));
-      });
     }
   }
   
