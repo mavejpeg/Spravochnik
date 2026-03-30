@@ -15,26 +15,31 @@ const PORT = process.env.PORT || 3000;
 console.log('\n🚀 STARTING SERVER...\n');
 
 // ========== PostgreSQL connection ==========
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-});
+let pool = null;
 
-// ========== Создаем таблицы ==========
-async function initTables() {
-    const client = await pool.connect();
+function initPool() {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+        console.error('❌ DATABASE_URL is not set!');
+        return null;
+    }
+    return new Pool({
+        connectionString: databaseUrl,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+    });
+}
+
+// ========== Create tables ==========
+async function initDatabase() {
+    pool = initPool();
+    if (!pool) return false;
+    
     try {
-        // Users table
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                full_name VARCHAR(255) NOT NULL,
-                role VARCHAR(20) DEFAULT 'user',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
+        const client = await pool.connect();
+        console.log('✅ Database connected');
 
         // Products table
         await client.query(`
@@ -44,9 +49,22 @@ async function initTables() {
                 product_id VARCHAR(100) UNIQUE NOT NULL,
                 name VARCHAR(255) NOT NULL,
                 strength INTEGER DEFAULT 5,
+                quality_class VARCHAR(20) DEFAULT 'medium',
                 origin VARCHAR(255),
                 description TEXT,
                 photo_url TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Users table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                full_name VARCHAR(255) NOT NULL,
+                role VARCHAR(20) DEFAULT 'user',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
@@ -60,7 +78,7 @@ async function initTables() {
             )
         `);
 
-        // Content table for editable content
+        // Content table
         await client.query(`
             CREATE TABLE IF NOT EXISTS content (
                 id SERIAL PRIMARY KEY,
@@ -73,21 +91,7 @@ async function initTables() {
             )
         `);
 
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS products (
-                id SERIAL PRIMARY KEY,
-                category VARCHAR(50) NOT NULL,
-                product_id VARCHAR(100) UNIQUE NOT NULL,
-                name VARCHAR(255) NOT NULL,
-                strength INTEGER DEFAULT 5,
-                product_class VARCHAR(20) DEFAULT 'medium',
-                origin VARCHAR(255),
-                description TEXT,
-                photo_url TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
+        // Manufacturers table
         await client.query(`
             CREATE TABLE IF NOT EXISTS manufacturers (
                 id SERIAL PRIMARY KEY,
@@ -99,29 +103,28 @@ async function initTables() {
             )
         `);
 
+        // Lines table
         await client.query(`
             CREATE TABLE IF NOT EXISTS lines (
                 id SERIAL PRIMARY KEY,
                 manufacturer_id INTEGER REFERENCES manufacturers(id) ON DELETE CASCADE,
                 name VARCHAR(255) NOT NULL,
                 description TEXT,
+                strength_color VARCHAR(20) DEFAULT 'medium',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(manufacturer_id, name)
             )
         `);
 
+        // Add quality_class to products if missing
         await client.query(`
-            CREATE TABLE IF NOT EXISTS flavors (
-                id SERIAL PRIMARY KEY,
-                line_id INTEGER REFERENCES lines(id) ON DELETE CASCADE,
-                name VARCHAR(255) NOT NULL,
-                strength INTEGER DEFAULT 5,
-                quality_class VARCHAR(20) DEFAULT 'medium',
-                description TEXT,
-                photo_url TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
+            ALTER TABLE products ADD COLUMN IF NOT EXISTS quality_class VARCHAR(20) DEFAULT 'medium'
+        `).catch(e => console.log('Column check:', e.message));
+
+        // Add strength_color to lines if missing
+        await client.query(`
+            ALTER TABLE lines ADD COLUMN IF NOT EXISTS strength_color VARCHAR(20) DEFAULT 'medium'
+        `).catch(e => console.log('Column check:', e.message));
 
         // Insert default users
         await client.query(`
@@ -142,66 +145,39 @@ async function initTables() {
             ON CONFLICT (username) DO NOTHING
         `);
 
-        // Insert default content for hookah page
-        await client.query(`
-            INSERT INTO content (page, section, content) 
-            VALUES ('hookah', 'parts', '{"html":"<div class=\"info-card\" style=\"margin-bottom:16px\"><h3>ℹ️ Что такое кальян</h3><ul><li>Приспособление для курения кальянной смеси</li><li>Охлаждение испарений через воду</li><li>Вода фильтрует испарения от твёрдых частиц</li><li>Охлаждённый пар наносит меньше вреда дыхательным путям</li></ul></div><div class=\"two-col\"><div class=\"info-card\"><h3>🔝 Верхняя часть</h3><ul><li>Экран / Фольга / Калауд</li><li>Чаша (чашка)</li><li>Тарелка (блюдце) для пепла</li><li>Шахта</li><li>Держатель трубки</li></ul></div><div class=\"info-card\"><h3>🔽 Нижняя часть</h3><ul><li>Пружина от перегиба шланга</li><li>Коннектор трубки</li><li>Система фиксации</li><li>Нижняя часть шахты</li><li>Диффузор</li><li>Колба</li><li>Трубка / Шланг</li><li>Клапан</li><li>Мундштук</li></ul></div></div><div class=\"hl info\">Тарелка правильно называется блюдцем. Система фиксации удерживает шахту в колбе.</div>"}')
-            ON CONFLICT (page, section) DO NOTHING
-        `);
-
-        await client.query(`
-            INSERT INTO content (page, section, content) 
-            VALUES ('hookah', 'bowls', '{"html":"<div class=\"alert-bar info\"><span>💡</span><span>Разные чаши по-разному раскрывают табак — влияют на крепость и вкус.</span></div><table class=\"ref-table\"><tr><th>Чаша</th><th>Описание</th><th>Для кого</th></tr><tr><td><strong>Турка / Универсальная</strong></td><td>5 отверстий. Классический баланс вкуса и крепости.</td><td>Все категории</td></tr><tr><td><strong>Убивашка</strong></td><td>5 отверстий, особая форма. Плотный дым, усиленная крепость.</td><td>Опытные</td></tr><tr><td><strong>Фанол / Фаннель</strong></td><td>1 центральное отверстие. Максимально чистый вкус.</td><td>Ценители вкуса</td></tr><tr><td><strong>Мелассоуловитель</strong></td><td>Ставится между чашей и шахтой. Собирает лишний сироп.</td><td>Для чистоты</td></tr></table>"}')
-            ON CONFLICT (page, section) DO NOTHING
-        `);
-
-        await client.query(`
-            INSERT INTO content (page, section, content) 
-            VALUES ('hookah', 'coal', '{"html":"<table class=\"ref-table\" style=\"margin-bottom:20px\"><tr><th>Инструмент</th><th>Описание</th></tr><tr><td><strong>Щипцы дешёвые</strong></td><td>Короткие, быстро нагреваются, покрытие облезает</td></tr><tr><td><strong>Щипцы дорогие</strong></td><td>Длинные, прочные, надёжная фиксация угля</td></tr><tr><td><strong>Колпак</strong></td><td>Накрывает чашу — помогает разжечься, защищает от ветра</td></tr><tr><td><strong>Печка / Каляница</strong></td><td>Электроплитка для равномерного и быстрого нагрева</td></tr><tr><td><strong>Кадило</strong></td><td>Металлическая ёмкость для переноски раскалённых углей</td></tr><tr><td><strong>Шило / Прокалыватель</strong></td><td>Отверстия в фольге. Также для распределения табака в чаше.</td></tr></table><div class=\"info-card\"><h3>⚫ Размеры углей</h3><ul><li><strong>22 мм</strong> — компактный, для небольших чаш</li><li><strong>25 мм</strong> — стандарт, универсальный</li></ul></div>"}')
-            ON CONFLICT (page, section) DO NOTHING
-        `);
-
-        await client.query(`
-            INSERT INTO content (page, section, content) 
-            VALUES ('hookah', 'clean', '{"html":"<table class=\"ref-table\"><tr><th>Аксессуар</th><th>Применение</th></tr><tr><td><strong>Уплотнитель для колбы</strong></td><td>Резиновое кольцо на горлышко колбы — герметичность</td></tr><tr><td><strong>Уплотнитель для чаши</strong></td><td>Резиновое кольцо на шахту — герметичность</td></tr><tr><td><strong>Ёршик для колбы</strong></td><td>Широкий, с изогнутой ручкой</td></tr><tr><td><strong>Ёршик для шахты</strong></td><td>Длинный и узкий — прочищает внутренние каналы</td></tr><tr><td><strong>Пружина для шланга</strong></td><td>Надевается на основание шланга — предотвращает перегиб</td></tr><tr><td><strong>Сетка на кальян</strong></td><td>Защитный экран от опрокидывания (животные, дети)</td></tr></table>"}')
-            ON CONFLICT (page, section) DO NOTHING
-        `);
-
-        await client.query(`
-            ALTER TABLE products ADD COLUMN IF NOT EXISTS product_class VARCHAR(20) DEFAULT 'medium'
-        `);
-
-        await client.query(`
-            ALTER TABLE products ADD COLUMN IF NOT EXISTS quality_class VARCHAR(20) DEFAULT 'medium'
-        `);
-
+        client.release();
         console.log('✅ Database tables ready');
         return true;
-    } catch (err) {
-        console.error('❌ Table creation error:', err.message);
+    } catch (error) {
+        console.error('❌ Database init error:', error.message);
         return false;
-    } finally {
-        client.release();
     }
 }
 
 // ========== Session middleware ==========
-const sessionMiddleware = session({
-    store: new pgSession({
-        pool: pool,
-        tableName: 'session',
-        createTableIfMissing: false
-    }),
-    secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: false,
-        httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000
-    },
-    name: 'spravochnik.sid'
-});
+function setupSession() {
+    if (!pool) {
+        console.error('❌ Cannot setup session: no database pool');
+        return null;
+    }
+    
+    return session({
+        store: new pgSession({
+            pool: pool,
+            tableName: 'session',
+            createTableIfMissing: false
+        }),
+        secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            secure: false,
+            httpOnly: true,
+            maxAge: 30 * 24 * 60 * 60 * 1000
+        },
+        name: 'spravochnik.sid'
+    });
+}
 
 // ========== Cloudinary ==========
 if (process.env.CLOUDINARY_CLOUD_NAME) {
@@ -221,20 +197,14 @@ const upload = multer({
 });
 
 // ========== MIDDLEWARE ==========
-app.use((req, res, next) => {
-  res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.header('Pragma', 'no-cache');
-  res.header('Expires', '0');
-  next();
-});
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(sessionMiddleware);
+app.use(express.static(path.join(__dirname)));
 
 // ========== AUTH MIDDLEWARE ==========
 function requireAuth(req, res, next) {
-    if (req.session.user) {
+    if (req.session && req.session.user) {
         next();
     } else {
         res.status(401).json({ error: 'Unauthorized' });
@@ -242,7 +212,7 @@ function requireAuth(req, res, next) {
 }
 
 function requireRop(req, res, next) {
-    if (req.session.user && (req.session.user.role === 'rop' || req.session.user.role === 'root')) {
+    if (req.session && req.session.user && (req.session.user.role === 'rop' || req.session.user.role === 'root')) {
         next();
     } else {
         res.status(403).json({ error: 'ROP only' });
@@ -250,7 +220,7 @@ function requireRop(req, res, next) {
 }
 
 function requireRoot(req, res, next) {
-    if (req.session.user && req.session.user.role === 'root') {
+    if (req.session && req.session.user && req.session.user.role === 'root') {
         next();
     } else {
         res.status(403).json({ error: 'Root only' });
@@ -266,20 +236,19 @@ app.get('/core.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'core.js'));
 });
 
+app.get('/main.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'main.js'));
+});
+
 // ========== AUTH ROUTES ==========
 
 app.get('/api/check-auth', (req, res) => {
-    if (req.session.user) {
+    if (req.session && req.session.user) {
         res.json({ authenticated: true, user: req.session.user });
     } else {
         res.json({ authenticated: false });
     }
 });
-
-app.get('/main.js', (req, res) => {
-    res.sendFile(path.join(__dirname, 'main.js'));
-});
-
 
 app.post('/api/simple-login', async (req, res) => {
     const { password } = req.body;
@@ -458,7 +427,7 @@ app.delete('/api/users/:id', requireRoot, async (req, res) => {
     }
 });
 
-// ========== CONTENT MANAGEMENT API ==========
+// ========== CONTENT MANAGEMENT ==========
 
 app.get('/api/content/:page/:section', async (req, res) => {
     const { page, section } = req.params;
@@ -492,164 +461,11 @@ app.post('/api/content/:page/:section', requireRop, async (req, res) => {
     }
 });
 
-// ========== PRODUCT ROUTES ==========
-
-app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file' });
-    
-    let photoUrl;
-    if (process.env.CLOUDINARY_CLOUD_NAME) {
-        const result = await new Promise((resolve, reject) => {
-            cloudinary.uploader.upload_stream(
-                { folder: 'spravochnik' },
-                (err, result) => err ? reject(err) : resolve(result)
-            ).end(req.file.buffer);
-        });
-        photoUrl = result.secure_url;
-    } else {
-        photoUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-    }
-    res.json({ photoUrl });
-});
-
-app.get('/api/products/:category', requireAuth, async (req, res) => {
-    const result = await pool.query(
-        'SELECT * FROM products WHERE category = $1 ORDER BY created_at DESC',
-        [req.params.category]
-    );
-    res.json(result.rows);
-});
-
-app.post('/api/products/:category', requireRop, async (req, res) => {
-    const { category } = req.params;
-    const { id, name, strength, product_class, origin, desc, photoUrl } = req.body;
-    
-    const result = await pool.query(
-        `INSERT INTO products (category, product_id, name, strength, product_class, origin, description, photo_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         ON CONFLICT (product_id) DO UPDATE SET
-           name = EXCLUDED.name, 
-           strength = EXCLUDED.strength,
-           product_class = EXCLUDED.product_class,
-           origin = EXCLUDED.origin, 
-           description = EXCLUDED.description,
-           photo_url = EXCLUDED.photo_url
-         RETURNING *`,
-        [category, id, name, strength || 5, product_class || 'medium', origin, desc, photoUrl]
-    );
-    res.json(result.rows[0]);
-});
-
-app.put('/api/products/:category/:id', requireRop, async (req, res) => {
-    const { category, id } = req.params;
-    const { name, strength, product_class, origin, desc, photoUrl } = req.body;
-    
-    const result = await pool.query(
-        `UPDATE products 
-         SET name=$1, strength=$2, product_class=$3, origin=$4, description=$5, photo_url=$6
-         WHERE category=$7 AND product_id=$8 RETURNING *`,
-        [name, strength || 5, product_class || 'medium', origin, desc, photoUrl, category, id]
-    );
-    res.json(result.rows[0]);
-});
-
-// ========== HTML ROUTES ==========
-
-app.get('/login.html', (req, res) => {
-    if (req.session.user) {
-        res.redirect('/');
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-});
-
-app.get('/', (req, res) => {
-    if (req.session.user) {
-        res.sendFile(path.join(__dirname, 'index.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-});
-
-app.get('/index.html', (req, res) => {
-    if (req.session.user) {
-        res.sendFile(path.join(__dirname, 'index.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-});
-
-app.get('/tobacco.html', (req, res) => {
-    if (req.session.user) {
-        res.sendFile(path.join(__dirname, 'tobacco.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-});
-
-app.get('/liquids.html', (req, res) => {
-    if (req.session.user) {
-        res.sendFile(path.join(__dirname, 'liquids.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-});
-
-app.get('/snus.html', (req, res) => {
-    if (req.session.user) {
-        res.sendFile(path.join(__dirname, 'snus.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-});
-
-app.get('/hookah.html', (req, res) => {
-    if (req.session.user) {
-        res.sendFile(path.join(__dirname, 'hookah.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-});
-
-app.get('/sales.html', (req, res) => {
-    if (req.session.user) {
-        res.sendFile(path.join(__dirname, 'sales.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-});
-
-app.get('/checks.html', (req, res) => {
-    if (req.session.user) {
-        res.sendFile(path.join(__dirname, 'checks.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-});
-
-app.get('/cash.html', (req, res) => {
-    if (req.session.user) {
-        res.sendFile(path.join(__dirname, 'cash.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-});
-
-app.get('/disposables.html', (req, res) => {
-    if (req.session.user) {
-        res.sendFile(path.join(__dirname, 'disposables.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-});
-
 // ========== MANUFACTURERS ROUTES ==========
 
 app.get('/api/manufacturers', requireAuth, async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT * FROM manufacturers ORDER BY name'
-        );
+        const result = await pool.query('SELECT * FROM manufacturers ORDER BY name');
         res.json(result.rows);
     } catch (error) {
         console.error('Get manufacturers error:', error);
@@ -780,7 +596,6 @@ app.put('/api/lines/:id', requireRop, async (req, res) => {
     }
 });
 
-
 app.delete('/api/lines/:id', requireRop, async (req, res) => {
     const { id } = req.params;
     try {
@@ -792,68 +607,166 @@ app.delete('/api/lines/:id', requireRop, async (req, res) => {
     }
 });
 
-// ========== FLAVORS ROUTES ==========
+// ========== PRODUCT ROUTES ==========
 
-// Создать вкус (ROP only)
-app.post('/api/flavors', requireRop, async (req, res) => {
-    const { line_id, name, strength, quality_class, description, photo_url } = req.body;
-    if (!line_id || !name) {
-        return res.status(400).json({ error: 'Line ID and name are required' });
+app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file' });
+    
+    let photoUrl;
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+        const result = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                { folder: 'spravochnik' },
+                (err, result) => err ? reject(err) : resolve(result)
+            ).end(req.file.buffer);
+        });
+        photoUrl = result.secure_url;
+    } else {
+        photoUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     }
-    try {
-        const result = await pool.query(
-            `INSERT INTO flavors (line_id, name, strength, quality_class, description, photo_url) 
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-            [line_id, name, strength || 5, quality_class || 'medium', description, photo_url]
-        );
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error('Create flavor error:', error);
-        res.status(500).json({ error: 'Failed to create flavor' });
+    res.json({ photoUrl });
+});
+
+app.get('/api/products/:category', requireAuth, async (req, res) => {
+    const result = await pool.query(
+        'SELECT * FROM products WHERE category = $1 ORDER BY created_at DESC',
+        [req.params.category]
+    );
+    res.json(result.rows);
+});
+
+app.post('/api/products/:category', requireRop, async (req, res) => {
+    const { category } = req.params;
+    const { id, name, strength, quality_class, origin, desc, photoUrl } = req.body;
+    
+    const result = await pool.query(
+        `INSERT INTO products (category, product_id, name, strength, quality_class, origin, description, photo_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (product_id) DO UPDATE SET
+           name = EXCLUDED.name, 
+           strength = EXCLUDED.strength,
+           quality_class = EXCLUDED.quality_class,
+           origin = EXCLUDED.origin, 
+           description = EXCLUDED.description,
+           photo_url = EXCLUDED.photo_url
+         RETURNING *`,
+        [category, id, name, strength || 5, quality_class || 'medium', origin, desc, photoUrl]
+    );
+    res.json(result.rows[0]);
+});
+
+app.put('/api/products/:category/:id', requireRop, async (req, res) => {
+    const { category, id } = req.params;
+    const { name, strength, quality_class, origin, desc, photoUrl } = req.body;
+    
+    const result = await pool.query(
+        `UPDATE products 
+         SET name=$1, strength=$2, quality_class=$3, origin=$4, description=$5, photo_url=$6
+         WHERE category=$7 AND product_id=$8 RETURNING *`,
+        [name, strength || 5, quality_class || 'medium', origin, desc, photoUrl, category, id]
+    );
+    res.json(result.rows[0]);
+});
+
+app.delete('/api/products/:category/:id', requireRop, async (req, res) => {
+    const { category, id } = req.params;
+    await pool.query('DELETE FROM products WHERE category=$1 AND product_id=$2', [category, id]);
+    res.json({ success: true });
+});
+
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', session: !!req.session?.user });
+});
+
+// ========== HTML ROUTES ==========
+
+const protectPage = (req, res, next) => {
+    if (req.session && req.session.user) {
+        next();
+    } else {
+        res.sendFile(path.join(__dirname, 'login.html'));
+    }
+};
+
+app.get('/login.html', (req, res) => {
+    if (req.session && req.session.user) {
+        res.redirect('/');
+    } else {
+        res.sendFile(path.join(__dirname, 'login.html'));
     }
 });
 
-// Обновить вкус (ROP only)
-app.put('/api/flavors/:id', requireRop, async (req, res) => {
-    const { id } = req.params;
-    const { name, strength, quality_class, description, photo_url } = req.body;
-    try {
-        const result = await pool.query(
-            `UPDATE flavors SET name = $1, strength = $2, quality_class = $3, description = $4, photo_url = $5 
-             WHERE id = $6 RETURNING *`,
-            [name, strength, quality_class, description, photo_url, id]
-        );
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error('Update flavor error:', error);
-        res.status(500).json({ error: 'Failed to update flavor' });
-    }
+app.get('/', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Удалить вкус (ROP only)
-app.delete('/api/flavors/:id', requireRop, async (req, res) => {
-    const { id } = req.params;
-    try {
-        await pool.query('DELETE FROM flavors WHERE id = $1', [id]);
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Delete flavor error:', error);
-        res.status(500).json({ error: 'Failed to delete flavor' });
-    }
+app.get('/index.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/tobacco.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'tobacco.html'));
+});
+
+app.get('/liquids.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'liquids.html'));
+});
+
+app.get('/snus.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'snus.html'));
+});
+
+app.get('/hookah.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'hookah.html'));
+});
+
+app.get('/sales.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'sales.html'));
+});
+
+app.get('/checks.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'checks.html'));
+});
+
+app.get('/cash.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'cash.html'));
+});
+
+app.get('/disposables.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'disposables.html'));
 });
 
 // ========== START SERVER ==========
-async function start() {
-    await initTables();
+async function startServer() {
+    console.log('\n🚀 Starting server...\n');
+    
+    const dbReady = await initDatabase();
+    
+    if (dbReady && pool) {
+        const sessionMiddleware = setupSession();
+        if (sessionMiddleware) {
+            app.use(sessionMiddleware);
+            console.log('✅ Session store: PostgreSQL');
+        } else {
+            console.log('⚠️ Session store: Memory (fallback)');
+            app.use(session({
+                secret: 'fallback_secret',
+                resave: false,
+                saveUninitialized: true
+            }));
+        }
+    }
     
     app.listen(PORT, () => {
-        console.log(`\n✅ Server running on http://localhost:${PORT}`);
+        console.log(`\n✅ Server running on port ${PORT}`);
+        console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
+        console.log(`🔐 Auth: Enabled`);
         console.log(`\n📋 Данные для входа:`);
         console.log(`   👤 Обычный пользователь: пароль 1111`);
         console.log(`   👑 РОП: rop / 1234`);
         console.log(`   👑 ROOT: root / root123`);
-        console.log(`\n🌐 Open: http://localhost:${PORT}\n`);
+        console.log(`\n🔗 URL: http://localhost:${PORT}\n`);
     });
 }
 
-start();
+startServer();
