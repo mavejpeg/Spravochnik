@@ -21,7 +21,15 @@ async function addItem(category, item) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(item)
+      body: JSON.stringify({
+        id: item.id,
+        name: item.name,
+        strength: item.strength,
+        product_class: item.product_class || 'medium',
+        origin: item.origin,
+        desc: item.desc,
+        photoUrl: item.photoUrl
+      })
     });
     if (!response.ok) {
       const error = await response.json();
@@ -58,7 +66,14 @@ async function updateItem(category, id, data) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        name: data.name,
+        strength: data.strength,
+        product_class: data.product_class || 'medium',
+        origin: data.origin,
+        desc: data.desc,
+        photoUrl: data.photoUrl
+      })
     });
     if (!response.ok) {
       const error = await response.json();
