@@ -1,4 +1,4 @@
-// core.js - полная финальная версия
+// core.js - исправленная версия
 
 // ========== CONSTANTS ==========
 const QUALITY_SETTINGS = {
@@ -28,13 +28,11 @@ const LIQUID_STRENGTH_MAP = {
 };
 
 const STRENGTH_BADGE_CLASS = {
-  // Для табака
   1: 'badge-strength-1', 2: 'badge-strength-1',
   3: 'badge-strength-2', 4: 'badge-strength-2',
   5: 'badge-strength-3', 6: 'badge-strength-3',
   7: 'badge-strength-4', 8: 'badge-strength-4',
   9: 'badge-strength-5', 10: 'badge-strength-5',
-  // Для жидкостей/одноразок
   0: 'badge-strength-1',
   20: 'badge-strength-2',
   50: 'badge-strength-3',
@@ -79,9 +77,7 @@ async function getCategory(category) {
   try {
     const response = await fetch(`/api/products/${category}`, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch');
-    const data = await response.json();
-    console.log(`Loaded ${category}:`, data.length);
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('Fetch error:', error);
     return [];
@@ -205,7 +201,6 @@ function renderProductCard(item, category, onDelete, onEdit) {
   const badgeClass = getStrengthBadgeClass(category, strength);
   const canEdit = window.isRopGlobal === true;
   
-  // Для жидкостей/одноразок - показываем мг, для табака - точки
   let strengthDisplay = '';
   if (category === 'liquids' || category === 'disposables') {
     const mgMap = {0: '0 мг', 20: '20 мг', 50: '50 мг', 70: '70+ мг'};
@@ -239,22 +234,9 @@ function renderProductCard(item, category, onDelete, onEdit) {
           </div>
         ` : ''}
       </div>
-      ${item.description ? `<div class="card-desc">${escapeHtml(item.description.substring(0, 100))}${item.description.length > 100 ? '...' : ''}</div>` : ''}
+      ${item.description ? `<div class="card-desc" style="word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(item.description)}</div>` : ''}
     </div>
   `;
-  
-  // Ограничиваем высоту описания
-  const descDiv = div.querySelector('.card-desc');
-  if (descDiv) {
-    descDiv.style.cssText = `
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      line-height: 1.4;
-      max-height: 4.2em;
-    `;
-  }
   
   const deleteBtn = div.querySelector('.btn-delete');
   if (deleteBtn && canEdit) {
@@ -315,7 +297,6 @@ class ProductModal {
     const hasPhoto = this.photoUrl ? true : false;
     const isLiquidOrDisposable = (this.category === 'liquids' || this.category === 'disposables');
     
-    // Для жидкостей и одноразок - выбор из предустановленных значений
     let strengthHtml = '';
     if (isLiquidOrDisposable) {
       strengthHtml = `
@@ -330,7 +311,6 @@ class ProductModal {
         </div>
       `;
     } else {
-      // Для табака - слайдер 1-10
       strengthHtml = `
         <div class="field">
           <label>⚡ Крепость (1-10)</label>
@@ -384,7 +364,7 @@ class ProductModal {
           
           <div class="field">
             <label>📋 Описание</label>
-            <textarea id="fieldDesc" rows="4" placeholder="Особенности вкуса, формат, советы">${escapeHtml(this.editItem?.desc || this.editItem?.description || '')}</textarea>
+            <textarea id="fieldDesc" rows="4" placeholder="Особенности вкуса, формат, советы" style="resize: vertical;">${escapeHtml(this.editItem?.desc || this.editItem?.description || '')}</textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -397,7 +377,6 @@ class ProductModal {
     document.body.appendChild(overlay);
     setTimeout(() => overlay.classList.add('open'), 10);
     
-    // Для табака - обработка слайдера
     if (!isLiquidOrDisposable) {
       const slider = overlay.querySelector('#fieldStrength');
       const strengthSpan = overlay.querySelector('#strengthValue');
@@ -409,7 +388,6 @@ class ProductModal {
       }
     }
     
-    // Фото загрузка
     const photoInput = overlay.querySelector('#photoInput');
     const photoPreview = overlay.querySelector('#photoPreview');
     const previewContainer = overlay.querySelector('#photoPreviewContainer');
@@ -486,6 +464,21 @@ class ProductModal {
     });
   }
 }
+
+// ========== CSS для описания ==========
+const style = document.createElement('style');
+style.textContent = `
+  .card-desc {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.5;
+    margin-top: 8px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
+`;
+document.head.appendChild(style);
 
 // ========== EXPORTS ==========
 window.getCategory = getCategory;
