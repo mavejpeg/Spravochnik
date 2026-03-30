@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Жидкости — Справочник</title>
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -47,6 +47,7 @@
   <div class="section" id="tab-info">
     <div class="sec-header">
       <span class="sec-title">Общая информация</span>
+      <button class="btn-edit-content" data-page="liquids" data-section="info" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="info-content">
       <div class="two-col">
@@ -61,6 +62,7 @@
   <div class="section" id="tab-alts">
     <div class="sec-header">
       <span class="sec-title">Альтернативы</span>
+      <button class="btn-edit-content" data-page="liquids" data-section="alternatives" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="alternatives-content">
       <div class="info-card"><h3>🔄 Чем заменить</h3><ul><li><strong>Брызги</strong> → Провинция, Наркоз, Дуал, Трава, Хром</li><li><strong>Рик и Морти</strong> → Сайонара, Злая Монашка, Ронин</li><li><strong>Vape Cloud</strong> → Хром</li><li><strong>Скала, Монстр, Angry Vape</strong> → Бруско</li><li><strong>Скала</strong> → Чакра</li><li><strong>Тойз</strong> → Антагонист</li></ul></div>
@@ -71,21 +73,23 @@
   <div class="section" id="tab-coils">
     <div class="sec-header">
       <span class="sec-title">Совместимость испарителей</span>
+      <button class="btn-edit-content" data-page="liquids" data-section="coils" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="coils-content">
-      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table">  <thead> <tr><th>Устройство / Платформа</th><th>Тип коила</th><th>Совместимые модели</th></tr> </thead><tbody> <tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr> <tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco (все модели)</td></tr> <tr><td>X-ross 4</td><td>Сменные картриджи</td><td>0.4, 0.6, 0.8, 1.2 Ом</td></tr> <tr><td>Vmate</td><td>Сменные картриджи</td><td>0.4, 0.7, 1.2 Ом</td></tr> </tbody></table><p style="margin-top:14px; font-size:12px; color:var(--muted)">Серии: Pnp, TW, WM, TPP, PNP-X, Dragy, Argus</p></div></div>
+      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead>  <tr><th>Устройство / Платформа</th><th>Тип коила</th><th>Совместимые модели</th></tr></thead><tbody><tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr><tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco (все модели)</td></tr><tr><td>X-ross 4</td><td>Сменные картриджи</td><td>0.4, 0.6, 0.8, 1.2 Ом</td></tr><tr><td>Vmate</td><td>Сменные картриджи</td><td>0.4, 0.7, 1.2 Ом</td></tr></tbody></table><p style="margin-top:14px; font-size:12px; color:var(--muted)">Серии: Pnp, TW, WM, TPP, PNP-X, Dragy, Argus</p></div></div>
     </div>
   </div>
 
 </main>
 
-<script src="core.js?v=5"></script>
-<script src="catalog.js?v=5"></script>
+<script src="core.js?v=6"></script>
+<script src="utils.js?v=6"></script>
 <script>
   const CATEGORY = 'liquids';
   let isRop = false;
 
-  async function checkLocalPermissions() {
+  // Проверка прав для кнопки добавления
+  async function checkAddButton() {
     const response = await fetch('/api/check-auth', { credentials: 'include' });
     const data = await response.json();
     if (data.authenticated) {
@@ -93,6 +97,13 @@
       window.isRopGlobal = isRop;
       const addButton = document.getElementById('btnAddLiquid');
       if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
+      
+      // Показываем кнопки редактирования контента
+      const editBtns = document.querySelectorAll('.btn-edit-content');
+      editBtns.forEach(btn => {
+        btn.style.display = isRop ? 'inline-flex' : 'none';
+        btn.addEventListener('click', () => editContent(btn.dataset.page, btn.dataset.section));
+      });
     }
   }
   
@@ -146,7 +157,7 @@
     });
   }
 
-  checkLocalPermissions().then(() => renderGrid());
+  checkAddButton().then(() => renderGrid());
 </script>
 </body>
 </html>
