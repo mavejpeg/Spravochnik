@@ -5,7 +5,157 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Обучение новичков — Справочник</title>
-<link rel="stylesheet" href="style.css?v=22">
+<link rel="stylesheet" href="style.css?v=23">
+<style>
+  /* Стили для опросников */
+  .quiz-block {
+    background: var(--surface2);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 24px;
+    border: 1px solid var(--border);
+  }
+  
+  .quiz-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .quiz-question {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-left: 3px solid var(--accent);
+  }
+  
+  .quiz-question-text {
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+  
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .quiz-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 8px 12px;
+    background: var(--surface2);
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  
+  .quiz-option:hover {
+    background: var(--surface3);
+  }
+  
+  .quiz-option input {
+    cursor: pointer;
+  }
+  
+  .quiz-option label {
+    cursor: pointer;
+    flex: 1;
+    color: var(--text2);
+  }
+  
+  .quiz-answer {
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: none;
+  }
+  
+  .quiz-answer.correct {
+    background: rgba(60, 255, 160, 0.1);
+    border-left: 3px solid var(--accent3);
+    color: var(--accent3);
+  }
+  
+  .quiz-answer.incorrect {
+    background: rgba(252, 92, 124, 0.1);
+    border-left: 3px solid var(--accent2);
+    color: var(--accent2);
+  }
+  
+  .quiz-answer.show {
+    display: block;
+  }
+  
+  .quiz-result {
+    margin-top: 16px;
+    padding: 12px;
+    text-align: center;
+    border-radius: 10px;
+    font-weight: 600;
+    display: none;
+  }
+  
+  .quiz-result.show {
+    display: block;
+  }
+  
+  .quiz-result.success {
+    background: rgba(60, 255, 160, 0.2);
+    color: var(--accent3);
+  }
+  
+  .quiz-result.fail {
+    background: rgba(252, 92, 124, 0.2);
+    color: var(--accent2);
+  }
+  
+  .quiz-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.2s;
+  }
+  
+  .quiz-btn:hover {
+    background: #8e6ffe;
+    transform: translateY(-1px);
+  }
+  
+  .quiz-reset {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    margin-left: 10px;
+  }
+  
+  /* Отступы */
+  .section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .gap-16 {
+    margin-bottom: 16px;
+  }
+</style>
 </head>
 <body>
 
@@ -37,7 +187,7 @@
       <span class="sec-title">📅 День 1: Основы</span>
       <button class="btn-edit-content" data-page="training" data-section="day1" style="display: none;">✏️ Редактировать</button>
     </div>
-    <div id="day1-content">
+    <div id="day1-content" class="section-content">
       <div class="info-card">
         <h3>🎯 Цели первого дня</h3>
         <ul>
@@ -48,7 +198,9 @@
         </ul>
       </div>
 
-      <div class="accordion open">
+      <div class="gap-16"></div>
+
+      <div class="accordion">
         <div class="acc-header"><span class="acc-title">💧 Жидкости: виды никотина</span><span class="acc-arrow">▼</span></div>
         <div class="acc-body">
           <div class="hl info">Солевой никотин (Salt Nic) — быстро накуривает, мягче при затяжке, для подов</div>
@@ -121,6 +273,15 @@
           <li>Какие одноразки крепкие, какие лёгкие?</li>
         </ul>
       </div>
+
+      <!-- ОПРОСНИК ДЕНЬ 1 -->
+      <div class="quiz-block" id="quiz-day1">
+        <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 1)</div>
+        <div id="quiz-day1-questions"></div>
+        <button class="quiz-btn" onclick="checkQuiz('day1')">✅ Проверить ответы</button>
+        <button class="quiz-btn quiz-reset" onclick="resetQuiz('day1')">🔄 Сбросить</button>
+        <div id="quiz-day1-result" class="quiz-result"></div>
+      </div>
     </div>
   </div>
 
@@ -130,7 +291,7 @@
       <span class="sec-title">📅 День 2: Кальянная тематика</span>
       <button class="btn-edit-content" data-page="training" data-section="day2" style="display: none;">✏️ Редактировать</button>
     </div>
-    <div id="day2-content">
+    <div id="day2-content" class="section-content">
       <div class="info-card">
         <h3>🎯 Цели второго дня</h3>
         <ul>
@@ -140,7 +301,7 @@
         </ul>
       </div>
 
-      <div class="accordion open">
+      <div class="accordion">
         <div class="acc-header"><span class="acc-title">🌿 Табаки: топы рынка и крепости</span><span class="acc-arrow">▼</span></div>
         <div class="acc-body">
           <ul>
@@ -204,11 +365,16 @@
           <li><strong>Плотная (оверпак)</strong> — для крепких миксов</li>
           <li><strong>Свободная (андерпак)</strong> — для лёгкого пара</li>
         </ul>
-        <div class="hl info">Примеры миксов:<br>
-        Сладкий: 1 легкий, 2 средних<br>
-        Свежий: 1 крепкий, 1 легкий, 1 средний<br>
-        Кислый: 2 средних, 1 крепкий<br>
-        Десертный: 2 крепких, 1 средний</div>
+        <div class="hl info">Примеры миксов:<br>Сладкий: 1 легкий, 2 средних<br>Свежий: 1 крепкий, 1 легкий, 1 средний<br>Кислый: 2 средних, 1 крепкий<br>Десертный: 2 крепких, 1 средний</div>
+      </div>
+
+      <!-- ОПРОСНИК ДЕНЬ 2 -->
+      <div class="quiz-block" id="quiz-day2">
+        <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 2)</div>
+        <div id="quiz-day2-questions"></div>
+        <button class="quiz-btn" onclick="checkQuiz('day2')">✅ Проверить ответы</button>
+        <button class="quiz-btn quiz-reset" onclick="resetQuiz('day2')">🔄 Сбросить</button>
+        <div id="quiz-day2-result" class="quiz-result"></div>
       </div>
     </div>
   </div>
@@ -219,7 +385,7 @@
       <span class="sec-title">📅 День 3: Касса и маркировка</span>
       <button class="btn-edit-content" data-page="training" data-section="day3" style="display: none;">✏️ Редактировать</button>
     </div>
-    <div id="day3-content">
+    <div id="day3-content" class="section-content">
       <div class="info-card">
         <h3>🎯 Цели третьего дня</h3>
         <ul>
@@ -230,7 +396,7 @@
         </ul>
       </div>
 
-      <div class="accordion open">
+      <div class="accordion">
         <div class="acc-header"><span class="acc-title">🧾 Работа с кассой и маркировкой</span><span class="acc-arrow">▼</span></div>
         <div class="acc-body">
           <div class="hl warn">ВАЖНО:</div>
@@ -259,7 +425,6 @@
       <div class="accordion">
         <div class="acc-header"><span class="acc-title">💰 Как вести себя с мошенниками</span><span class="acc-arrow">▼</span></div>
         <div class="acc-body">
-          <div class="hl warn">ПРАВИЛА:</div>
           <ul>
             <li>Сначала берем деньги, потом отдаем товар</li>
             <li>Проверка купюр (на просвет, тактильно)</li>
@@ -272,7 +437,6 @@
       <div class="accordion">
         <div class="acc-header"><span class="acc-title">🏛️ Как вести себя с гос.органами</span><span class="acc-arrow">▼</span></div>
         <div class="acc-body">
-          <div class="hl warn">ПАМЯТКА:</div>
           <ul>
             <li>Перед началом рабочего дня знать на каком юр.лице работаете и с какого момента</li>
             <li>Запоминайте ФИО и орган проверяющих</li>
@@ -296,6 +460,15 @@
           </ul>
         </div>
       </div>
+
+      <!-- ОПРОСНИК ДЕНЬ 3 -->
+      <div class="quiz-block" id="quiz-day3">
+        <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 3)</div>
+        <div id="quiz-day3-questions"></div>
+        <button class="quiz-btn" onclick="checkQuiz('day3')">✅ Проверить ответы</button>
+        <button class="quiz-btn quiz-reset" onclick="resetQuiz('day3')">🔄 Сбросить</button>
+        <div id="quiz-day3-result" class="quiz-result"></div>
+      </div>
     </div>
   </div>
 
@@ -305,7 +478,7 @@
       <span class="sec-title">📅 День 4: Закрепление</span>
       <button class="btn-edit-content" data-page="training" data-section="day4" style="display: none;">✏️ Редактировать</button>
     </div>
-    <div id="day4-content">
+    <div id="day4-content" class="section-content">
       <div class="info-card">
         <h3>🎯 Цели четвертого дня</h3>
         <ul>
@@ -316,7 +489,7 @@
         </ul>
       </div>
 
-      <div class="accordion open">
+      <div class="accordion">
         <div class="acc-header"><span class="acc-title">✅ Контрольные вопросы</span><span class="acc-arrow">▼</span></div>
         <div class="acc-body">
           <ul>
@@ -338,6 +511,15 @@
           <li>После комбо всегда предлагать испаритель или картридж</li>
         </ul>
       </div>
+
+      <!-- ОПРОСНИК ДЕНЬ 4 -->
+      <div class="quiz-block" id="quiz-day4">
+        <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 4)</div>
+        <div id="quiz-day4-questions"></div>
+        <button class="quiz-btn" onclick="checkQuiz('day4')">✅ Проверить ответы</button>
+        <button class="quiz-btn quiz-reset" onclick="resetQuiz('day4')">🔄 Сбросить</button>
+        <div id="quiz-day4-result" class="quiz-result"></div>
+      </div>
     </div>
   </div>
 
@@ -347,8 +529,8 @@
       <span class="sec-title">💬 Скрипты продаж</span>
       <button class="btn-edit-content" data-page="training" data-section="scripts" style="display: none;">✏️ Редактировать</button>
     </div>
-    <div id="scripts-content">
-      <div class="accordion open">
+    <div id="scripts-content" class="section-content">
+      <div class="accordion">
         <div class="acc-header"><span class="acc-title">🎯 Стандарты общения</span><span class="acc-arrow">▼</span></div>
         <div class="acc-body">
           <ul>
@@ -366,8 +548,7 @@
           <div class="hl ok">«Здравствуйте, что по вкусу вы хотели (кислое или сладкое)? И какая крепость?»</div>
           <div class="hl info">Если ответ «Не знаю, хочу что-нибудь вкусненькое»:</div>
           <div class="hl ok">«Давайте попробуем определиться. Фруктовые, ягодные или сладкие десертные?»</div>
-          <div class="hl info">После выбора направления — дать 3 варианта на выбор с презентацией:</div>
-          <div class="hl ok">«Можете попробовать жидкость Наркоз — у них в основе зарубежные ароматизаторы, которые влияют на яркость и насыщение вкуса, а так же продлевают жизнь испарителя»</div>
+          <div class="hl info">После выбора направления — дать 3 варианта на выбор с презентацией</div>
         </div>
       </div>
 
@@ -375,8 +556,6 @@
         <div class="acc-header"><span class="acc-title">💨 Скрипт: одноразки</span><span class="acc-arrow">▼</span></div>
         <div class="acc-body">
           <div class="hl ok">«На какое количество тяг рассматриваете? Крепкую или легкую? Что по вкусу?»</div>
-          <div class="hl ok">«Могу предложить Plonk — это премиальные лёгкие одноразки с насыщенным вкусом»</div>
-          <div class="hl ok">«Если хотите что-то покрепче — обратите внимание на Vozol 20k или Fumo 18k»</div>
         </div>
       </div>
 
@@ -385,20 +564,6 @@
         <div class="acc-body">
           <div class="hl ok">«Какую крепость предпочитаете? Лёгкую, среднюю или крепкую?»</div>
           <div class="hl ok">«По вкусу: фруктовые, ягодные, мятные или табачные?»</div>
-          <div class="hl ok">«Могу порекомендовать Darkside — премиальный табак с насыщенным вкусом»</div>
-        </div>
-      </div>
-
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">🎭 Скрипт: сценка полного процесса</span><span class="acc-arrow">▼</span></div>
-        <div class="acc-body">
-          <div class="hl info">Покупатель: «Здравствуйте, мне нужна жидкость»</div>
-          <div class="hl ok">Продавец: «Здравствуйте, что по вкусу вам бы хотелось, кислое или сладкое и какая крепость?»</div>
-          <div class="hl info">Покупатель: «Мне бы хотелось что-нибудь сладкое и не крепкое»</div>
-          <div class="hl ok">Продавец: «С холодком или без?»</div>
-          <div class="hl info">Покупатель: «Можно немного»</div>
-          <div class="hl ok">Продавец: «У нас есть жидкость Наркоз, там в основе идут зарубежные ароматизаторы, которые влияют на яркость и насыщение вкуса, а так же продлевают жизнь испарителя. (Открыть и дать на выбор понюхать 3 вкуса по запросу). Для конкретики можно еще уточнить, фрукты нужны или ягоды?»</div>
-          <div class="hl ok">«У нас сейчас проходит комбо, при покупке второй жидкости будет скидка. Вам нужен будет испаритель либо картридж? Когда берете новую жидкость, желательно всегда брать новый, т.к новая жидкость может смешаться со старой и он просто перегорит»</div>
         </div>
       </div>
     </div>
@@ -410,36 +575,25 @@
       <span class="sec-title">🔒 Безопасность и мошенники</span>
       <button class="btn-edit-content" data-page="training" data-section="security" style="display: none;">✏️ Редактировать</button>
     </div>
-    <div id="security-content">
+    <div id="security-content" class="section-content">
       <div class="info-card">
         <h3>💰 Правила работы с деньгами</h3>
         <ul>
           <li>Сначала берем деньги, потом отдаем товар</li>
           <li>Проверка купюр (на просвет, тактильно)</li>
           <li>Не начинайте считать сдачу, пока не убедились, что получили деньги в руки</li>
-          <li>Стойте в полоборота (спинкой к товару — он сам себя не украдет)</li>
+          <li>Стойте в полоборота (спинкой к товару)</li>
         </ul>
       </div>
 
       <div class="info-card">
         <h3>🏛️ Работа с гос.органами</h3>
         <ul>
-          <li>Перед началом рабочего дня убедитесь на каком юр.лице вы работаете и знайте с какого момента</li>
-          <li>Запоминайте ФИО и орган, когда к вам пришли проверяющие</li>
-          <li>Ничего не подписывать, пока не прочитали все документы полностью</li>
-          <li>Фотографировать — вы имеете на это право</li>
-          <li>Если изымают — должна быть опись с НАЗВАНИЯМИ, ценами и количеством</li>
-          <li>Молчите и косите под дурачка — вы простой продавец</li>
-        </ul>
-      </div>
-
-      <div class="info-card">
-        <h3>📞 Мошенники: основные схемы</h3>
-        <ul>
-          <li>«Дали крупную купюру, а требуют сдачу» — всегда пересчитывайте вслух</li>
-          <li>Путают сдачу, отвлекают разговорами</li>
-          <li>Просят показать товар и отвлекают второго продавца</li>
-          <li>Если что-то подозрительно — зовите старшего</li>
+          <li>Перед началом рабочего дня знать на каком юр.лице работаете</li>
+          <li>Запоминайте ФИО и орган проверяющих</li>
+          <li>Ничего не подписывать не читая</li>
+          <li>Фотографировать — вы имеете право</li>
+          <li>Если изымают — должна быть опись</li>
         </ul>
       </div>
     </div>
@@ -447,10 +601,181 @@
 
 </main>
 
-<script src="core.js?v=22"></script>
-<script src="main.js?v=22"></script>
+<script src="core.js?v=23"></script>
+<script src="main.js?v=23"></script>
 <script>
-  console.log('Training page loaded');
+// Данные для опросников
+const quizzes = {
+  day1: {
+    questions: [
+      { text: "Чем отличается солевой никотин от щелочного?", 
+        options: ["Солевой быстрее накуривает, мягче", "Щелочной быстрее накуривает", "Нет разницы", "Солевой только для больших устройств"],
+        correct: 0,
+        explanation: "Солевой никотин быстрее накуривает и мягче при затяжке, используется в под-системах. Щелочной имеет накопительный эффект, для больших устройств." },
+      { text: "Какие одноразки относятся к крепким?", 
+        options: ["Plonk, Ignite", "Vozol 20k, Fumo 18k, GENG", "Lost Mary, Soak", "Все перечисленные"],
+        correct: 1,
+        explanation: "К крепким одноразкам относятся: Vozol 20k, Fumo 18k, GENG, HQD, Bubble Moon" },
+      { text: "Какое сопротивление испарителя лучше подходит для солевых жидкостей?", 
+        options: ["0.2-0.4 Ом", "0.6-0.8 Ом", "1.2-1.6 Ом", "Любое"],
+        correct: 1,
+        explanation: "Для солевых жидкостей лучше подходят испарители 0.6-0.8 Ом (под-системы)" }
+    ]
+  },
+  day2: {
+    questions: [
+      { text: "Какой табак для кальяна считается самым крепким?", 
+        options: ["Darkside", "Мастях", "Siberia", "HiPrime"],
+        correct: 2,
+        explanation: "Siberia — один из самых крепких табаков на рынке" },
+      { text: "Какая чаша лучше всего раскрывает вкус?", 
+        options: ["Турка", "Убивашка", "Фанол / Фаннель", "Мелассоуловитель"],
+        correct: 2,
+        explanation: "Фанол / Фаннель (с 1 центральным отверстием) максимально раскрывает вкус" },
+      { text: "Для чего нужен мелассоуловитель?", 
+        options: ["Для усиления крепости", "Для сбора лишнего сиропа", "Для охлаждения дыма", "Для розжига углей"],
+        correct: 1,
+        explanation: "Мелассоуловитель ставится между чашей и шахтой для сбора лишнего сиропа" }
+    ]
+  },
+  day3: {
+    questions: [
+      { text: "Как правильно принимать поставку?", 
+        options: ["Частями по мере поступления", "Одна накладная — одна приемка", "Можно отложить на неделю", "Принимать без проверки"],
+        correct: 1,
+        explanation: "Правило: ОДНА НАКЛАДНАЯ — ОДНА ПРИЕМКА. Никаких частей!" },
+      { text: "Что делать, если не успели принять товар в день поставки?", 
+        options: ["Ничего", "Написать в закуп", "Отложить до следующей недели", "Принять без проверки"],
+        correct: 1,
+        explanation: "Если не успели принять товар в течение текущего дня или следующего — написать в закуп" },
+      { text: "Как вести себя с мошенниками?", 
+        options: ["Сначала отдать товар, потом взять деньги", "Сначала взять деньги, потом отдать товар", "Не проверять купюры", "Отдавать сдачу не считая"],
+        correct: 1,
+        explanation: "Сначала берем деньги, потом отдаем товар. Обязательно проверяем купюры" }
+    ]
+  },
+  day4: {
+    questions: [
+      { text: "Как правильно предлагать комбо?", 
+        options: ["Назвать точную скидку", "Сказать 'программа сама рассчитает'", "Не предлагать вообще", "Предложить только один товар"],
+        correct: 1,
+        explanation: "При предложении комбо скидку называть не нужно, можно сказать что программа сама рассчитает" },
+      { text: "Что обязательно предложить после комбо?", 
+        options: ["Скидочную карту", "Испаритель или картридж", "Чек", "Пакет"],
+        correct: 1,
+        explanation: "После комбо всегда обязательно предлагать испаритель или картридж" },
+      { text: "Какую информацию нужно знать перед началом рабочего дня?", 
+        options: ["Погоду", "На каком юр.лице работаешь", "Курс валют", "Новости"],
+        correct: 1,
+        explanation: "Перед началом рабочего дня нужно знать на каком юр.лице работаешь и с какого момента" }
+    ]
+  }
+};
+
+// Инициализация опросников
+function initQuizzes() {
+  for (const [day, quiz] of Object.entries(quizzes)) {
+    const container = document.getElementById(`quiz-${day}-questions`);
+    if (!container) continue;
+    
+    let html = '';
+    quiz.questions.forEach((q, idx) => {
+      html += `
+        <div class="quiz-question" data-q="${idx}">
+          <div class="quiz-question-text">${idx + 1}. ${q.text}</div>
+          <div class="quiz-options">
+            ${q.options.map((opt, optIdx) => `
+              <label class="quiz-option">
+                <input type="radio" name="q${day}_${idx}" value="${optIdx}">
+                <span>${opt}</span>
+              </label>
+            `).join('')}
+          </div>
+          <div class="quiz-answer" id="quiz-${day}-answer-${idx}"></div>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+  }
+}
+
+// Проверка опросника
+function checkQuiz(day) {
+  const quiz = quizzes[day];
+  if (!quiz) return;
+  
+  let correctCount = 0;
+  const total = quiz.questions.length;
+  
+  quiz.questions.forEach((q, idx) => {
+    const selected = document.querySelector(`input[name="q${day}_${idx}"]:checked`);
+    const answerDiv = document.getElementById(`quiz-${day}-answer-${idx}`);
+    const isCorrect = selected && parseInt(selected.value) === q.correct;
+    
+    if (isCorrect) correctCount++;
+    
+    answerDiv.innerHTML = isCorrect ? 
+      `✅ Правильно! ${q.explanation}` : 
+      `❌ Неправильно. ${q.explanation}`;
+    answerDiv.className = `quiz-answer show ${isCorrect ? 'correct' : 'incorrect'}`;
+  });
+  
+  const resultDiv = document.getElementById(`quiz-${day}-result`);
+  const percentage = Math.round((correctCount / total) * 100);
+  
+  resultDiv.innerHTML = `Результат: ${correctCount} из ${total} (${percentage}%)`;
+  resultDiv.className = `quiz-result show ${percentage >= 70 ? 'success' : 'fail'}`;
+  
+  if (percentage >= 70) {
+    resultDiv.innerHTML += `<br>🎉 Отлично! Материал усвоен.`;
+  } else {
+    resultDiv.innerHTML += `<br>📚 Рекомендуется повторить материал.`;
+  }
+}
+
+// Сброс опросника
+function resetQuiz(day) {
+  const quiz = quizzes[day];
+  if (!quiz) return;
+  
+  quiz.questions.forEach((_, idx) => {
+    const radios = document.querySelectorAll(`input[name="q${day}_${idx}"]`);
+    radios.forEach(radio => radio.checked = false);
+    const answerDiv = document.getElementById(`quiz-${day}-answer-${idx}`);
+    answerDiv.innerHTML = '';
+    answerDiv.classList.remove('show', 'correct', 'incorrect');
+  });
+  
+  const resultDiv = document.getElementById(`quiz-${day}-result`);
+  resultDiv.innerHTML = '';
+  resultDiv.classList.remove('show', 'success', 'fail');
+}
+
+// Инициализация аккордеонов для details/summary
+function initDetailsAccordions() {
+  const details = document.querySelectorAll('details');
+  details.forEach(detail => {
+    const summary = detail.querySelector('summary');
+    if (summary && !detail.classList.contains('converted')) {
+      summary.addEventListener('click', (e) => {
+        e.preventDefault();
+        detail.open = !detail.open;
+      });
+      detail.classList.add('converted');
+    }
+  });
+}
+
+// Запуск после загрузки
+document.addEventListener('DOMContentLoaded', () => {
+  initQuizzes();
+  initDetailsAccordions();
+  console.log('Training page loaded with quizzes');
+});
+
+// Глобальные функции для кнопок
+window.checkQuiz = checkQuiz;
+window.resetQuiz = resetQuiz;
 </script>
 </body>
 </html>
