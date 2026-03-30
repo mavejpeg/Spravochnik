@@ -1,4 +1,4 @@
-// server.js - полная версия
+// server.js - исправленная версия
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -116,12 +116,11 @@ async function initDatabase() {
             )
         `);
 
-        // Add quality_class to products if missing
+        // Add columns if missing
         await client.query(`
             ALTER TABLE products ADD COLUMN IF NOT EXISTS quality_class VARCHAR(20) DEFAULT 'medium'
         `).catch(e => console.log('Column check:', e.message));
-
-        // Add strength_color to lines if missing
+        
         await client.query(`
             ALTER TABLE lines ADD COLUMN IF NOT EXISTS strength_color VARCHAR(20) DEFAULT 'medium'
         `).catch(e => console.log('Column check:', e.message));
@@ -155,7 +154,9 @@ async function initDatabase() {
 }
 
 // ========== Session middleware ==========
-function setupSession() {
+let sessionMiddleware = null;
+
+function createSessionMiddleware() {
     if (!pool) {
         console.error('❌ Cannot setup session: no database pool');
         return null;
@@ -196,7 +197,7 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// ========== MIDDLEWARE ==========
+// ========== MIDDLEWARE (применяем СНАЧАЛА) ==========
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -204,7 +205,10 @@ app.use(express.static(path.join(__dirname)));
 
 // ========== AUTH MIDDLEWARE ==========
 function requireAuth(req, res, next) {
-    if (req.session && req.session.user) {
+    if (!req.session) {
+        return res.status(401).json({ error: 'Session not initialized' });
+    }
+    if (req.session.user) {
         next();
     } else {
         res.status(401).json({ error: 'Unauthorized' });
@@ -212,7 +216,10 @@ function requireAuth(req, res, next) {
 }
 
 function requireRop(req, res, next) {
-    if (req.session && req.session.user && (req.session.user.role === 'rop' || req.session.user.role === 'root')) {
+    if (!req.session) {
+        return res.status(401).json({ error: 'Session not initialized' });
+    }
+    if (req.session.user && (req.session.user.role === 'rop' || req.session.user.role === 'root')) {
         next();
     } else {
         res.status(403).json({ error: 'ROP only' });
@@ -220,10 +227,21 @@ function requireRop(req, res, next) {
 }
 
 function requireRoot(req, res, next) {
-    if (req.session && req.session.user && req.session.user.role === 'root') {
+    if (!req.session) {
+        return res.status(401).json({ error: 'Session not initialized' });
+    }
+    if (req.session.user && req.session.user.role === 'root') {
         next();
     } else {
         res.status(403).json({ error: 'Root only' });
+    }
+}
+
+function protectPage(req, res, next) {
+    if (req.session && req.session.user) {
+        next();
+    } else {
+        res.sendFile(path.join(__dirname, 'login.html'));
     }
 }
 
@@ -268,6 +286,12 @@ app.post('/api/simple-login', async (req, res) => {
         }
         
         const user = result.rows[0];
+        
+        if (!req.session) {
+            console.error('Session not available');
+            return res.status(500).json({ error: 'Session error' });
+        }
+        
         req.session.user = {
             id: user.id,
             username: user.username,
@@ -296,6 +320,12 @@ app.post('/api/login', async (req, res) => {
         }
         
         const user = result.rows[0];
+        
+        if (!req.session) {
+            console.error('Session not available');
+            return res.status(500).json({ error: 'Session error' });
+        }
+        
         req.session.user = {
             id: user.id,
             username: user.username,
@@ -311,15 +341,19 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/logout', (req, res) => {
-    req.session.destroy(() => {
+    if (req.session) {
+        req.session.destroy(() => {
+            res.json({ success: true });
+        });
+    } else {
         res.json({ success: true });
-    });
+    }
 });
 
 // ========== USER MANAGEMENT ==========
 
 app.get('/api/users', async (req, res) => {
-    if (!req.session.user) {
+    if (!req.session || !req.session.user) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     
@@ -342,7 +376,7 @@ app.post('/api/users/:id/change-password', async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
     
-    if (!req.session.user) {
+    if (!req.session || !req.session.user) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     
@@ -384,7 +418,7 @@ app.post('/api/users/:id/change-password', async (req, res) => {
 app.post('/api/users', async (req, res) => {
     const { username, password, full_name, role } = req.body;
     
-    if (!req.session.user || (req.session.user.role !== 'root' && req.session.user.role !== 'rop')) {
+    if (!req.session || !req.session.user || (req.session.user.role !== 'root' && req.session.user.role !== 'rop')) {
         return res.status(403).json({ error: 'Access denied' });
     }
     
@@ -557,7 +591,6 @@ app.get('/api/lines/:id', requireAuth, async (req, res) => {
 
 app.post('/api/lines', requireRop, async (req, res) => {
     const { manufacturer_id, name, description, strength_color } = req.body;
-    console.log('Creating line:', { manufacturer_id, name, description, strength_color });
     
     if (!manufacturer_id || !name) {
         return res.status(400).json({ error: 'Manufacturer ID and name are required' });
@@ -567,7 +600,6 @@ app.post('/api/lines', requireRop, async (req, res) => {
             'INSERT INTO lines (manufacturer_id, name, description, strength_color) VALUES ($1, $2, $3, $4) RETURNING *',
             [manufacturer_id, name, description || '', strength_color || 'medium']
         );
-        console.log('Line created:', result.rows[0]);
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Create line error:', error);
@@ -578,7 +610,6 @@ app.post('/api/lines', requireRop, async (req, res) => {
 app.put('/api/lines/:id', requireRop, async (req, res) => {
     const { id } = req.params;
     const { name, description, strength_color } = req.body;
-    console.log('Updating line:', { id, name, description, strength_color });
     
     try {
         const result = await pool.query(
@@ -588,7 +619,6 @@ app.put('/api/lines/:id', requireRop, async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Line not found' });
         }
-        console.log('Line updated:', result.rows[0]);
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Update line error:', error);
@@ -675,18 +705,10 @@ app.delete('/api/products/:category/:id', requireRop, async (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', session: !!req.session?.user });
+    res.json({ status: 'ok', session: !!req.session });
 });
 
 // ========== HTML ROUTES ==========
-
-const protectPage = (req, res, next) => {
-    if (req.session && req.session.user) {
-        next();
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-};
 
 app.get('/login.html', (req, res) => {
     if (req.session && req.session.user) {
@@ -743,7 +765,7 @@ async function startServer() {
     const dbReady = await initDatabase();
     
     if (dbReady && pool) {
-        const sessionMiddleware = setupSession();
+        sessionMiddleware = createSessionMiddleware();
         if (sessionMiddleware) {
             app.use(sessionMiddleware);
             console.log('✅ Session store: PostgreSQL');
@@ -752,7 +774,8 @@ async function startServer() {
             app.use(session({
                 secret: 'fallback_secret',
                 resave: false,
-                saveUninitialized: true
+                saveUninitialized: true,
+                cookie: { secure: false }
             }));
         }
     }
