@@ -478,41 +478,35 @@ app.get('/api/products/:category', requireAuth, async (req, res) => {
 
 app.post('/api/products/:category', requireRop, async (req, res) => {
     const { category } = req.params;
-    const { id, name, strength, origin, desc, photoUrl } = req.body;
+    const { id, name, strength, product_class, origin, desc, photoUrl } = req.body;
     
     const result = await pool.query(
-        `INSERT INTO products (category, product_id, name, strength, origin, description, photo_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO products (category, product_id, name, strength, product_class, origin, description, photo_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          ON CONFLICT (product_id) DO UPDATE SET
-           name = EXCLUDED.name, strength = EXCLUDED.strength,
-           origin = EXCLUDED.origin, description = EXCLUDED.description,
+           name = EXCLUDED.name, 
+           strength = EXCLUDED.strength,
+           product_class = EXCLUDED.product_class,
+           origin = EXCLUDED.origin, 
+           description = EXCLUDED.description,
            photo_url = EXCLUDED.photo_url
          RETURNING *`,
-        [category, id, name, strength || 5, origin, desc, photoUrl]
+        [category, id, name, strength || 5, product_class || 'medium', origin, desc, photoUrl]
     );
     res.json(result.rows[0]);
 });
 
 app.put('/api/products/:category/:id', requireRop, async (req, res) => {
     const { category, id } = req.params;
-    const { name, strength, origin, desc, photoUrl } = req.body;
+    const { name, strength, product_class, origin, desc, photoUrl } = req.body;
     
     const result = await pool.query(
-        `UPDATE products SET name=$1, strength=$2, origin=$3, description=$4, photo_url=$5
-         WHERE category=$6 AND product_id=$7 RETURNING *`,
-        [name, strength, origin, desc, photoUrl, category, id]
+        `UPDATE products 
+         SET name=$1, strength=$2, product_class=$3, origin=$4, description=$5, photo_url=$6
+         WHERE category=$7 AND product_id=$8 RETURNING *`,
+        [name, strength || 5, product_class || 'medium', origin, desc, photoUrl, category, id]
     );
     res.json(result.rows[0]);
-});
-
-app.delete('/api/products/:category/:id', requireRop, async (req, res) => {
-    const { category, id } = req.params;
-    await pool.query('DELETE FROM products WHERE category=$1 AND product_id=$2', [category, id]);
-    res.json({ success: true });
-});
-
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', session: !!req.session.user });
 });
 
 // ========== HTML ROUTES ==========
