@@ -469,7 +469,6 @@ class ProductModal {
 }
 
 // ========== CSS для описания ==========
-const style = document.createElement('style');
 style.textContent = `
   .card-desc {
     font-size: 12px;
