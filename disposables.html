@@ -56,38 +56,33 @@
 
 </main>
 
-<script src="core.js?v=6"></script>
-<script src="utils.js?v=6"></script>
+<script src="core.js"></script>
+<script src="main.js"></script>
 <script>
-  const CATEGORY = 'disposables';
+  const CATEGORY = 'liquids'; // измените для каждой страницы
   let isRop = false;
 
+  // Проверка прав для кнопки добавления
   async function checkAddButton() {
     const response = await fetch('/api/check-auth', { credentials: 'include' });
     const data = await response.json();
     if (data.authenticated) {
       isRop = (data.user.role === 'rop' || data.user.role === 'root');
       window.isRopGlobal = isRop;
-      const addButton = document.getElementById('btnAddDisposable');
+      const addButton = document.getElementById('btnAddLiquid');
       if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
-      
-      const editBtns = document.querySelectorAll('.btn-edit-content');
-      editBtns.forEach(btn => {
-        btn.style.display = isRop ? 'inline-flex' : 'none';
-        btn.addEventListener('click', () => editContent(btn.dataset.page, btn.dataset.section));
-      });
     }
   }
   
   async function renderGrid() {
-    const grid = document.getElementById('disposablesGrid');
+    const grid = document.getElementById('liquidsGrid');
     if (!grid) return;
     
     const items = await getCategory(CATEGORY);
     grid.innerHTML = '';
 
     if (!items || items.length === 0) {
-      renderEmpty(grid, '⚡', 'Каталог пуст', isRop ? 'Нажмите «Добавить одноразку» чтобы внести первую позицию' : 'Нет доступных позиций');
+      renderEmpty(grid, '💧', 'Каталог пуст', isRop ? 'Нажмите «Добавить жидкость» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
 
@@ -111,7 +106,7 @@
     }
   }
 
-  const addBtn = document.getElementById('btnAddDisposable');
+  const addBtn = document.getElementById('btnAddLiquid');
   if (addBtn) {
     addBtn.addEventListener('click', () => {
       if (!isRop) {
@@ -120,7 +115,7 @@
       }
       new ProductModal({
         category: CATEGORY,
-        title: 'Добавить одноразку',
+        title: 'Добавить жидкость',
         onSave: async (item) => {
           await addItem(CATEGORY, item);
           renderGrid();
