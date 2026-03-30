@@ -731,6 +731,10 @@ app.post('/api/devtools-detected', requireAuth, (req, res) => {
     res.json({ success: true });
 });
 
+app.get('/training.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'training.html'));
+});
+
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
