@@ -1,11 +1,10 @@
-// server.js - исправленная версия
+// server.js - упрощенная версия с memory store
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
 const cors = require('cors');
 const multer = require('multer');
 const session = require('express-session');
-const pgSession = require('connect-pg-simple')(session);
 const { v2: cloudinary } = require('cloudinary');
 require('dotenv').config();
 
@@ -66,15 +65,6 @@ async function initDatabase() {
                 full_name VARCHAR(255) NOT NULL,
                 role VARCHAR(20) DEFAULT 'user',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Session table
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS session (
-                sid VARCHAR(255) PRIMARY KEY,
-                sess JSON NOT NULL,
-                expire TIMESTAMP NOT NULL
             )
         `);
 
@@ -153,33 +143,6 @@ async function initDatabase() {
     }
 }
 
-// ========== Session middleware ==========
-let sessionMiddleware = null;
-
-function createSessionMiddleware() {
-    if (!pool) {
-        console.error('❌ Cannot setup session: no database pool');
-        return null;
-    }
-    
-    return session({
-        store: new pgSession({
-            pool: pool,
-            tableName: 'session',
-            createTableIfMissing: false
-        }),
-        secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
-        resave: false,
-        saveUninitialized: false,
-        cookie: {
-            secure: false,
-            httpOnly: true,
-            maxAge: 30 * 24 * 60 * 60 * 1000
-        },
-        name: 'spravochnik.sid'
-    });
-}
-
 // ========== Cloudinary ==========
 if (process.env.CLOUDINARY_CLOUD_NAME) {
     cloudinary.config({
@@ -197,18 +160,28 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// ========== MIDDLEWARE (применяем СНАЧАЛА) ==========
+// ========== MIDDLEWARE ==========
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
+// ========== SESSION MIDDLEWARE (memory store) ==========
+app.use(session({
+    secret: 'spravochnik_secret_key_2024',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false,
+        httpOnly: true,
+        maxAge: 30 * 24 * 60 * 60 * 1000
+    },
+    name: 'spravochnik.sid'
+}));
+
 // ========== AUTH MIDDLEWARE ==========
 function requireAuth(req, res, next) {
-    if (!req.session) {
-        return res.status(401).json({ error: 'Session not initialized' });
-    }
-    if (req.session.user) {
+    if (req.session && req.session.user) {
         next();
     } else {
         res.status(401).json({ error: 'Unauthorized' });
@@ -216,10 +189,7 @@ function requireAuth(req, res, next) {
 }
 
 function requireRop(req, res, next) {
-    if (!req.session) {
-        return res.status(401).json({ error: 'Session not initialized' });
-    }
-    if (req.session.user && (req.session.user.role === 'rop' || req.session.user.role === 'root')) {
+    if (req.session && req.session.user && (req.session.user.role === 'rop' || req.session.user.role === 'root')) {
         next();
     } else {
         res.status(403).json({ error: 'ROP only' });
@@ -227,10 +197,7 @@ function requireRop(req, res, next) {
 }
 
 function requireRoot(req, res, next) {
-    if (!req.session) {
-        return res.status(401).json({ error: 'Session not initialized' });
-    }
-    if (req.session.user && req.session.user.role === 'root') {
+    if (req.session && req.session.user && req.session.user.role === 'root') {
         next();
     } else {
         res.status(403).json({ error: 'Root only' });
@@ -269,6 +236,7 @@ app.get('/api/check-auth', (req, res) => {
 });
 
 app.post('/api/simple-login', async (req, res) => {
+    console.log('Simple login attempt');
     const { password } = req.body;
     
     if (!password) {
@@ -287,11 +255,6 @@ app.post('/api/simple-login', async (req, res) => {
         
         const user = result.rows[0];
         
-        if (!req.session) {
-            console.error('Session not available');
-            return res.status(500).json({ error: 'Session error' });
-        }
-        
         req.session.user = {
             id: user.id,
             username: user.username,
@@ -299,6 +262,7 @@ app.post('/api/simple-login', async (req, res) => {
             role: user.role
         };
         
+        console.log('Simple login success:', user.username);
         res.json({ success: true, user: req.session.user });
     } catch (err) {
         console.error('Login error:', err);
@@ -307,6 +271,7 @@ app.post('/api/simple-login', async (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
+    console.log('Login attempt:', req.body.username);
     const { username, password } = req.body;
     
     try {
@@ -321,11 +286,6 @@ app.post('/api/login', async (req, res) => {
         
         const user = result.rows[0];
         
-        if (!req.session) {
-            console.error('Session not available');
-            return res.status(500).json({ error: 'Session error' });
-        }
-        
         req.session.user = {
             id: user.id,
             username: user.username,
@@ -333,6 +293,7 @@ app.post('/api/login', async (req, res) => {
             role: user.role
         };
         
+        console.log('Login success:', user.username);
         res.json({ success: true, user: req.session.user });
     } catch (err) {
         console.error('Login error:', err);
@@ -341,13 +302,9 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/logout', (req, res) => {
-    if (req.session) {
-        req.session.destroy(() => {
-            res.json({ success: true });
-        });
-    } else {
+    req.session.destroy(() => {
         res.json({ success: true });
-    }
+    });
 });
 
 // ========== USER MANAGEMENT ==========
@@ -764,26 +721,10 @@ async function startServer() {
     
     const dbReady = await initDatabase();
     
-    if (dbReady && pool) {
-        sessionMiddleware = createSessionMiddleware();
-        if (sessionMiddleware) {
-            app.use(sessionMiddleware);
-            console.log('✅ Session store: PostgreSQL');
-        } else {
-            console.log('⚠️ Session store: Memory (fallback)');
-            app.use(session({
-                secret: 'fallback_secret',
-                resave: false,
-                saveUninitialized: true,
-                cookie: { secure: false }
-            }));
-        }
-    }
-    
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`🔐 Auth: Enabled`);
+        console.log(`🔐 Auth: Enabled (memory store)`);
         console.log(`\n📋 Данные для входа:`);
         console.log(`   👤 Обычный пользователь: пароль 1111`);
         console.log(`   👑 РОП: rop / 1234`);
