@@ -118,6 +118,261 @@ const STRENGTH_BADGE_CLASS = {
   9: 'badge-strength-5', 10: 'badge-strength-5'
 };
 
+// Классы товаров
+const PRODUCT_CLASSES = {
+  'premium': { name: 'Премиум', icon: '💎', color: 'var(--accent)' },
+  'medium': { name: 'Средний класс', icon: '⭐', color: 'var(--accent4)' },
+  'economy': { name: 'Эконом', icon: '📦', color: 'var(--accent3)' }
+};
+
+const PRODUCT_CLASS_OPTIONS = [
+  { value: 'premium', label: '💎 Премиум', color: 'var(--accent)' },
+  { value: 'medium', label: '⭐ Средний класс', color: 'var(--accent4)' },
+  { value: 'economy', label: '📦 Эконом', color: 'var(--accent3)' }
+];
+
+// Обновите класс ProductModal - добавьте поле для выбора класса
+class ProductModal {
+  constructor({ category, title, onSave, editItem = null }) {
+    this.category = category;
+    this.titleText = title;
+    this.onSave = onSave;
+    this.editItem = editItem;
+    this.photoUrl = editItem?.photoUrl || editItem?.photo_url || null;
+    this.productClass = editItem?.product_class || 'medium';
+    this.isUploading = false;
+    this._build();
+  }
+  
+  _build() {
+    const existing = document.getElementById('productModal');
+    if (existing) existing.remove();
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'productModal';
+    
+    const strengthVal = this.editItem?.strength || 5;
+    const hasPhoto = this.photoUrl ? true : false;
+    
+    // Опции для выбора класса
+    const classOptions = PRODUCT_CLASS_OPTIONS.map(opt => {
+      const selected = this.productClass === opt.value ? 'selected' : '';
+      return `<option value="${opt.value}" ${selected}>${opt.label}</option>`;
+    }).join('');
+    
+    overlay.innerHTML = `
+      <div class="modal" style="max-width: 700px;">
+        <div class="modal-header">
+          <span class="modal-title">${this.editItem ? '✏️ Редактировать' : '➕ ' + this.titleText}</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>📸 Фото товара</label>
+            <div class="photo-upload-area" id="photoUploadArea">
+              <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" class="photo-upload-input">
+              <div class="photo-upload-icon">📷</div>
+              <div class="photo-upload-title">Нажмите или перетащите фото</div>
+              <div class="photo-upload-sub">Поддерживаются <strong>JPG, PNG, WEBP</strong> до <strong>5MB</strong></div>
+            </div>
+            <div class="photo-upload-progress" id="uploadProgress" style="display:none;">
+              <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+              </div>
+              <span class="progress-text">Загрузка...</span>
+            </div>
+            <div class="photo-preview-container" id="photoPreviewContainer" style="${hasPhoto ? 'display:block' : 'display:none'}">
+              <img class="photo-preview" id="photoPreview" src="${this.photoUrl || ''}">
+              <button class="photo-remove-btn" id="removePhotoBtn" title="Удалить фото">✕</button>
+            </div>
+          </div>
+          
+          <div class="field">
+            <label>📝 Название *</label>
+            <input type="text" id="fieldName" value="${escapeHtml(this.editItem?.name || '')}" placeholder="Введите название">
+          </div>
+          
+          <div class="row" style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <div class="field" style="flex: 1;">
+              <label>⚡ Крепость (1-10)</label>
+              <div class="strength-slider-wrap">
+                <div class="strength-display">
+                  <span class="strength-val" id="strengthValDisplay">${strengthVal}</span>
+                  <span class="strength-label-text" id="strengthLabelDisplay">${STRENGTH_LABELS[strengthVal]}</span>
+                </div>
+                <input type="range" id="fieldStrength" min="1" max="10" value="${strengthVal}">
+              </div>
+            </div>
+            
+            <div class="field" style="flex: 1;">
+              <label>🏷️ Класс товара</label>
+              <select id="fieldClass" class="product-class-select" style="width:100%; padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px;">
+                ${classOptions}
+              </select>
+            </div>
+          </div>
+          
+          <div class="field">
+            <label>🏭 Производитель / Страна</label>
+            <input type="text" id="fieldOrigin" value="${escapeHtml(this.editItem?.origin || '')}" placeholder="Например: Россия, Швеция">
+          </div>
+          
+          <div class="field">
+            <label>📋 Описание</label>
+            <textarea id="fieldDesc" rows="4" placeholder="Особенности вкуса, формат, советы">${escapeHtml(this.editItem?.desc || this.editItem?.description || '')}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Отмена</button>
+          <button class="btn-save">${this.editItem ? '💾 Сохранить' : '➕ Добавить'}</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.classList.add('open'), 10);
+    
+    // Strength slider
+    const slider = overlay.querySelector('#fieldStrength');
+    const valDisp = overlay.querySelector('#strengthValDisplay');
+    const labelDisp = overlay.querySelector('#strengthLabelDisplay');
+    
+    if (slider) {
+      slider.addEventListener('input', () => {
+        valDisp.textContent = slider.value;
+        labelDisp.textContent = STRENGTH_LABELS[slider.value] || '';
+        const val = parseInt(slider.value);
+        valDisp.style.color = val <= 3 ? 'var(--accent3)' : val <= 6 ? 'var(--accent4)' : 'var(--accent2)';
+      });
+    }
+    
+    // Photo upload
+    const photoInput = overlay.querySelector('#photoInput');
+    const uploadProgress = overlay.querySelector('#uploadProgress');
+    const progressBar = overlay.querySelector('#progressBar');
+    const progressText = overlay.querySelector('.progress-text');
+    const photoPreview = overlay.querySelector('#photoPreview');
+    const previewContainer = overlay.querySelector('#photoPreviewContainer');
+    const removePhotoBtn = overlay.querySelector('#removePhotoBtn');
+    
+    if (photoInput) {
+      const uploadArea = overlay.querySelector('#photoUploadArea');
+      uploadArea.addEventListener('click', () => {
+        photoInput.click();
+      });
+      
+      photoInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        if (file.size > 5 * 1024 * 1024) {
+          alert('❌ Файл слишком большой! Максимум 5MB');
+          return;
+        }
+        
+        if (!file.type.startsWith('image/')) {
+          alert('❌ Пожалуйста, выберите изображение');
+          return;
+        }
+        
+        uploadProgress.style.display = 'block';
+        this.isUploading = true;
+        
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress = Math.min(progress + 10, 90);
+          if (progressBar) progressBar.style.width = progress + '%';
+          if (progressText) progressText.textContent = `Загрузка ${progress}%...`;
+        }, 100);
+        
+        try {
+          const photoUrl = await uploadPhoto(file);
+          this.photoUrl = photoUrl;
+          photoPreview.src = photoUrl;
+          previewContainer.style.display = 'block';
+          
+          clearInterval(interval);
+          if (progressBar) progressBar.style.width = '100%';
+          if (progressText) progressText.textContent = '✅ Готово!';
+          
+          setTimeout(() => {
+            uploadProgress.style.display = 'none';
+            if (progressBar) progressBar.style.width = '0%';
+          }, 1000);
+        } catch (error) {
+          clearInterval(interval);
+          alert('❌ Ошибка загрузки: ' + error.message);
+          uploadProgress.style.display = 'none';
+        } finally {
+          this.isUploading = false;
+        }
+      });
+    }
+    
+    // Remove photo
+    if (removePhotoBtn) {
+      removePhotoBtn.addEventListener('click', () => {
+        this.photoUrl = null;
+        photoPreview.src = '';
+        previewContainer.style.display = 'none';
+      });
+    }
+    
+    // Close modal
+    const closeModal = () => {
+      overlay.classList.remove('open');
+      setTimeout(() => overlay.remove(), 300);
+    };
+    
+    const closeBtn = overlay.querySelector('.modal-close');
+    const cancelBtn = overlay.querySelector('.btn-cancel');
+    
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
+    });
+    
+    // Save
+    const saveBtn = overlay.querySelector('.btn-save');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async () => {
+        if (this.isUploading) {
+          alert('⏳ Подождите, фото загружается...');
+          return;
+        }
+        
+        const nameInput = overlay.querySelector('#fieldName');
+        const name = nameInput ? nameInput.value.trim() : '';
+        
+        if (!name) {
+          alert('❌ Введите название товара');
+          if (nameInput) nameInput.focus();
+          return;
+        }
+        
+        const item = {
+          id: this.editItem?.id || (Date.now() + Math.random()).toString(),
+          name: name,
+          strength: parseInt(overlay.querySelector('#fieldStrength')?.value || 5),
+          product_class: overlay.querySelector('#fieldClass')?.value || 'medium',
+          origin: overlay.querySelector('#fieldOrigin')?.value.trim() || '',
+          desc: overlay.querySelector('#fieldDesc')?.value.trim() || '',
+          photoUrl: this.photoUrl
+        };
+        
+        try {
+          await this.onSave(item);
+          closeModal();
+        } catch (err) {
+          alert('❌ Ошибка: ' + err.message);
+        }
+      });
+    }
+  }
+}
+
 // ========== HELPER FUNCTIONS ==========
 
 function escapeHtml(str) {
