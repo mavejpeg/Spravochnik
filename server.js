@@ -5,12 +5,12 @@ const { Pool } = require('pg');
 const cors = require('cors');
 const multer = require('multer');
 const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 const { v2: cloudinary } = require('cloudinary');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const pgSession = require('connect-pg-simple')(session);
 
 console.log('\n🚀 STARTING SERVER...\n');
 
@@ -69,6 +69,16 @@ async function initDatabase() {
             )
         `);
 
+        // Session table for connect-pg-simple
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS "session" (
+                "sid" varchar NOT NULL COLLATE "default",
+                "sess" json NOT NULL,
+                "expire" timestamp(6) NOT NULL,
+                CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+            )
+        `);
+
         // Content table
         await client.query(`
             CREATE TABLE IF NOT EXISTS content (
@@ -115,6 +125,11 @@ async function initDatabase() {
         await client.query(`
             ALTER TABLE lines ADD COLUMN IF NOT EXISTS strength_color VARCHAR(20) DEFAULT 'medium'
         `).catch(e => console.log('Column check:', e.message));
+
+        // Create index for session expiration
+        await client.query(`
+            CREATE INDEX IF NOT EXISTS IDX_session_expire ON "session" ("expire")
+        `);
 
         // Insert default users
         await client.query(`
@@ -173,29 +188,8 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
-// ========== SESSION MIDDLEWARE ==========
-app.use(session({
-    store: new pgSession({
-        pool: pool,
-        tableName: 'session',
-        createTableIfMissing: true
-    }),
-    secret: 'spravochnik_secret_key_2024',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: false,
-        httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-        sameSite: 'lax'
-    },
-    name: 'spravochnik.sid'
-}));
-
-
 // ========== AUTH MIDDLEWARE ==========
 function requireAuth(req, res, next) {
-    console.log('requireAuth - session user:', req.session?.user?.username);
     if (req.session && req.session.user) {
         next();
     } else {
@@ -220,7 +214,6 @@ function requireRoot(req, res, next) {
 }
 
 function protectPage(req, res, next) {
-    console.log('protectPage - session user:', req.session?.user?.username);
     if (req.session && req.session.user) {
         next();
     } else {
@@ -244,7 +237,6 @@ app.get('/main.js', (req, res) => {
 // ========== AUTH ROUTES ==========
 
 app.get('/api/check-auth', (req, res) => {
-    console.log('check-auth - session user:', req.session?.user?.username);
     if (req.session && req.session.user) {
         res.json({ authenticated: true, user: req.session.user });
     } else {
@@ -279,12 +271,8 @@ app.post('/api/simple-login', async (req, res) => {
             role: user.role
         };
         
-        // Сохраняем сессию явно
-        req.session.save((err) => {
-            if (err) console.error('Session save error:', err);
-            console.log('Simple login success:', user.username);
-            res.json({ success: true, user: req.session.user });
-        });
+        console.log('Simple login success:', user.username);
+        res.json({ success: true, user: req.session.user });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -314,11 +302,8 @@ app.post('/api/login', async (req, res) => {
             role: user.role
         };
         
-        req.session.save((err) => {
-            if (err) console.error('Session save error:', err);
-            console.log('Login success:', user.username);
-            res.json({ success: true, user: req.session.user });
-        });
+        console.log('Login success:', user.username);
+        res.json({ success: true, user: req.session.user });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -759,10 +744,40 @@ async function startServer() {
     
     const dbReady = await initDatabase();
     
+    if (dbReady && pool) {
+        // Session middleware with PostgreSQL store - создаем ПОСЛЕ инициализации pool
+        app.use(session({
+            store: new pgSession({
+                pool: pool,
+                tableName: 'session',
+                createTableIfMissing: false // таблица уже создана
+            }),
+            secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
+            resave: false,
+            saveUninitialized: false,
+            cookie: {
+                secure: false,
+                httpOnly: true,
+                maxAge: 30 * 24 * 60 * 60 * 1000,
+                sameSite: 'lax'
+            },
+            name: 'spravochnik.sid'
+        }));
+        console.log('✅ Session store: PostgreSQL');
+    } else {
+        console.log('⚠️ Session store: Memory (fallback)');
+        app.use(session({
+            secret: 'fallback_secret',
+            resave: false,
+            saveUninitialized: true,
+            cookie: { secure: false }
+        }));
+    }
+    
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`🔐 Auth: Enabled (memory store)`);
+        console.log(`🔐 Auth: Enabled`);
         console.log(`\n📋 Данные для входа:`);
         console.log(`   👤 Обычный пользователь: пароль 1111`);
         console.log(`   👑 РОП: rop / 1234`);
