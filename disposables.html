@@ -27,7 +27,6 @@
 
 <main>
 
-  <!-- CATALOG -->
   <div class="section active" id="tab-catalog">
     <div class="sec-header">
       <span class="sec-title">⚡ Одноразовые электронные сигареты</span>
@@ -43,38 +42,21 @@
     <div class="cards-grid" id="disposablesGrid"></div>
   </div>
 
-  <!-- GUIDE -->
   <div class="section" id="tab-guide">
     <div class="sec-header">
       <span class="sec-title">Гид по брендам</span>
-      <button class="btn-edit-content" data-page="disposables" data-section="guide" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="guide-content">
-      <div class="accordion open">
-        <div class="acc-header"><span class="acc-title">🔥 Крепкие бренды (7-10)</span><span class="acc-arrow">▼</span></div>
-        <div class="acc-body">
-          <ul><li><strong>Husky</strong> — все модели крепкие, со льдом</li><li><strong>Iceberg</strong> — 6000 затяжек</li><li><strong>GENG</strong> — 8000/12000 затяжек</li><li><strong>Вака</strong> — 20000 затяжек, самая крепкая</li><li><strong>Fumo</strong> — 22000 затяжек</li><li><strong>Vozol Vista</strong> — 20000 затяжек</li></ul>
-        </div>
-      </div>
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">💨 Лёгкие бренды (1-3)</span><span class="acc-arrow">▼</span></div>
-        <div class="acc-body">
-          <ul><li><strong>Plonk</strong> — премиальные лёгкие</li><li><strong>Ignite</strong> — натуральные ароматы</li><li><strong>Lost Mary</strong> — 4000-30000 затяжек</li><li><strong>Soak</strong> — 9000 затяжек</li><li><strong>Daft</strong> — 7000 затяжек, кальянная тяга</li></ul>
-        </div>
-      </div>
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">⚖️ Средние бренды (4-6)</span><span class="acc-arrow">▼</span></div>
-        <div class="acc-body">
-          <ul><li><strong>KRZ</strong> — 8000 затяжек</li><li><strong>Inflave Strong</strong> — 18000 затяжек</li><li><strong>HQD</strong> — 12000-18000 затяжек</li><li><strong>Funky Lands</strong> — 10000 затяжек</li></ul>
-        </div>
-      </div>
+      <div class="accordion open"><div class="acc-header"><span class="acc-title">🔥 Крепкие бренды (7-10)</span><span class="acc-arrow">▼</span></div><div class="acc-body"><ul><li><strong>Husky</strong> — все модели крепкие, со льдом</li><li><strong>Iceberg</strong> — 6000 затяжек</li><li><strong>GENG</strong> — 8000/12000 затяжек</li><li><strong>Вака</strong> — 20000 затяжек, самая крепкая</li><li><strong>Fumo</strong> — 22000 затяжек</li><li><strong>Vozol Vista</strong> — 20000 затяжек</li></ul></div></div>
+      <div class="accordion"><div class="acc-header"><span class="acc-title">💨 Лёгкие бренды (1-3)</span><span class="acc-arrow">▼</span></div><div class="acc-body"><ul><li><strong>Plonk</strong> — премиальные лёгкие</li><li><strong>Ignite</strong> — натуральные ароматы</li><li><strong>Lost Mary</strong> — 4000-30000 затяжек</li><li><strong>Soak</strong> — 9000 затяжек</li><li><strong>Daft</strong> — 7000 затяжек, кальянная тяга</li></ul></div></div>
+      <div class="accordion"><div class="acc-header"><span class="acc-title">⚖️ Средние бренды (4-6)</span><span class="acc-arrow">▼</span></div><div class="acc-body"><ul><li><strong>KRZ</strong> — 8000 затяжек</li><li><strong>Inflave Strong</strong> — 18000 затяжек</li><li><strong>HQD</strong> — 12000-18000 затяжек</li><li><strong>Funky Lands</strong> — 10000 затяжек</li></ul></div></div>
     </div>
   </div>
 
 </main>
 
 <script src="core.js?v=5"></script>
-<script src="admin.js?v=5"></script>
+<script src="catalog.js?v=5"></script>
 <script>
   const CATEGORY = 'disposables';
   let isRop = false;
