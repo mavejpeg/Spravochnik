@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Жидкости — Справочник</title>
-<link rel="stylesheet" href="style.css?v=20">
+<link rel="stylesheet" href="style.css?v=21">
 </head>
 <body>
 
@@ -64,7 +64,7 @@
       <span class="sec-title">Альтернативы</span>
       <button class="btn-edit-content" data-page="liquids" data-section="alternatives" style="display: none;">✏️ Редактировать</button>
     </div>
-    <div id="alternatives-content" style="display: flex; flex-direction: column; gap: 16px;">
+    <div id="alternatives-content">
       <div class="info-card"><h3>🔄 Чем заменить</h3><ul><li><strong>Брызги</strong> → Провинция, Наркоз, Дуал, Трава, Хром</li><li><strong>Рик и Морти</strong> → Сайонара, Злая Монашка, Ронин</li><li><strong>Vape Cloud</strong> → Хром</li><li><strong>Скала, Монстр, Angry Vape</strong> → Бруско</li><li><strong>Скала</strong> → Чакра</li><li><strong>Тойз</strong> → Антагонист</li></ul></div>
       <div class="info-card"><h3>🎨 Цвета Хром</h3><ul><li>Розовая — сладкая</li><li>Оранжевая — генетик</li><li>Голубая — холодная</li><li>Белая — классика</li><li>Зелёная — кислая</li></ul></div>
     </div>
@@ -76,13 +76,13 @@
       <button class="btn-edit-content" data-page="liquids" data-section="coils" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="coils-content">
-      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead>  <tr><th>Устройство / Платформа</th><th>Тип коила</th><th>Совместимые модели</th></tr></thead><tbody><tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr><tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco (все модели)</td></tr><tr><td>X-ross 4</td><td>Сменные картриджи</td><td>0.4, 0.6, 0.8, 1.2 Ом</td></tr><tr><td>Vmate</td><td>Сменные картриджи</td><td>0.4, 0.7, 1.2 Ом</td></tr></tbody></table><p style="margin-top:14px; font-size:12px; color:var(--muted)">Серии: Pnp, TW, WM, TPP, PNP-X, Dragy, Argus</p></div></div>
+      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead>   <tr><th>Устройство / Платформа</th><th>Тип коила</th><th>Совместимые модели</th></tr></thead><tbody><tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr><tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco (все модели)</td></tr><tr><td>X-ross 4</td><td>Сменные картриджи</td><td>0.4, 0.6, 0.8, 1.2 Ом</td></tr><tr><td>Vmate</td><td>Сменные картриджи</td><td>0.4, 0.7, 1.2 Ом</td></tr></tbody></table><p style="margin-top:14px; font-size:12px; color:var(--muted)">Серии: Pnp, TW, WM, TPP, PNP-X, Dragy, Argus</p></div></div>
     </div>
   </div>
 
 </main>
 
-<script src="core.js?v=20"></script>
+<script src="core.js?v=21"></script>
 <script>
   const CATEGORY = 'liquids';
   let isRop = false;
@@ -97,6 +97,12 @@
       document.getElementById('ropBtn').style.display = isRop ? 'block' : 'none';
       const addButton = document.getElementById('btnAddLiquid');
       if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
+      
+      // Показываем кнопки редактирования
+      const editBtns = document.querySelectorAll('.btn-edit-content');
+      editBtns.forEach(btn => {
+        btn.style.display = isRop ? 'inline-flex' : 'none';
+      });
     } else {
       window.location.href = '/login.html';
     }
@@ -107,7 +113,6 @@
     if (!grid) return;
     
     const items = await getCategory(CATEGORY);
-    console.log('Rendering items:', items.length);
     grid.innerHTML = '';
 
     if (!items || items.length === 0) {
@@ -153,6 +158,33 @@
     });
   }
 
+  // Инициализация табов
+  function initTabs() {
+    const btns = document.querySelectorAll('.tab-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const target = this.dataset.tab;
+        btns.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        const sec = document.getElementById(target);
+        if (sec) sec.classList.add('active');
+      });
+    });
+  }
+
+  // Инициализация аккордеонов
+  function initAccordions() {
+    const headers = document.querySelectorAll('.acc-header');
+    headers.forEach(header => {
+      header.addEventListener('click', function() {
+        this.closest('.accordion').classList.toggle('open');
+      });
+    });
+  }
+
+  initTabs();
+  initAccordions();
   checkPermissions().then(() => renderGrid());
 </script>
 </body>
