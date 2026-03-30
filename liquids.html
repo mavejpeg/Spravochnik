@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Жидкости — Справочник</title>
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -33,7 +35,7 @@
   <div class="section active" id="tab-catalog">
     <div class="sec-header">
       <span class="sec-title">💧 Жидкости — каталог</span>
-      <button class="btn-add" id="btnAddLiquid" style="display: none;">
+      <button class="btn-add" id="btnAddLiquid">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
         Добавить жидкость
       </button>
@@ -49,36 +51,22 @@
   <div class="section" id="tab-info">
     <div class="sec-header">
       <span class="sec-title">Общая информация</span>
-      <button class="btn-edit-content" data-page="liquids" data-section="info" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="info-content">
       <div class="two-col">
         <div class="info-card">
           <h3>⚗️ Типы жидкостей</h3>
-          <ul>
-            <li><strong>Солевые (Salt Nic)</strong> — быстро накуривают, мягче при затяжке, для подов</li>
-            <li><strong>Щелочные (Freebase)</strong> — накопительный эффект, для больших устройств</li>
-            <li><strong>Безникотиновые (0 мг)</strong> — только вкус, без никотина</li>
-          </ul>
+          <ul><li><strong>Солевые (Salt Nic)</strong> — быстро накуривают, мягче при затяжке, для подов</li><li><strong>Щелочные (Freebase)</strong> — накопительный эффект, для больших устройств</li><li><strong>Безникотиновые (0 мг)</strong> — только вкус, без никотина</li></ul>
         </div>
         <div class="info-card">
           <h3>💡 Уровни никотина</h3>
-          <ul>
-            <li>0 мг — нулёвки</li>
-            <li>20 мг — стандарт, большинство</li>
-            <li>20/50 — два варианта крепости</li>
-            <li>50 мг — крепкие</li>
-            <li>70+ мг — экстремальные</li>
-          </ul>
+          <ul><li>0 мг — нулёвки</li><li>20 мг — стандарт, большинство</li><li>20/50 — два варианта крепости</li><li>50 мг — крепкие</li><li>70+ мг — экстремальные</li></ul>
         </div>
       </div>
       <div class="accordion">
         <div class="acc-header"><span class="acc-title">Black Jack vs Camel — в чём разница?</span><span class="acc-arrow">▼</span></div>
         <div class="acc-body">
-          <div class="two-col">
-            <div class="info-card"><h3>🐫 Camel</h3><ul><li>1-й план — вкус</li><li>2-й план — табачная нота</li></ul></div>
-            <div class="info-card"><h3>🃏 Black Jack</h3><ul><li>1-й план — табак</li><li>2-й план — вкус</li></ul></div>
-          </div>
+          <div class="two-col"><div class="info-card"><h3>🐫 Camel</h3><ul><li>1-й план — вкус</li><li>2-й план — табачная нота</li></ul></div><div class="info-card"><h3>🃏 Black Jack</h3><ul><li>1-й план — табак</li><li>2-й план — вкус</li></ul></div></div>
         </div>
       </div>
       <div class="accordion">
@@ -95,30 +83,10 @@
   <div class="section" id="tab-alts">
     <div class="sec-header">
       <span class="sec-title">Альтернативы</span>
-      <button class="btn-edit-content" data-page="liquids" data-section="alternatives" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="alternatives-content">
-      <div class="info-card">
-        <h3>🔄 Чем заменить</h3>
-        <ul>
-          <li><strong>Брызги</strong> → Провинция, Наркоз, Дуал, Трава, Хром</li>
-          <li><strong>Рик и Морти</strong> → Сайонара, Злая Монашка, Ронин</li>
-          <li><strong>Vape Cloud</strong> → Хром</li>
-          <li><strong>Скала, Монстр, Angry Vape</strong> → Бруско</li>
-          <li><strong>Скала</strong> → Чакра</li>
-          <li><strong>Тойз</strong> → Антагонист</li>
-        </ul>
-      </div>
-      <div class="info-card">
-        <h3>🎨 Цвета Хром</h3>
-        <ul>
-          <li>Розовая — сладкая</li>
-          <li>Оранжевая — генетик</li>
-          <li>Голубая — холодная</li>
-          <li>Белая — классика</li>
-          <li>Зелёная — кислая</li>
-        </ul>
-      </div>
+      <div class="info-card"><h3>🔄 Чем заменить</h3><ul><li><strong>Брызги</strong> → Провинция, Наркоз, Дуал, Трава, Хром</li><li><strong>Рик и Морти</strong> → Сайонара, Злая Монашка, Ронин</li><li><strong>Vape Cloud</strong> → Хром</li><li><strong>Скала, Монстр, Angry Vape</strong> → Бруско</li><li><strong>Скала</strong> → Чакра</li><li><strong>Тойз</strong> → Антагонист</li></ul></div>
+      <div class="info-card"><h3>🎨 Цвета Хром</h3><ul><li>Розовая — сладкая</li><li>Оранжевая — генетик</li><li>Голубая — холодная</li><li>Белая — классика</li><li>Зелёная — кислая</li></ul></div>
     </div>
   </div>
 
@@ -126,7 +94,6 @@
   <div class="section" id="tab-coils">
     <div class="sec-header">
       <span class="sec-title">Совместимость испарителей</span>
-      <button class="btn-edit-content" data-page="liquids" data-section="coils" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="coils-content">
       <div class="accordion open">
@@ -134,11 +101,11 @@
         <div class="acc-body">
           <table class="ref-table">
             <tr><th>Устройство / Платформа</th><th>Тип коила</th><th>Совместимые модели</th></tr>
-            <tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td> </tr>
-             <tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco (все модели)</td> </tr>
-             <tr><td>X-ross 4</td><td>Сменные картриджи</td><td>0.4, 0.6, 0.8, 1.2 Ом</td> </tr>
-             <tr><td>Vmate</td><td>Сменные картриджи</td><td>0.4, 0.7, 1.2 Ом</td> </tr>
-           </table>
+             <tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr>
+             <tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco (все модели)</td></tr>
+             <tr><td>X-ross 4</td><td>Сменные картриджи</td><td>0.4, 0.6, 0.8, 1.2 Ом</td></tr>
+             <tr><td>Vmate</td><td>Сменные картриджи</td><td>0.4, 0.7, 1.2 Ом</td></tr>
+          </table>
           <p style="margin-top:14px; font-size:12px; color:var(--muted)">Серии: Pnp, TW, WM, TPP, PNP-X, Dragy, Argus</p>
         </div>
       </div>
@@ -149,75 +116,87 @@
 
 <script src="core.js?v=5"></script>
 <script>
-  const CATEGORY = 'liquids'; // измените для каждой страницы
+  const CATEGORY = 'liquids';
   let currentUser = null;
   let isRop = false;
 
-  initTabs();
-  initAccordions();
-  initSearch();
-  
+  // Инициализация табов
+  function initTabs() {
+    const btns = document.querySelectorAll('.tab-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const target = this.dataset.tab;
+        btns.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        const sec = document.getElementById(target);
+        if (sec) sec.classList.add('active');
+      });
+    });
+  }
+
+  // Инициализация аккордеонов
+  function initAccordions() {
+    document.querySelectorAll('.acc-header').forEach(header => {
+      header.addEventListener('click', function() {
+        this.closest('.accordion').classList.toggle('open');
+      });
+    });
+  }
+
+  // Инициализация поиска
+  function initSearch() {
+    const input = document.getElementById('searchInput');
+    if (!input) return;
+    input.addEventListener('input', function() {
+      const val = this.value.toLowerCase();
+      document.querySelectorAll('[data-searchable]').forEach(el => {
+        if (el.textContent.toLowerCase().includes(val)) {
+          el.classList.remove('search-hidden');
+        } else {
+          el.classList.add('search-hidden');
+        }
+      });
+    });
+  }
+
   async function checkPermissions() {
     try {
-      console.log('Checking permissions...');
       const response = await fetch('/api/check-auth', { credentials: 'include' });
       const data = await response.json();
-      
-      console.log('Auth response:', data);
       
       if (data.authenticated) {
         currentUser = data.user;
         isRop = (data.user.role === 'rop' || data.user.role === 'root');
         window.isRopGlobal = isRop;
         
-        console.log('User role:', data.user.role, 'isRop:', isRop);
+        document.getElementById('userName').textContent = data.user.full_name;
         
-        // Показываем имя пользователя
-        const userNameSpan = document.getElementById('userName');
-        if (userNameSpan) userNameSpan.textContent = data.user.full_name;
-        
-        // Показываем кнопку РОП если нужно
         const ropBtn = document.getElementById('ropBtn');
-        if (ropBtn) {
-          ropBtn.style.display = isRop ? 'block' : 'none';
-        }
+        if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
         
-        // Показываем/скрываем кнопку добавления
         const addButton = document.getElementById('btnAddLiquid');
         if (addButton) {
           addButton.style.display = isRop ? 'flex' : 'none';
-          console.log('Add button display:', addButton.style.display);
-        }
-        
-        // Обновляем счетчики на главной если нужно
-        if (typeof updateAllCounters === 'function') {
-          updateAllCounters();
         }
       } else {
-        console.log('Not authenticated, redirecting to login');
         window.location.href = '/login.html';
       }
     } catch (error) {
-      console.error('Permission check error:', error);
+      console.error('Permission error:', error);
       window.location.href = '/login.html';
     }
   }
   
   async function renderGrid() {
-    console.log('Rendering grid for category:', CATEGORY);
-    const grid = document.getElementById(`${CATEGORY}Grid`);
-    if (!grid) {
-      console.error('Grid element not found for:', CATEGORY);
-      return;
-    }
+    const grid = document.getElementById('liquidsGrid');
+    if (!grid) return;
     
     const items = await getCategory(CATEGORY);
-    console.log('Items loaded:', items.length);
-    
     grid.innerHTML = '';
 
     if (!items || items.length === 0) {
-      renderEmpty(grid, getCategoryIcon(), 'Каталог пуст', isRop ? 'Нажмите «Добавить» чтобы внести первую позицию' : 'Нет доступных позиций');
+      renderEmpty(grid, '💧', 'Каталог пуст', isRop ? 'Нажмите «Добавить жидкость» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
 
@@ -237,55 +216,29 @@
           });
         }
       );
-      
       grid.appendChild(card);
     }
   }
-  
-  function getCategoryIcon() {
-    const icons = {
-      'tobacco': '🌿',
-      'liquids': '💧',
-      'snus': '🫙',
-      'disposables': '⚡'
-    };
-    return icons[CATEGORY] || '📦';
-  }
-  
+
   // Кнопка добавления
-  const addBtn = document.getElementById(`btnAdd${CATEGORY.charAt(0).toUpperCase() + CATEGORY.slice(1)}`);
+  const addBtn = document.getElementById('btnAddLiquid');
   if (addBtn) {
-    console.log('Add button found, attaching listener');
     addBtn.addEventListener('click', () => {
-      console.log('Add button clicked, isRop:', isRop);
       if (!isRop) {
         alert('У вас нет прав для добавления');
         return;
       }
       new ProductModal({
         category: CATEGORY,
-        title: getModalTitle(),
+        title: 'Добавить жидкость',
         onSave: async (item) => {
-          console.log('Saving item:', item);
           await addItem(CATEGORY, item);
           renderGrid();
         }
       });
     });
-  } else {
-    console.log('Add button not found for:', CATEGORY);
   }
-  
-  function getModalTitle() {
-    const titles = {
-      'tobacco': 'Добавить табак',
-      'liquids': 'Добавить жидкость',
-      'snus': 'Добавить жевательный табак',
-      'disposables': 'Добавить одноразку'
-    };
-    return titles[CATEGORY] || 'Добавить товар';
-  }
-  
+
   // Выход
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
@@ -294,16 +247,15 @@
       window.location.href = '/login.html';
     });
   }
-  
-  // Кнопка управления РОП
+
+  // Кнопка РОП
   const ropBtn = document.getElementById('ropBtn');
   if (ropBtn) {
     ropBtn.addEventListener('click', () => {
       openRopPanel();
     });
   }
-  
-  // Функция открытия панели РОП (как в других файлах)
+
   async function openRopPanel() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -380,7 +332,7 @@
       }
     });
   }
-  
+
   async function loadUsers(modal) {
     const response = await fetch('/api/users', { credentials: 'include' });
     const users = await response.json();
@@ -414,7 +366,7 @@
       `;
     }).join('');
   }
-  
+
   window.changePasswordUser = async (userId, userName) => {
     const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
     if (!newPassword) return;
@@ -431,7 +383,7 @@
     if (response.ok) alert('Пароль успешно изменен');
     else alert('Ошибка смены пароля');
   };
-  
+
   window.deleteUserById = async (userId) => {
     if (confirm('Удалить пользователя?')) {
       const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
@@ -441,13 +393,16 @@
       } else alert('Ошибка удаления');
     }
   };
-  
+
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
   }
-  
-  // Запуск
+
+  // Запуск всех инициализаций
+  initTabs();
+  initAccordions();
+  initSearch();
   checkPermissions().then(() => renderGrid());
 </script>
 </body>
