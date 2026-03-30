@@ -1008,3 +1008,43 @@ function showCopyWarning(message) {
 
 // Запускаем защиту
 setupCopyProtection();
+
+// Добавление водяного знака с данными пользователя
+async function addWatermark() {
+    try {
+        const response = await fetch('/api/check-auth', { credentials: 'include' });
+        const data = await response.json();
+        
+        if (data.authenticated) {
+            const userInfo = data.user;
+            const timestamp = new Date().toLocaleString();
+            const watermarkText = `${userInfo.full_name} | ${userInfo.username} | ${timestamp}`;
+            
+            // Создаем невидимый водяной знак
+            const watermark = document.createElement('div');
+            watermark.style.cssText = `
+                position: fixed;
+                bottom: 5px;
+                left: 5px;
+                font-size: 8px;
+                color: rgba(100, 100, 100, 0.2);
+                z-index: 9999;
+                pointer-events: none;
+                font-family: monospace;
+            `;
+            watermark.textContent = watermarkText;
+            document.body.appendChild(watermark);
+            
+            // Добавляем метаданные в DOM
+            const meta = document.createElement('meta');
+            meta.name = 'user-data';
+            meta.content = watermarkText;
+            document.head.appendChild(meta);
+        }
+    } catch (error) {
+        console.error('Watermark error:', error);
+    }
+}
+
+// Запускаем добавление водяного знака
+addWatermark();
