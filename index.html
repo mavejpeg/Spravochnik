@@ -26,7 +26,10 @@
     position: relative;
     overflow: hidden;
   }
-  .hub-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .hub-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
   
   .hub-card.liq { border-color: rgba(60,186,252,0.15); }
   .hub-card.liq .hub-icon { background: linear-gradient(135deg, rgba(60,186,252,0.15), rgba(60,186,252,0.05)); color: var(--accent5); }
@@ -37,11 +40,17 @@
   .hub-card.snus { border-color: rgba(252,184,48,0.15); }
   .hub-card.snus .hub-icon { background: linear-gradient(135deg, rgba(252,184,48,0.15), rgba(252,184,48,0.05)); color: var(--accent4); }
 
+  .hub-card.disposables { border-color: rgba(252,92,124,0.15); }
+  .hub-card.disposables .hub-icon { background: linear-gradient(135deg, rgba(252,92,124,0.15), rgba(252,92,124,0.05)); color: var(--accent2); }
+
   .hub-card.hookah { border-color: rgba(124,92,252,0.15); }
   .hub-card.hookah .hub-icon { background: linear-gradient(135deg, rgba(124,92,252,0.15), rgba(124,92,252,0.05)); color: var(--accent); }
 
   .hub-card.sales { border-color: rgba(252,92,124,0.15); }
   .hub-card.sales .hub-icon { background: linear-gradient(135deg, rgba(252,92,124,0.15), rgba(252,92,124,0.05)); color: var(--accent2); }
+
+  .hub-card.training { border-color: rgba(124,92,252,0.15); }
+  .hub-card.training .hub-icon { background: linear-gradient(135deg, rgba(124,92,252,0.15), rgba(124,92,252,0.05)); color: var(--accent); }
 
   .hub-card.checks { border-color: rgba(252,92,124,0.15); }
   .hub-card.checks .hub-icon { background: linear-gradient(135deg, rgba(252,92,124,0.15), rgba(252,92,124,0.05)); color: var(--accent2); }
@@ -49,13 +58,13 @@
   .hub-card.cash { border-color: rgba(60,255,160,0.15); }
   .hub-card.cash .hub-icon { background: linear-gradient(135deg, rgba(60,255,160,0.15), rgba(60,255,160,0.05)); color: var(--accent3); }
 
-  .hub-card.disposables { border-color: rgba(252,92,124,0.15); }
-  .hub-card.disposables .hub-icon { background: linear-gradient(135deg, rgba(252,92,124,0.15), rgba(252,92,124,0.05)); color: var(--accent2); }
-
   .hub-icon {
-    width: 48px; height: 48px;
+    width: 48px;
+    height: 48px;
     border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 24px;
   }
   .hub-label {
@@ -65,7 +74,11 @@
     color: var(--strong);
     line-height: 1.4;
   }
-  .hub-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .hub-sub {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
   .hub-count {
     font-family: 'Unbounded', sans-serif;
     font-size: 11px;
@@ -99,7 +112,12 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-  .hero-sub { font-size: 14px; color: var(--text2); max-width: 480px; line-height: 1.6; }
+  .hero-sub {
+    font-size: 14px;
+    color: var(--text2);
+    max-width: 480px;
+    line-height: 1.6;
+  }
   
   .site-header {
     position: sticky;
@@ -138,7 +156,10 @@
     transition: all 0.2s;
     white-space: nowrap;
   }
-  .home-btn:hover { color: var(--text); border-color: var(--border2); }
+  .home-btn:hover {
+    color: var(--text);
+    border-color: var(--border2);
+  }
   .rop-btn {
     background: linear-gradient(135deg, var(--accent4), var(--accent2));
     border: none;
@@ -191,15 +212,22 @@
     <a href="tobacco.html" class="hub-card tab">
       <div class="hub-icon">🌿</div>
       <div class="hub-label">Табак для кальяна</div>
-      <div class="hub-sub">Производители, линейки, вкусы</div>
+      <div class="hub-sub">Производители, линейки, крепость</div>
       <div class="hub-count" id="cnt-tobacco">Загрузка...</div>
     </a>
 
     <a href="snus.html" class="hub-card snus">
       <div class="hub-icon">🫙</div>
       <div class="hub-label">Жевательный табак</div>
-      <div class="hub-sub">Снюс, шайбы, форматы, применение</div>
+      <div class="hub-sub">Снюс, шайбы, форматы, крепость</div>
       <div class="hub-count" id="cnt-snus">Загрузка...</div>
+    </a>
+
+    <a href="disposables.html" class="hub-card disposables">
+      <div class="hub-icon">⚡</div>
+      <div class="hub-label">Одноразки</div>
+      <div class="hub-sub">Бренды, крепость, затяжки, альтернативы</div>
+      <div class="hub-count" id="cnt-disposables">Загрузка...</div>
     </a>
 
     <a href="hookah.html" class="hub-card hookah">
@@ -212,8 +240,15 @@
     <a href="sales.html" class="hub-card sales">
       <div class="hub-icon">💬</div>
       <div class="hub-label">Скрипты продаж</div>
-      <div class="hub-sub">Возражения, отработка, добивание</div>
+      <div class="hub-sub">Возражения, отработка, добивание, комбо</div>
       <div class="hub-count">Справочник</div>
+    </a>
+
+    <a href="training.html" class="hub-card training">
+      <div class="hub-icon">📚</div>
+      <div class="hub-label">Обучение новичков</div>
+      <div class="hub-sub">4 дня обучения, скрипты, безопасность</div>
+      <div class="hub-count">Методичка</div>
     </a>
 
     <a href="checks.html" class="hub-card checks">
@@ -228,13 +263,6 @@
       <div class="hub-label">Касса и маркировка</div>
       <div class="hub-sub">QR-коды, акциз, типы товаров</div>
       <div class="hub-count">Справочник</div>
-    </a>
-
-    <a href="disposables.html" class="hub-card disposables">
-      <div class="hub-icon">⚡</div>
-      <div class="hub-label">Одноразки</div>
-      <div class="hub-sub">Бренды, крепость, затяжки</div>
-      <div class="hub-count" id="cnt-disposables">Загрузка...</div>
     </a>
 
   </div>
@@ -285,9 +313,9 @@ async function openRopPanel() {
             <div class="modal-body">
                 <div class="field">
                     <label>➕ Добавить пользователя</label>
-                    <div style="display: flex; gap: 8px;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
-                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width:100px">
+                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
                         <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
                         <button id="addUserBtn" class="btn-add">Добавить</button>
                     </div>
@@ -369,10 +397,10 @@ async function loadUsers(modal) {
         
         return `
             <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                     <div>
                         <strong>${escapeHtml(user.full_name)}</strong><br>
-                        <span style="font-size: 11px;">${user.username} | ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
+                        <span style="font-size: 11px;">Логин: ${user.username} | Роль: ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
                     </div>
                     <div style="display: flex; gap: 6px;">
                         ${canChange ? `<button onclick="window.changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
@@ -398,7 +426,7 @@ window.changePasswordUser = async (userId, userName) => {
         body: JSON.stringify({ newPassword })
     });
     if (response.ok) alert('Пароль успешно изменен');
-    else alert('Ошибка');
+    else alert('Ошибка смены пароля');
 };
 
 window.deleteUserById = async (userId) => {
@@ -407,7 +435,7 @@ window.deleteUserById = async (userId) => {
         if (response.ok) {
             alert('Пользователь удален');
             location.reload();
-        } else alert('Ошибка');
+        } else alert('Ошибка удаления');
     }
 };
 
