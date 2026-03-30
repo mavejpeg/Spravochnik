@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Жевательный табак — Справочник</title>
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -47,6 +47,7 @@
   <div class="section" id="tab-howto">
     <div class="sec-header">
       <span class="sec-title">Как применять</span>
+      <button class="btn-edit-content" data-page="snus" data-section="howto" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="howto-content">
       <div class="info-card"><h3>📋 Инструкция для клиента</h3><div class="steps"><div class="step"><div class="step-num">1</div><div class="step-body"><strong>Подготовить область</strong><span>Промокнуть область между верхней губой и десной сухой салфеткой.</span></div></div><div class="step"><div class="step-num">2</div><div class="step-body"><strong>Вложить пауч</strong><span>Пауч кладётся между верхней губой и верхней десной. Левая/правая сторона — чередовать.</span></div></div><div class="step"><div class="step-num">3</div><div class="step-body"><strong>Держать 1–15 минут</strong><span>Никотин поступает через слизистую постепенно. Не жевать!</span></div></div><div class="step"><div class="step-num">4</div><div class="step-body"><strong>Утилизировать</strong><span>Выбросить в мусор. Некоторые банки имеют отсек для использованных паучей.</span></div></div></div></div>
@@ -57,6 +58,7 @@
   <div class="section" id="tab-formats">
     <div class="sec-header">
       <span class="sec-title">Форматы паучей</span>
+      <button class="btn-edit-content" data-page="snus" data-section="formats" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="formats-content">
       <div class="two-col"><div class="info-card"><h3>📦 Размеры</h3><ul><li><strong>Large</strong> — стандарт, 0.8–1 г</li><li><strong>Slim</strong> — тонкий и широкий, ~1 г</li><li><strong>Mini</strong> — маленький, ~0.4 г</li></ul></div><div class="info-card"><h3>🌿 Типы сырья</h3><ul><li><strong>White</strong> — промытый табак</li><li><strong>Классический тёмный</strong> — менее промытый</li></ul></div></div>
@@ -67,6 +69,7 @@
   <div class="section" id="tab-strength">
     <div class="sec-header">
       <span class="sec-title">Классификация по крепости</span>
+      <button class="btn-edit-content" data-page="snus" data-section="strength" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="strength-content">
       <div class="accordion open"><div class="acc-header"><span class="acc-title">🔥 Крепкие</span><span class="acc-arrow">▼</span></div><div class="acc-body"><ul><li><strong>Corvus Crash</strong> — 68 мг</li><li><strong>Адекс</strong> — мощный удар</li><li><strong>Iceberg Strong</strong> — 60 мг</li></ul></div></div>
@@ -77,13 +80,13 @@
 
 </main>
 
-<script src="core.js?v=5"></script>
-<script src="catalog.js?v=5"></script>
+<script src="core.js?v=6"></script>
+<script src="utils.js?v=6"></script>
 <script>
   const CATEGORY = 'snus';
   let isRop = false;
 
-  async function checkLocalPermissions() {
+  async function checkAddButton() {
     const response = await fetch('/api/check-auth', { credentials: 'include' });
     const data = await response.json();
     if (data.authenticated) {
@@ -91,6 +94,12 @@
       window.isRopGlobal = isRop;
       const addButton = document.getElementById('btnAddSnus');
       if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
+      
+      const editBtns = document.querySelectorAll('.btn-edit-content');
+      editBtns.forEach(btn => {
+        btn.style.display = isRop ? 'inline-flex' : 'none';
+        btn.addEventListener('click', () => editContent(btn.dataset.page, btn.dataset.section));
+      });
     }
   }
   
@@ -144,7 +153,7 @@
     });
   }
 
-  checkLocalPermissions().then(() => renderGrid());
+  checkAddButton().then(() => renderGrid());
 </script>
 </body>
 </html>
