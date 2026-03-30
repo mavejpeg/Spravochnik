@@ -645,7 +645,6 @@ app.get('/disposables.html', (req, res) => {
 
 // ========== MANUFACTURERS ROUTES ==========
 
-// Получить всех производителей
 app.get('/api/manufacturers', requireAuth, async (req, res) => {
     try {
         const result = await pool.query(
@@ -658,7 +657,6 @@ app.get('/api/manufacturers', requireAuth, async (req, res) => {
     }
 });
 
-// Получить производителя с линейками
 app.get('/api/manufacturers/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     try {
@@ -672,15 +670,6 @@ app.get('/api/manufacturers/:id', requireAuth, async (req, res) => {
             [id]
         );
         
-        // Для каждой линейки получаем вкусы
-        for (let line of lines.rows) {
-            const flavors = await pool.query(
-                'SELECT * FROM flavors WHERE line_id = $1 ORDER BY name',
-                [line.id]
-            );
-            line.flavors = flavors.rows;
-        }
-        
         res.json({
             ...manufacturer.rows[0],
             lines: lines.rows
@@ -691,16 +680,15 @@ app.get('/api/manufacturers/:id', requireAuth, async (req, res) => {
     }
 });
 
-// Создать производителя (ROP only)
 app.post('/api/manufacturers', requireRop, async (req, res) => {
-    const { name, description, logo } = req.body;
+    const { name, description, logo, quality_class } = req.body;
     if (!name) {
         return res.status(400).json({ error: 'Name is required' });
     }
     try {
         const result = await pool.query(
-            'INSERT INTO manufacturers (name, description, logo) VALUES ($1, $2, $3) RETURNING *',
-            [name, description, logo]
+            'INSERT INTO manufacturers (name, description, logo, quality_class) VALUES ($1, $2, $3, $4) RETURNING *',
+            [name, description, logo, quality_class || 'medium']
         );
         res.json(result.rows[0]);
     } catch (error) {
@@ -709,14 +697,13 @@ app.post('/api/manufacturers', requireRop, async (req, res) => {
     }
 });
 
-// Обновить производителя (ROP only)
 app.put('/api/manufacturers/:id', requireRop, async (req, res) => {
     const { id } = req.params;
-    const { name, description, logo } = req.body;
+    const { name, description, logo, quality_class } = req.body;
     try {
         const result = await pool.query(
-            'UPDATE manufacturers SET name = $1, description = $2, logo = $3 WHERE id = $4 RETURNING *',
-            [name, description, logo, id]
+            'UPDATE manufacturers SET name = $1, description = $2, logo = $3, quality_class = $4 WHERE id = $5 RETURNING *',
+            [name, description, logo, quality_class || 'medium', id]
         );
         res.json(result.rows[0]);
     } catch (error) {
@@ -725,7 +712,6 @@ app.put('/api/manufacturers/:id', requireRop, async (req, res) => {
     }
 });
 
-// Удалить производителя (ROP only)
 app.delete('/api/manufacturers/:id', requireRop, async (req, res) => {
     const { id } = req.params;
     try {
@@ -739,16 +725,29 @@ app.delete('/api/manufacturers/:id', requireRop, async (req, res) => {
 
 // ========== LINES ROUTES ==========
 
-// Создать линейку (ROP only)
+app.get('/api/lines/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM lines WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Line not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Get line error:', error);
+        res.status(500).json({ error: 'Failed to get line' });
+    }
+});
+
 app.post('/api/lines', requireRop, async (req, res) => {
-    const { manufacturer_id, name, description } = req.body;
+    const { manufacturer_id, name, description, strength_color } = req.body;
     if (!manufacturer_id || !name) {
         return res.status(400).json({ error: 'Manufacturer ID and name are required' });
     }
     try {
         const result = await pool.query(
-            'INSERT INTO lines (manufacturer_id, name, description) VALUES ($1, $2, $3) RETURNING *',
-            [manufacturer_id, name, description]
+            'INSERT INTO lines (manufacturer_id, name, description, strength_color) VALUES ($1, $2, $3, $4) RETURNING *',
+            [manufacturer_id, name, description, strength_color || 'medium']
         );
         res.json(result.rows[0]);
     } catch (error) {
@@ -757,14 +756,13 @@ app.post('/api/lines', requireRop, async (req, res) => {
     }
 });
 
-// Обновить линейку (ROP only)
 app.put('/api/lines/:id', requireRop, async (req, res) => {
     const { id } = req.params;
-    const { name, description } = req.body;
+    const { name, description, strength_color } = req.body;
     try {
         const result = await pool.query(
-            'UPDATE lines SET name = $1, description = $2 WHERE id = $3 RETURNING *',
-            [name, description, id]
+            'UPDATE lines SET name = $1, description = $2, strength_color = $3 WHERE id = $4 RETURNING *',
+            [name, description, strength_color || 'medium', id]
         );
         res.json(result.rows[0]);
     } catch (error) {
@@ -773,7 +771,6 @@ app.put('/api/lines/:id', requireRop, async (req, res) => {
     }
 });
 
-// Удалить линейку (ROP only)
 app.delete('/api/lines/:id', requireRop, async (req, res) => {
     const { id } = req.params;
     try {
