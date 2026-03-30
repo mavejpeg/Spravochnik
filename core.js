@@ -1,4 +1,4 @@
-// core.js - полная исправленная версия
+// core.js - полная финальная версия
 
 // ========== CONSTANTS ==========
 const QUALITY_SETTINGS = {
@@ -7,24 +7,71 @@ const QUALITY_SETTINGS = {
   economy: { name: 'Эконом', icon: '📦', color: 'var(--accent3)' }
 };
 
-const STRENGTH_LABELS = {
-  1: 'Очень лёгкий', 2: 'Лёгкий', 3: 'Ниже среднего', 4: 'Средний',
-  5: 'Выше среднего', 6: 'Крепкий', 7: 'Очень крепкий',
-  8: 'Мощный', 9: 'Экстремальный', 10: 'Убийственный'
+const TOBACCO_STRENGTH_LABELS = {
+  1: 'Очень лёгкий',
+  2: 'Лёгкий',
+  3: 'Ниже среднего',
+  4: 'Средний',
+  5: 'Выше среднего',
+  6: 'Крепкий',
+  7: 'Очень крепкий',
+  8: 'Мощный',
+  9: 'Экстремальный',
+  10: 'Убийственный'
+};
+
+const LIQUID_STRENGTH_MAP = {
+  0: 'Безникотиновая',
+  20: 'Средняя',
+  50: 'Крепкая',
+  70: 'Очень крепкая'
 };
 
 const STRENGTH_BADGE_CLASS = {
+  // Для табака
   1: 'badge-strength-1', 2: 'badge-strength-1',
   3: 'badge-strength-2', 4: 'badge-strength-2',
   5: 'badge-strength-3', 6: 'badge-strength-3',
   7: 'badge-strength-4', 8: 'badge-strength-4',
-  9: 'badge-strength-5', 10: 'badge-strength-5'
+  9: 'badge-strength-5', 10: 'badge-strength-5',
+  // Для жидкостей/одноразок
+  0: 'badge-strength-1',
+  20: 'badge-strength-2',
+  50: 'badge-strength-3',
+  70: 'badge-strength-4'
 };
 
 // ========== HELPER FUNCTIONS ==========
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+}
+
+function getStrengthLabel(category, strength) {
+  if (category === 'liquids' || category === 'disposables') {
+    return LIQUID_STRENGTH_MAP[strength] || `${strength} мг`;
+  } else {
+    return TOBACCO_STRENGTH_LABELS[strength] || `${strength}/10`;
+  }
+}
+
+function getStrengthBadgeClass(category, strength) {
+  if (category === 'liquids' || category === 'disposables') {
+    if (strength === 0) return 'badge-strength-1';
+    if (strength === 20) return 'badge-strength-2';
+    if (strength === 50) return 'badge-strength-3';
+    if (strength >= 70) return 'badge-strength-4';
+    return 'badge-strength-2';
+  } else {
+    const classes = {
+      1: 'badge-strength-1', 2: 'badge-strength-1',
+      3: 'badge-strength-2', 4: 'badge-strength-2',
+      5: 'badge-strength-3', 6: 'badge-strength-3',
+      7: 'badge-strength-4', 8: 'badge-strength-4',
+      9: 'badge-strength-5', 10: 'badge-strength-5'
+    };
+    return classes[strength] || 'badge-strength-3';
+  }
 }
 
 // ========== API FUNCTIONS ==========
@@ -149,13 +196,23 @@ function renderProductCard(item, category, onDelete, onEdit) {
   div.className = 'product-card';
   
   const productId = item.product_id || item.id;
-  const strength = item.strength || 5;
-  const badgeClass = STRENGTH_BADGE_CLASS[strength] || 'badge-strength-3';
+  const strength = item.strength || (category === 'liquids' || category === 'disposables' ? 20 : 5);
   const photoUrl = item.photo_url || item.photoUrl;
   const qualityClass = item.quality_class || 'medium';
   const quality = QUALITY_SETTINGS[qualityClass] || QUALITY_SETTINGS.medium;
   
+  const strengthLabel = getStrengthLabel(category, strength);
+  const badgeClass = getStrengthBadgeClass(category, strength);
   const canEdit = window.isRopGlobal === true;
+  
+  // Для жидкостей/одноразок - показываем мг, для табака - точки
+  let strengthDisplay = '';
+  if (category === 'liquids' || category === 'disposables') {
+    const mgMap = {0: '0 мг', 20: '20 мг', 50: '50 мг', 70: '70+ мг'};
+    strengthDisplay = `${mgMap[strength] || strength + ' мг'} - ${strengthLabel}`;
+  } else {
+    strengthDisplay = `Крепость ${strength}/10 - ${strengthLabel}`;
+  }
   
   div.innerHTML = `
     <div class="card-actions" style="${canEdit ? '' : 'display: none !important;'}">
@@ -168,21 +225,36 @@ function renderProductCard(item, category, onDelete, onEdit) {
     <div class="card-body">
       <div class="card-name">${escapeHtml(item.name)}</div>
       <div class="card-meta">
-        <span class="badge ${badgeClass}">${STRENGTH_LABELS[strength]}</span>
-        <span class="badge quality-badge ${qualityClass}" style="background: ${quality.color}20; color: ${quality.color}; border: 2px solid ${quality.color}; box-shadow: 0 0 4px ${quality.color};">
+        <span class="badge ${badgeClass}">${strengthLabel}</span>
+        <span class="badge quality-badge ${qualityClass}" style="background: ${quality.color}20; color: ${quality.color}; border: 2px solid ${quality.color};">
           ${quality.icon} ${quality.name}
         </span>
         ${item.origin ? `<span class="badge badge-origin">🌍 ${escapeHtml(item.origin)}</span>` : ''}
       </div>
       <div class="strength-compact">
-        <span class="strength-label-small">Крепость ${strength}/10</span>
-        <div class="strength-dots">
-          ${Array(10).fill().map((_, i) => `<span class="strength-dot ${i < strength ? 'active' : ''}"></span>`).join('')}
-        </div>
+        <span class="strength-label-small">${strengthDisplay}</span>
+        ${category !== 'liquids' && category !== 'disposables' ? `
+          <div class="strength-dots">
+            ${Array(10).fill().map((_, i) => `<span class="strength-dot ${i < strength ? 'active' : ''}"></span>`).join('')}
+          </div>
+        ` : ''}
       </div>
-      ${item.description ? `<div class="card-desc">${escapeHtml(item.description.substring(0, 80))}${item.description.length > 80 ? '...' : ''}</div>` : ''}
+      ${item.description ? `<div class="card-desc">${escapeHtml(item.description.substring(0, 100))}${item.description.length > 100 ? '...' : ''}</div>` : ''}
     </div>
   `;
+  
+  // Ограничиваем высоту описания
+  const descDiv = div.querySelector('.card-desc');
+  if (descDiv) {
+    descDiv.style.cssText = `
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      line-height: 1.4;
+      max-height: 4.2em;
+    `;
+  }
   
   const deleteBtn = div.querySelector('.btn-delete');
   if (deleteBtn && canEdit) {
@@ -227,6 +299,7 @@ class ProductModal {
     this.editItem = editItem;
     this.photoUrl = editItem?.photoUrl || editItem?.photo_url || null;
     this.qualityClass = editItem?.quality_class || 'medium';
+    this.strength = editItem?.strength || (category === 'liquids' || category === 'disposables' ? 20 : 5);
     this.isUploading = false;
     this._build();
   }
@@ -239,8 +312,33 @@ class ProductModal {
     overlay.className = 'modal-overlay';
     overlay.id = 'productModal';
     
-    const strengthVal = this.editItem?.strength || 5;
     const hasPhoto = this.photoUrl ? true : false;
+    const isLiquidOrDisposable = (this.category === 'liquids' || this.category === 'disposables');
+    
+    // Для жидкостей и одноразок - выбор из предустановленных значений
+    let strengthHtml = '';
+    if (isLiquidOrDisposable) {
+      strengthHtml = `
+        <div class="field">
+          <label>⚡ Крепость никотина</label>
+          <select id="fieldStrength" style="width:100%; padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text);">
+            <option value="0" ${this.strength === 0 ? 'selected' : ''}>💨 0 мг - Безникотиновая</option>
+            <option value="20" ${this.strength === 20 ? 'selected' : ''}>🟢 20 мг - Средняя</option>
+            <option value="50" ${this.strength === 50 ? 'selected' : ''}>🟡 50 мг - Крепкая</option>
+            <option value="70" ${this.strength === 70 ? 'selected' : ''}>🔴 70+ мг - Очень крепкая</option>
+          </select>
+        </div>
+      `;
+    } else {
+      // Для табака - слайдер 1-10
+      strengthHtml = `
+        <div class="field">
+          <label>⚡ Крепость (1-10)</label>
+          <input type="range" id="fieldStrength" min="1" max="10" value="${this.strength}" style="width:100%">
+          <span id="strengthValue">${this.strength}/10 - ${TOBACCO_STRENGTH_LABELS[this.strength] || ''}</span>
+        </div>
+      `;
+    }
     
     overlay.innerHTML = `
       <div class="modal">
@@ -268,21 +366,15 @@ class ProductModal {
             <input type="text" id="fieldName" value="${escapeHtml(this.editItem?.name || '')}" placeholder="Введите название">
           </div>
           
-          <div class="row" style="display: flex; gap: 16px; flex-wrap: wrap;">
-            <div class="field" style="flex: 1;">
-              <label>⚡ Крепость (1-10)</label>
-              <input type="range" id="fieldStrength" min="1" max="10" value="${strengthVal}" style="width:100%">
-              <span id="strengthValue">${strengthVal}/10 - ${STRENGTH_LABELS[strengthVal]}</span>
-            </div>
-            
-            <div class="field" style="flex: 1;">
-              <label>🏷️ Класс качества</label>
-              <select id="fieldQuality" style="width:100%; padding: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;">
-                <option value="premium" ${this.qualityClass === 'premium' ? 'selected' : ''}>💎 Премиум</option>
-                <option value="medium" ${this.qualityClass === 'medium' ? 'selected' : ''}>⭐ Средний класс</option>
-                <option value="economy" ${this.qualityClass === 'economy' ? 'selected' : ''}>📦 Эконом</option>
-              </select>
-            </div>
+          ${strengthHtml}
+          
+          <div class="field">
+            <label>🏷️ Класс качества</label>
+            <select id="fieldQuality" style="width:100%; padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text);">
+              <option value="premium" ${this.qualityClass === 'premium' ? 'selected' : ''}>💎 Премиум</option>
+              <option value="medium" ${this.qualityClass === 'medium' ? 'selected' : ''}>⭐ Средний класс</option>
+              <option value="economy" ${this.qualityClass === 'economy' ? 'selected' : ''}>📦 Эконом</option>
+            </select>
           </div>
           
           <div class="field">
@@ -305,15 +397,19 @@ class ProductModal {
     document.body.appendChild(overlay);
     setTimeout(() => overlay.classList.add('open'), 10);
     
-    const slider = overlay.querySelector('#fieldStrength');
-    const strengthSpan = overlay.querySelector('#strengthValue');
-    if (slider) {
-      slider.addEventListener('input', () => {
-        const val = slider.value;
-        strengthSpan.textContent = `${val}/10 - ${STRENGTH_LABELS[val]}`;
-      });
+    // Для табака - обработка слайдера
+    if (!isLiquidOrDisposable) {
+      const slider = overlay.querySelector('#fieldStrength');
+      const strengthSpan = overlay.querySelector('#strengthValue');
+      if (slider) {
+        slider.addEventListener('input', () => {
+          const val = slider.value;
+          strengthSpan.textContent = `${val}/10 - ${TOBACCO_STRENGTH_LABELS[val] || ''}`;
+        });
+      }
     }
     
+    // Фото загрузка
     const photoInput = overlay.querySelector('#photoInput');
     const photoPreview = overlay.querySelector('#photoPreview');
     const previewContainer = overlay.querySelector('#photoPreviewContainer');
@@ -364,10 +460,17 @@ class ProductModal {
         return;
       }
       
+      let strength = 5;
+      if (isLiquidOrDisposable) {
+        strength = parseInt(overlay.querySelector('#fieldStrength').value);
+      } else {
+        strength = parseInt(overlay.querySelector('#fieldStrength').value);
+      }
+      
       const item = {
         id: this.editItem?.id || Date.now().toString(),
         name: name,
-        strength: parseInt(overlay.querySelector('#fieldStrength').value),
+        strength: strength,
         quality_class: overlay.querySelector('#fieldQuality').value,
         origin: overlay.querySelector('#fieldOrigin').value.trim(),
         desc: overlay.querySelector('#fieldDesc').value.trim(),
@@ -384,42 +487,6 @@ class ProductModal {
   }
 }
 
-function initPageElements() {
-    // Инициализация табов
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    tabBtns.forEach(btn => {
-        btn.removeEventListener('click', handleTabClick);
-        btn.addEventListener('click', handleTabClick);
-    });
-    
-    // Инициализация аккордеонов
-    const accordions = document.querySelectorAll('.accordion');
-    accordions.forEach(acc => {
-        const header = acc.querySelector('.acc-header');
-        if (header && !acc.classList.contains('converted')) {
-            header.removeEventListener('click', handleAccordionClick);
-            header.addEventListener('click', handleAccordionClick);
-        }
-    });
-}
-
-function handleTabClick(e) {
-    const btn = e.currentTarget;
-    const target = btn.dataset.tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    btn.classList.add('active');
-    const sec = document.getElementById(target);
-    if (sec) sec.classList.add('active');
-}
-
-function handleAccordionClick(e) {
-    const header = e.currentTarget;
-    header.closest('.accordion').classList.toggle('open');
-}
-
-window.initPageElements = initPageElements;
-
 // ========== EXPORTS ==========
 window.getCategory = getCategory;
 window.addItem = addItem;
@@ -429,8 +496,10 @@ window.uploadPhoto = uploadPhoto;
 window.renderProductCard = renderProductCard;
 window.renderEmpty = renderEmpty;
 window.ProductModal = ProductModal;
-window.STRENGTH_LABELS = STRENGTH_LABELS;
-window.STRENGTH_BADGE_CLASS = STRENGTH_BADGE_CLASS;
+window.TOBACCO_STRENGTH_LABELS = TOBACCO_STRENGTH_LABELS;
+window.LIQUID_STRENGTH_MAP = LIQUID_STRENGTH_MAP;
 window.QUALITY_SETTINGS = QUALITY_SETTINGS;
+window.getStrengthLabel = getStrengthLabel;
+window.getStrengthBadgeClass = getStrengthBadgeClass;
 window.escapeHtml = escapeHtml;
 window.isRopGlobal = false;
