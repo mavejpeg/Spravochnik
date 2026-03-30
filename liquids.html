@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Жидкости — Справочник</title>
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -32,7 +32,7 @@
   <div class="section active" id="tab-catalog">
     <div class="sec-header">
       <span class="sec-title">💧 Жидкости — каталог</span>
-      <button class="btn-add" id="btnAddLiquid">
+      <button class="btn-add" id="btnAddLiquid" style="display: none;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
         Добавить жидкость
       </button>
@@ -54,8 +54,6 @@
         <div class="info-card"><h3>⚗️ Типы жидкостей</h3><ul><li><strong>Солевые (Salt Nic)</strong> — быстро накуривают, мягче при затяжке, для подов</li><li><strong>Щелочные (Freebase)</strong> — накопительный эффект, для больших устройств</li><li><strong>Безникотиновые (0 мг)</strong> — только вкус, без никотина</li></ul></div>
         <div class="info-card"><h3>💡 Уровни никотина</h3><ul><li>0 мг — нулёвки</li><li>20 мг — стандарт, большинство</li><li>20/50 — два варианта крепости</li><li>50 мг — крепкие</li><li>70+ мг — экстремальные</li></ul></div>
       </div>
-      <div class="accordion"><div class="acc-header"><span class="acc-title">Black Jack vs Camel — в чём разница?</span><span class="acc-arrow">▼</span></div><div class="acc-body"><div class="two-col"><div class="info-card"><h3>🐫 Camel</h3><ul><li>1-й план — вкус</li><li>2-й план — табачная нота</li></ul></div><div class="info-card"><h3>🃏 Black Jack</h3><ul><li>1-й план — табак</li><li>2-й план — вкус</li></ul></div></div></div></div>
-      <div class="accordion"><div class="acc-header"><span class="acc-title">Почему жидкость темнеет?</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>Жидкость темнеет при карамелизации — когда долго стоит или находится в тепле. Цвет не означает плохое качество.</p><div class="hl ok">Скрипт: «Цвет ароматизатора ни на что не влияет — он может быть светлым и тёмным. Это зависит от производителя»</div></div></div>
     </div>
   </div>
 
@@ -65,7 +63,7 @@
       <button class="btn-edit-content" data-page="liquids" data-section="alternatives" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="alternatives-content">
-      <div class="info-card"><h3>🔄 Чем заменить</h3><ul><li><strong>Брызги</strong> → Провинция, Наркоз, Дуал, Трава, Хром</li><li><strong>Рик и Морти</strong> → Сайонара, Злая Монашка, Ронин</li><li><strong>Vape Cloud</strong> → Хром</li><li><strong>Скала, Монстр, Angry Vape</strong> → Бруско</li><li><strong>Скала</strong> → Чакра</li><li><strong>Тойз</strong> → Антагонист</li></ul></div>
+      <div class="info-card"><h3>🔄 Чем заменить</h3><ul><li><strong>Брызги</strong> → Провинция, Наркоз, Дуал, Трава, Хром</li><li><strong>Рик и Морти</strong> → Сайонара, Злая Монашка, Ронин</li><li><strong>Vape Cloud</strong> → Хром</li><li><strong>Скала, Монстр, Angry Vape</strong> → Бруско</li></ul></div>
       <div class="info-card"><h3>🎨 Цвета Хром</h3><ul><li>Розовая — сладкая</li><li>Оранжевая — генетик</li><li>Голубая — холодная</li><li>Белая — классика</li><li>Зелёная — кислая</li></ul></div>
     </div>
   </div>
@@ -76,14 +74,14 @@
       <button class="btn-edit-content" data-page="liquids" data-section="coils" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="coils-content">
-      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead><tr><th>Устройство / Платформа</th><th>Тип коила</th><th>Совместимые модели</th></tr></thead><tbody><tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr><tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco (все модели)</td></tr><tr><td>X-ross 4</td><td>Сменные картриджи</td><td>0.4, 0.6, 0.8, 1.2 Ом</td></tr><tr><td>Vmate</td><td>Сменные картриджи</td><td>0.4, 0.7, 1.2 Ом</td></tr></tbody></table><p style="margin-top:14px; font-size:12px; color:var(--muted)">Серии: Pnp, TW, WM, TPP, PNP-X, Dragy, Argus</p></div></div>
+      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead>  <tr><th>Устройство</th><th>Тип коила</th><th>Совместимые модели</th></tr></thead><tbody><tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr><tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco</td></tr></tbody></table></div></div>
     </div>
   </div>
 
 </main>
 
-<script src="core.js?v=7"></script>
-<script src="main.js?v=7"></script>
+<script src="core.js?v=10"></script>
+<script src="main.js?v=10"></script>
 <script>
   const CATEGORY = 'liquids';
   let isRop = false;
