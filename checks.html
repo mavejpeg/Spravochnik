@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Проверки — Справочник</title>
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -90,14 +90,46 @@
 
 </main>
 
-<script src="core.js?v=4"></script>
+<script src="core.js?v=5"></script>
 <script>
   let isRop = false;
 
-  initTabs();
-  initAccordions();
-  initSearch();
-  
+  function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        btn.classList.add('active');
+        const sec = document.getElementById(target);
+        if (sec) sec.classList.add('active');
+      });
+    });
+  }
+
+  function initAccordions() {
+    document.querySelectorAll('.acc-header').forEach(h => {
+      h.addEventListener('click', () => {
+        h.closest('.accordion').classList.toggle('open');
+      });
+    });
+  }
+
+  function initSearch() {
+    const input = document.getElementById('searchInput');
+    if (!input) return;
+    input.addEventListener('input', () => {
+      const val = input.value.toLowerCase();
+      document.querySelectorAll('[data-searchable]').forEach(el => {
+        if (el.textContent.toLowerCase().includes(val)) {
+          el.classList.remove('search-hidden');
+        } else {
+          el.classList.add('search-hidden');
+        }
+      });
+    });
+  }
+
   async function checkPermissions() {
     try {
       const response = await fetch('/api/check-auth', { credentials: 'include' });
@@ -110,7 +142,7 @@
         document.getElementById('userName').textContent = data.user.full_name;
         
         const ropBtn = document.getElementById('ropBtn');
-        if (ropBtn && isRop) ropBtn.style.display = 'block';
+        if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
         
         const editBtns = document.querySelectorAll('.btn-edit-content');
         editBtns.forEach(btn => {
@@ -121,7 +153,7 @@
         window.location.href = '/login.html';
       }
     } catch (error) {
-      console.error('Permission check error:', error);
+      console.error('Permission error:', error);
       window.location.href = '/login.html';
     }
   }
@@ -130,65 +162,22 @@
     const contentDiv = document.getElementById(`${section}-content`);
     const currentHtml = contentDiv.innerHTML;
     
-    if (section === 'official') {
-      editOfficialContent(contentDiv, currentHtml);
-    } else if (section === 'practical') {
-      editPracticalContent(contentDiv, currentHtml);
-    } else if (section === 'after') {
-      editAfterContent(contentDiv, currentHtml);
-    }
-  }
-  
-  function editOfficialContent(contentDiv, currentHtml) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
-    
-    // Извлекаем предупреждение
-    let warning = '';
-    const alertDiv = tempDiv.querySelector('.alert-bar.danger');
-    if (alertDiv) warning = alertDiv.textContent.trim();
-    
-    // Извлекаем шаги
-    const steps = [];
-    const stepDivs = tempDiv.querySelectorAll('.steps .step');
-    stepDivs.forEach(step => {
-      const num = step.querySelector('.step-num')?.textContent.trim() || '';
-      const strong = step.querySelector('.step-body strong')?.textContent.trim() || '';
-      const span = step.querySelector('.step-body span')?.textContent.trim() || '';
-      steps.push({ num, strong, span });
-    });
-    
-    let stepsHtml = '';
-    steps.forEach((step, idx) => {
-      stepsHtml += `
-        <div class="step-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
-          <div class="field">
-            <label>Шаг ${step.num}</label>
-            <input type="text" class="step-title" value="${escapeHtml(step.strong)}" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
-            <textarea class="step-desc" rows="3" placeholder="Описание" style="width:100%">${escapeHtml(step.span)}</textarea>
-          </div>
-          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
-        </div>
-      `;
-    });
-    
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
         <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: Официальная инструкция</span>
+          <span class="modal-title">✏️ Редактировать: ${section}</span>
           <button class="modal-close">✕</button>
         </div>
         <div class="modal-body">
           <div class="field">
-            <label>⚠️ Главное предупреждение</label>
-            <textarea id="warning" rows="2">${escapeHtml(warning.replace('🚨', '').trim())}</textarea>
+            <label>📝 Содержимое (HTML)</label>
+            <textarea id="contentEditor" style="width:100%; min-height:400px; font-family:monospace; font-size:13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: var(--text);">${escapeHtml(currentHtml)}</textarea>
           </div>
-          <div class="field">
-            <label>📋 Порядок действий (шаги)</label>
-            <div id="stepsList">${stepsHtml}</div>
-            <button id="addStepBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить шаг</button>
+          <div class="alert-bar info">
+            <span>💡</span>
+            <span>Вы можете использовать HTML теги: &lt;div&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;table&gt;, &lt;h3&gt; и т.д.</span>
           </div>
         </div>
         <div class="modal-footer">
@@ -201,43 +190,6 @@
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
     
-    const addStepBtn = modal.querySelector('#addStepBtn');
-    if (addStepBtn) {
-      addStepBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#stepsList');
-        const newStepNum = container.querySelectorAll('.step-item').length + 1;
-        const newDiv = document.createElement('div');
-        newDiv.className = 'step-item';
-        newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
-        newDiv.innerHTML = `
-          <div class="field">
-            <label>Шаг ${newStepNum}</label>
-            <input type="text" class="step-title" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
-            <textarea class="step-desc" rows="3" placeholder="Описание" style="width:100%"></textarea>
-          </div>
-          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
-        `;
-        newDiv.querySelector('.remove-step-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
-        const steps = modal.querySelectorAll('.step-item');
-        steps.forEach((step, idx) => {
-          const label = step.querySelector('.field label');
-          if (label) label.textContent = `Шаг ${idx + 1}`;
-        });
-      });
-    }
-    
-    modal.querySelectorAll('.remove-step-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('.step-item').remove();
-        const steps = modal.querySelectorAll('.step-item');
-        steps.forEach((step, idx) => {
-          const label = step.querySelector('.field label');
-          if (label) label.textContent = `Шаг ${idx + 1}`;
-        });
-      });
-    });
-    
     const closeModal = () => {
       modal.classList.remove('open');
       setTimeout(() => modal.remove(), 300);
@@ -247,359 +199,29 @@
     modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
     
     modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const warning = modal.querySelector('#warning').value;
+      const newContent = modal.querySelector('#contentEditor').value;
       
-      const stepsList = [];
-      modal.querySelectorAll('.step-item').forEach((item, idx) => {
-        const title = item.querySelector('.step-title').value.trim();
-        const desc = item.querySelector('.step-desc').value.trim();
-        if (title && desc) {
-          stepsList.push({ num: idx + 1, title, desc });
+      try {
+        const response = await fetch(`/api/content/${page}/${section}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ content: newContent })
+        });
+        
+        if (response.ok) {
+          contentDiv.innerHTML = newContent;
+          alert('✅ Сохранено успешно!');
+          closeModal();
+        } else {
+          alert('❌ Ошибка сохранения');
         }
-      });
-      
-      let stepsHtmlNew = '';
-      stepsList.forEach(step => {
-        stepsHtmlNew += `
-          <div class="step">
-            <div class="step-num">${step.num}</div>
-            <div class="step-body">
-              <strong>${escapeHtml(step.title)}</strong>
-              <span>${escapeHtml(step.desc)}</span>
-            </div>
-          </div>
-        `;
-      });
-      
-      const newHtml = `
-        <div class="alert-bar danger">
-          <span>🚨</span>
-          <span>${escapeHtml(warning)}</span>
-        </div>
-        <div class="steps">
-          ${stepsHtmlNew}
-        </div>
-      `;
-      
-      await saveContent('checks', 'official', newHtml, contentDiv, closeModal);
-    });
-  }
-  
-  function editPracticalContent(contentDiv, currentHtml) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
-    
-    // Извлекаем предупреждение
-    let topWarning = '';
-    const warnDiv = tempDiv.querySelector('.hl.warn:first-child');
-    if (warnDiv) topWarning = warnDiv.textContent.trim();
-    
-    // Извлекаем правила поведения
-    const rules = [];
-    const ruleDivs = tempDiv.querySelectorAll('.accordion .acc-body .hl');
-    ruleDivs.forEach(rule => {
-      let text = rule.textContent.trim();
-      let type = 'normal';
-      if (rule.classList.contains('warn')) type = 'warn';
-      rules.push({ text, type });
-    });
-    
-    let rulesHtml = '';
-    rules.forEach((rule, idx) => {
-      rulesHtml += `
-        <div class="rule-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
-          <div class="field">
-            <label>Правило ${idx + 1}</label>
-            <textarea class="rule-text" rows="2" style="width:100%">${escapeHtml(rule.text)}</textarea>
-          </div>
-          <div class="field">
-            <label>Тип</label>
-            <select class="rule-type" style="width:100%; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
-              <option value="normal" ${rule.type === 'normal' ? 'selected' : ''}>Обычный</option>
-              <option value="warn" ${rule.type === 'warn' ? 'selected' : ''}>Важный (красный)</option>
-            </select>
-          </div>
-          <button class="remove-rule-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить правило</button>
-        </div>
-      `;
-    });
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: Практические советы</span>
-          <button class="modal-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="field">
-            <label>⚠️ Важное замечание</label>
-            <textarea id="topWarning" rows="2">${escapeHtml(topWarning)}</textarea>
-          </div>
-          <div class="field">
-            <label>📋 Ключевые правила поведения</label>
-            <div id="rulesList">${rulesHtml}</div>
-            <button id="addRuleBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить правило</button>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel">Отмена</button>
-          <button class="btn-save">💾 Сохранить</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    const addRuleBtn = modal.querySelector('#addRuleBtn');
-    if (addRuleBtn) {
-      addRuleBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#rulesList');
-        const newNum = container.querySelectorAll('.rule-item').length + 1;
-        const newDiv = document.createElement('div');
-        newDiv.className = 'rule-item';
-        newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
-        newDiv.innerHTML = `
-          <div class="field">
-            <label>Правило ${newNum}</label>
-            <textarea class="rule-text" rows="2" style="width:100%" placeholder="Текст правила"></textarea>
-          </div>
-          <div class="field">
-            <label>Тип</label>
-            <select class="rule-type" style="width:100%; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
-              <option value="normal">Обычный</option>
-              <option value="warn">Важный (красный)</option>
-            </select>
-          </div>
-          <button class="remove-rule-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить правило</button>
-        `;
-        newDiv.querySelector('.remove-rule-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
-        const rules = modal.querySelectorAll('.rule-item');
-        rules.forEach((rule, idx) => {
-          const label = rule.querySelector('.field label');
-          if (label) label.textContent = `Правило ${idx + 1}`;
-        });
-      });
-    }
-    
-    modal.querySelectorAll('.remove-rule-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('.rule-item').remove();
-        const rules = modal.querySelectorAll('.rule-item');
-        rules.forEach((rule, idx) => {
-          const label = rule.querySelector('.field label');
-          if (label) label.textContent = `Правило ${idx + 1}`;
-        });
-      });
-    });
-    
-    const closeModal = () => {
-      modal.classList.remove('open');
-      setTimeout(() => modal.remove(), 300);
-    };
-    
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
-    modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const topWarning = modal.querySelector('#topWarning').value;
-      
-      const rulesList = [];
-      modal.querySelectorAll('.rule-item').forEach((item, idx) => {
-        const text = item.querySelector('.rule-text').value.trim();
-        const type = item.querySelector('.rule-type').value;
-        if (text) {
-          rulesList.push({ text, type });
-        }
-      });
-      
-      let rulesHtmlNew = '';
-      rulesList.forEach(rule => {
-        const className = rule.type === 'warn' ? 'hl warn' : 'hl';
-        rulesHtmlNew += `<div class="${className}">${escapeHtml(rule.text)}</div>`;
-      });
-      
-      const newHtml = `
-        <div class="hl warn" style="margin-bottom:12px">${escapeHtml(topWarning)}</div>
-        <div class="accordion open">
-          <div class="acc-header"><span class="acc-title">Ключевые правила поведения</span><span class="acc-arrow">▼</span></div>
-          <div class="acc-body">
-            ${rulesHtmlNew}
-          </div>
-        </div>
-      `;
-      
-      await saveContent('checks', 'practical', newHtml, contentDiv, closeModal);
-    });
-  }
-  
-  function editAfterContent(contentDiv, currentHtml) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
-    
-    // Извлекаем шаги
-    const steps = [];
-    const stepDivs = tempDiv.querySelectorAll('.steps .step');
-    stepDivs.forEach(step => {
-      const num = step.querySelector('.step-num')?.textContent.trim() || '';
-      const strong = step.querySelector('.step-body strong')?.textContent.trim() || '';
-      const span = step.querySelector('.step-body span')?.textContent.trim() || '';
-      steps.push({ num, strong, span });
-    });
-    
-    // Извлекаем примечание
-    let note = '';
-    const noteDiv = tempDiv.querySelector('.hl.info');
-    if (noteDiv) note = noteDiv.textContent.trim();
-    
-    let stepsHtml = '';
-    steps.forEach((step, idx) => {
-      stepsHtml += `
-        <div class="step-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
-          <div class="field">
-            <label>Шаг ${step.num}</label>
-            <input type="text" class="step-title" value="${escapeHtml(step.strong)}" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
-            <textarea class="step-desc" rows="3" placeholder="Описание" style="width:100%">${escapeHtml(step.span)}</textarea>
-          </div>
-          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
-        </div>
-      `;
-    });
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: По окончании проверки</span>
-          <button class="modal-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="field">
-            <label>📋 Порядок действий (шаги)</label>
-            <div id="stepsList">${stepsHtml}</div>
-            <button id="addStepBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить шаг</button>
-          </div>
-          <div class="field">
-            <label>💡 Примечание</label>
-            <textarea id="note" rows="2">${escapeHtml(note)}</textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel">Отмена</button>
-          <button class="btn-save">💾 Сохранить</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    const addStepBtn = modal.querySelector('#addStepBtn');
-    if (addStepBtn) {
-      addStepBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#stepsList');
-        const newStepNum = container.querySelectorAll('.step-item').length + 1;
-        const newDiv = document.createElement('div');
-        newDiv.className = 'step-item';
-        newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
-        newDiv.innerHTML = `
-          <div class="field">
-            <label>Шаг ${newStepNum}</label>
-            <input type="text" class="step-title" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
-            <textarea class="step-desc" rows="3" placeholder="Описание" style="width:100%"></textarea>
-          </div>
-          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
-        `;
-        newDiv.querySelector('.remove-step-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
-        const steps = modal.querySelectorAll('.step-item');
-        steps.forEach((step, idx) => {
-          const label = step.querySelector('.field label');
-          if (label) label.textContent = `Шаг ${idx + 1}`;
-        });
-      });
-    }
-    
-    modal.querySelectorAll('.remove-step-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('.step-item').remove();
-        const steps = modal.querySelectorAll('.step-item');
-        steps.forEach((step, idx) => {
-          const label = step.querySelector('.field label');
-          if (label) label.textContent = `Шаг ${idx + 1}`;
-        });
-      });
-    });
-    
-    const closeModal = () => {
-      modal.classList.remove('open');
-      setTimeout(() => modal.remove(), 300);
-    };
-    
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
-    modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const stepsList = [];
-      modal.querySelectorAll('.step-item').forEach((item, idx) => {
-        const title = item.querySelector('.step-title').value.trim();
-        const desc = item.querySelector('.step-desc').value.trim();
-        if (title && desc) {
-          stepsList.push({ num: idx + 1, title, desc });
-        }
-      });
-      const note = modal.querySelector('#note').value;
-      
-      let stepsHtmlNew = '';
-      stepsList.forEach(step => {
-        stepsHtmlNew += `
-          <div class="step">
-            <div class="step-num">${step.num}</div>
-            <div class="step-body">
-              <strong>${escapeHtml(step.title)}</strong>
-              <span>${escapeHtml(step.desc)}</span>
-            </div>
-          </div>
-        `;
-      });
-      
-      const newHtml = `
-        <div class="steps">
-          ${stepsHtmlNew}
-        </div>
-        <div class="hl info" style="margin-top:12px">${escapeHtml(note)}</div>
-      `;
-      
-      await saveContent('checks', 'after', newHtml, contentDiv, closeModal);
-    });
-  }
-  
-  async function saveContent(page, section, newHtml, contentDiv, closeModal) {
-    try {
-      const response = await fetch(`/api/content/${page}/${section}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ content: newHtml })
-      });
-      
-      if (response.ok) {
-        contentDiv.innerHTML = newHtml;
-        alert('✅ Сохранено успешно!');
-        closeModal();
-        initAccordions();
-      } else {
-        alert('❌ Ошибка сохранения');
+      } catch (error) {
+        alert('❌ Ошибка: ' + error.message);
       }
-    } catch (error) {
-      alert('❌ Ошибка: ' + error.message);
-    }
+    });
   }
-  
+
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
@@ -752,6 +374,9 @@
     }
   };
 
+  initTabs();
+  initAccordions();
+  initSearch();
   checkPermissions();
 </script>
 </body>
