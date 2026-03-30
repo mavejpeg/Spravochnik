@@ -225,6 +225,8 @@ app.get('/main.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'main.js'));
 });
 
+
+
 // ========== AUTH ROUTES ==========
 
 app.get('/api/check-auth', (req, res) => {
@@ -449,6 +451,22 @@ app.post('/api/content/:page/:section', requireRop, async (req, res) => {
     } catch (error) {
         console.error('Save content error:', error);
         res.status(500).json({ error: 'Failed to save content' });
+    }
+});
+
+// ========== COUNT ==========
+
+app.get('/api/count/:category', requireAuth, async (req, res) => {
+    const { category } = req.params;
+    try {
+        const result = await pool.query(
+            'SELECT COUNT(*) FROM products WHERE category = $1',
+            [category]
+        );
+        res.json({ count: parseInt(result.rows[0].count) });
+    } catch (error) {
+        console.error('Count error:', error);
+        res.json({ count: 0 });
     }
 });
 
