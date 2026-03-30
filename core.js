@@ -456,8 +456,11 @@ function renderProductCard(item, category, onDelete, onEdit) {
   const strength = item.strength || 5;
   const badgeClass = STRENGTH_BADGE_CLASS[strength] || 'badge-strength-3';
   const photoUrl = item.photo_url || item.photoUrl;
+  const productClass = item.product_class || 'medium';
   
-  // Проверяем права
+  // Получаем информацию о классе
+  const classInfo = PRODUCT_CLASSES[productClass] || PRODUCT_CLASSES.medium;
+  
   const canEdit = window.isRopGlobal === true;
   
   div.innerHTML = `
@@ -472,6 +475,9 @@ function renderProductCard(item, category, onDelete, onEdit) {
       <div class="card-name">${escapeHtml(item.name)}</div>
       <div class="card-meta">
         <span class="badge ${badgeClass}">${STRENGTH_LABELS[strength]}</span>
+        <span class="badge badge-class" style="background: ${classInfo.color}20; color: ${classInfo.color}; border-color: ${classInfo.color}40;">
+          ${classInfo.icon} ${classInfo.name}
+        </span>
         ${item.origin ? `<span class="badge badge-origin">🌍 ${escapeHtml(item.origin)}</span>` : ''}
       </div>
       <div class="strength-compact">
@@ -484,7 +490,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
     </div>
   `;
   
-  // Кнопка удаления
+  // Delete button
   const deleteBtn = div.querySelector('.btn-delete');
   if (deleteBtn && canEdit) {
     deleteBtn.addEventListener('click', async (e) => {
@@ -506,7 +512,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
     });
   }
   
-  // Кнопка редактирования
+  // Edit button
   const editBtn = div.querySelector('.btn-edit');
   if (editBtn && canEdit) {
     editBtn.addEventListener('click', (e) => {
@@ -515,7 +521,8 @@ function renderProductCard(item, category, onDelete, onEdit) {
         ...item,
         id: productId,
         desc: item.description,
-        photoUrl: photoUrl
+        photoUrl: photoUrl,
+        product_class: productClass
       };
       if (onEdit) onEdit(editItem);
     });
