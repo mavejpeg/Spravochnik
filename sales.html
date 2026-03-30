@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Скрипты продаж — Справочник</title>
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -114,14 +114,46 @@
 
 </main>
 
-<script src="core.js?v=4"></script>
+<script src="core.js?v=5"></script>
 <script>
   let isRop = false;
 
-  initTabs();
-  initAccordions();
-  initSearch();
-  
+  function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        btn.classList.add('active');
+        const sec = document.getElementById(target);
+        if (sec) sec.classList.add('active');
+      });
+    });
+  }
+
+  function initAccordions() {
+    document.querySelectorAll('.acc-header').forEach(h => {
+      h.addEventListener('click', () => {
+        h.closest('.accordion').classList.toggle('open');
+      });
+    });
+  }
+
+  function initSearch() {
+    const input = document.getElementById('searchInput');
+    if (!input) return;
+    input.addEventListener('input', () => {
+      const val = input.value.toLowerCase();
+      document.querySelectorAll('[data-searchable]').forEach(el => {
+        if (el.textContent.toLowerCase().includes(val)) {
+          el.classList.remove('search-hidden');
+        } else {
+          el.classList.add('search-hidden');
+        }
+      });
+    });
+  }
+
   async function checkPermissions() {
     try {
       const response = await fetch('/api/check-auth', { credentials: 'include' });
@@ -134,7 +166,7 @@
         document.getElementById('userName').textContent = data.user.full_name;
         
         const ropBtn = document.getElementById('ropBtn');
-        if (ropBtn && isRop) ropBtn.style.display = 'block';
+        if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
         
         const editBtns = document.querySelectorAll('.btn-edit-content');
         editBtns.forEach(btn => {
@@ -145,7 +177,7 @@
         window.location.href = '/login.html';
       }
     } catch (error) {
-      console.error('Permission check error:', error);
+      console.error('Permission error:', error);
       window.location.href = '/login.html';
     }
   }
@@ -154,76 +186,22 @@
     const contentDiv = document.getElementById(`${section}-content`);
     const currentHtml = contentDiv.innerHTML;
     
-    if (section === 'returns') {
-      editReturnsContent(contentDiv, currentHtml);
-    } else if (section === 'price') {
-      editPriceContent(contentDiv, currentHtml);
-    } else if (section === 'color') {
-      editColorContent(contentDiv, currentHtml);
-    } else if (section === 'upsell') {
-      editUpsellContent(contentDiv, currentHtml);
-    }
-  }
-  
-  function editReturnsContent(contentDiv, currentHtml) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
-    
-    // Извлекаем предупреждение
-    let warningText = '';
-    const alertDiv = tempDiv.querySelector('.alert-bar.danger');
-    if (alertDiv) warningText = alertDiv.textContent.trim();
-    
-    // Извлекаем шаги
-    const steps = [];
-    const stepDivs = tempDiv.querySelectorAll('.steps .step');
-    stepDivs.forEach(step => {
-      const num = step.querySelector('.step-num')?.textContent.trim() || '';
-      const strong = step.querySelector('.step-body strong')?.textContent.trim() || '';
-      const span = step.querySelector('.step-body span')?.textContent.trim() || '';
-      steps.push({ num, strong, span });
-    });
-    
-    // Извлекаем примечание
-    let note = '';
-    const noteDiv = tempDiv.querySelector('.hl.warn');
-    if (noteDiv) note = noteDiv.textContent.trim();
-    
-    let stepsHtml = '';
-    steps.forEach((step, idx) => {
-      stepsHtml += `
-        <div class="step-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
-          <div class="field">
-            <label>Шаг ${step.num}</label>
-            <input type="text" class="step-title" value="${escapeHtml(step.strong)}" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
-            <textarea class="step-desc" rows="3" placeholder="Описание" style="width:100%">${escapeHtml(step.span)}</textarea>
-          </div>
-          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
-        </div>
-      `;
-    });
-    
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
         <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: Возврат картриджа</span>
+          <span class="modal-title">✏️ Редактировать: ${section}</span>
           <button class="modal-close">✕</button>
         </div>
         <div class="modal-body">
           <div class="field">
-            <label>⚠️ Предупреждение</label>
-            <textarea id="warning" rows="2">${escapeHtml(warningText.replace('⚠️', '').trim())}</textarea>
+            <label>📝 Содержимое (HTML)</label>
+            <textarea id="contentEditor" style="width:100%; min-height:400px; font-family:monospace; font-size:13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: var(--text);">${escapeHtml(currentHtml)}</textarea>
           </div>
-          <div class="field">
-            <label>📋 Алгоритм действий</label>
-            <div id="stepsList">${stepsHtml}</div>
-            <button id="addStepBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить шаг</button>
-          </div>
-          <div class="field">
-            <label>📝 Примечание</label>
-            <textarea id="note" rows="2">${escapeHtml(note)}</textarea>
+          <div class="alert-bar info">
+            <span>💡</span>
+            <span>Вы можете использовать HTML теги: &lt;div&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;table&gt;, &lt;h3&gt; и т.д.</span>
           </div>
         </div>
         <div class="modal-footer">
@@ -235,44 +213,6 @@
     
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
-    
-    const addStepBtn = modal.querySelector('#addStepBtn');
-    if (addStepBtn) {
-      addStepBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#stepsList');
-        const newStepNum = container.querySelectorAll('.step-item').length + 1;
-        const newDiv = document.createElement('div');
-        newDiv.className = 'step-item';
-        newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
-        newDiv.innerHTML = `
-          <div class="field">
-            <label>Шаг ${newStepNum}</label>
-            <input type="text" class="step-title" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
-            <textarea class="step-desc" rows="3" placeholder="Описание" style="width:100%"></textarea>
-          </div>
-          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
-        `;
-        newDiv.querySelector('.remove-step-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
-        // Обновляем номера
-        const steps = modal.querySelectorAll('.step-item');
-        steps.forEach((step, idx) => {
-          const label = step.querySelector('.field label');
-          if (label) label.textContent = `Шаг ${idx + 1}`;
-        });
-      });
-    }
-    
-    modal.querySelectorAll('.remove-step-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('.step-item').remove();
-        const steps = modal.querySelectorAll('.step-item');
-        steps.forEach((step, idx) => {
-          const label = step.querySelector('.field label');
-          if (label) label.textContent = `Шаг ${idx + 1}`;
-        });
-      });
-    });
     
     const closeModal = () => {
       modal.classList.remove('open');
@@ -283,511 +223,29 @@
     modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
     
     modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const warning = modal.querySelector('#warning').value;
-      const note = modal.querySelector('#note').value;
+      const newContent = modal.querySelector('#contentEditor').value;
       
-      const stepsList = [];
-      modal.querySelectorAll('.step-item').forEach((item, idx) => {
-        const title = item.querySelector('.step-title').value.trim();
-        const desc = item.querySelector('.step-desc').value.trim();
-        if (title && desc) {
-          stepsList.push({ num: idx + 1, title, desc });
-        }
-      });
-      
-      let stepsHtmlNew = '';
-      stepsList.forEach(step => {
-        stepsHtmlNew += `
-          <div class="step">
-            <div class="step-num">${step.num}</div>
-            <div class="step-body">
-              <strong>${escapeHtml(step.title)}</strong>
-              <span>${escapeHtml(step.desc)}</span>
-            </div>
-          </div>
-        `;
-      });
-      
-      const newHtml = `
-        <div class="alert-bar danger">
-          <span>⚠️</span><span>${escapeHtml(warning)}</span>
-        </div>
-        <div class="steps">
-          ${stepsHtmlNew}
-        </div>
-        <div class="hl warn">${escapeHtml(note)}</div>
-      `;
-      
-      await saveContent('sales', 'returns', newHtml, contentDiv, closeModal);
-    });
-  }
-  
-  function editPriceContent(contentDiv, currentHtml) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
-    
-    // Извлекаем скрипты
-    const scripts = [];
-    const accordions = tempDiv.querySelectorAll('.accordion');
-    accordions.forEach(acc => {
-      const title = acc.querySelector('.acc-header .acc-title')?.textContent.trim() || '';
-      const items = [];
-      const hlDivs = acc.querySelectorAll('.acc-body .hl.ok');
-      hlDivs.forEach(hl => items.push(hl.textContent.trim()));
-      scripts.push({ title, items });
-    });
-    
-    let scriptsHtml = '';
-    scripts.forEach((script, idx) => {
-      let itemsHtml = '';
-      script.items.forEach((item, itemIdx) => {
-        itemsHtml += `
-          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-            <textarea class="script-item-${idx}" rows="2" style="flex:1" placeholder="Текст скрипта">${escapeHtml(item)}</textarea>
-            <button class="remove-item-btn" data-script="${idx}" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-          </div>
-        `;
-      });
-      
-      scriptsHtml += `
-        <div class="script-group" style="background: var(--surface2); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-          <div class="field">
-            <label>💬 Возражение клиента</label>
-            <input type="text" class="script-title" value="${escapeHtml(script.title)}" style="width:100%; margin-bottom: 12px;">
-          </div>
-          <div class="field">
-            <label>📋 Скрипты ответов</label>
-            <div id="items-list-${idx}" class="items-list">${itemsHtml}</div>
-            <button class="add-item-btn btn-add" data-script="${idx}" style="margin-top: 8px;">➕ Добавить скрипт</button>
-          </div>
-          <button class="remove-script-btn" style="margin-top: 12px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить возражение</button>
-        </div>
-      `;
-    });
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: Отработка возражения по цене</span>
-          <button class="modal-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div id="scriptsContainer">${scriptsHtml}</div>
-          <button id="addScriptBtn" class="btn-add" style="margin-top: 16px; width: 100%;">➕ Добавить возражение</button>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel">Отмена</button>
-          <button class="btn-save">💾 Сохранить</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    function updateScriptIndices() {
-      const scripts = modal.querySelectorAll('.script-group');
-      scripts.forEach((script, scriptIdx) => {
-        const itemsContainer = script.querySelector('.items-list');
-        const items = itemsContainer.querySelectorAll('div');
-        items.forEach((item, itemIdx) => {
-          const textarea = item.querySelector('textarea');
-          if (textarea) textarea.className = `script-item-${scriptIdx}`;
-          const removeBtn = item.querySelector('.remove-item-btn');
-          if (removeBtn) removeBtn.setAttribute('data-script', scriptIdx);
-        });
-        const addBtn = script.querySelector('.add-item-btn');
-        if (addBtn) addBtn.setAttribute('data-script', scriptIdx);
-      });
-    }
-    
-    const addScriptBtn = modal.querySelector('#addScriptBtn');
-    if (addScriptBtn) {
-      addScriptBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#scriptsContainer');
-        const newScriptIndex = modal.querySelectorAll('.script-group').length;
-        const newDiv = document.createElement('div');
-        newDiv.className = 'script-group';
-        newDiv.style.cssText = 'background: var(--surface2); border-radius: 12px; padding: 16px; margin-bottom: 16px;';
-        newDiv.innerHTML = `
-          <div class="field">
-            <label>💬 Возражение клиента</label>
-            <input type="text" class="script-title" placeholder="Например: «Почему так дорого?»" style="width:100%; margin-bottom: 12px;">
-          </div>
-          <div class="field">
-            <label>📋 Скрипты ответов</label>
-            <div id="items-list-${newScriptIndex}" class="items-list"></div>
-            <button class="add-item-btn btn-add" data-script="${newScriptIndex}" style="margin-top: 8px;">➕ Добавить скрипт</button>
-          </div>
-          <button class="remove-script-btn" style="margin-top: 12px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить возражение</button>
-        `;
-        
-        const addItemBtn = newDiv.querySelector('.add-item-btn');
-        addItemBtn.addEventListener('click', (e) => {
-          const scriptIdx = e.target.getAttribute('data-script');
-          const itemsContainer = newDiv.querySelector(`#items-list-${scriptIdx}`);
-          const newItemDiv = document.createElement('div');
-          newItemDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-          newItemDiv.innerHTML = `
-            <textarea class="script-item-${scriptIdx}" rows="2" style="flex:1" placeholder="Текст скрипта"></textarea>
-            <button class="remove-item-btn" data-script="${scriptIdx}" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-          `;
-          newItemDiv.querySelector('.remove-item-btn').addEventListener('click', () => newItemDiv.remove());
-          itemsContainer.appendChild(newItemDiv);
+      try {
+        const response = await fetch(`/api/content/${page}/${section}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ content: newContent })
         });
         
-        const removeScriptBtn = newDiv.querySelector('.remove-script-btn');
-        removeScriptBtn.addEventListener('click', () => newDiv.remove());
-        
-        container.appendChild(newDiv);
-        updateScriptIndices();
-      });
-    }
-    
-    modal.querySelectorAll('.add-item-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const scriptIdx = e.target.getAttribute('data-script');
-        const scriptGroup = e.target.closest('.script-group');
-        const itemsContainer = scriptGroup.querySelector(`#items-list-${scriptIdx}`);
-        const newItemDiv = document.createElement('div');
-        newItemDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-        newItemDiv.innerHTML = `
-          <textarea class="script-item-${scriptIdx}" rows="2" style="flex:1" placeholder="Текст скрипта"></textarea>
-          <button class="remove-item-btn" data-script="${scriptIdx}" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        `;
-        newItemDiv.querySelector('.remove-item-btn').addEventListener('click', () => newItemDiv.remove());
-        itemsContainer.appendChild(newItemDiv);
-      });
-    });
-    
-    modal.querySelectorAll('.remove-item-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('div').remove();
-      });
-    });
-    
-    modal.querySelectorAll('.remove-script-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('.script-group').remove();
-      });
-    });
-    
-    const closeModal = () => {
-      modal.classList.remove('open');
-      setTimeout(() => modal.remove(), 300);
-    };
-    
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
-    modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const scriptsList = [];
-      modal.querySelectorAll('.script-group').forEach(scriptGroup => {
-        const title = scriptGroup.querySelector('.script-title').value.trim();
-        const items = [];
-        scriptGroup.querySelectorAll('.items-list textarea').forEach(textarea => {
-          const val = textarea.value.trim();
-          if (val) items.push(val);
-        });
-        if (title && items.length > 0) {
-          scriptsList.push({ title, items });
+        if (response.ok) {
+          contentDiv.innerHTML = newContent;
+          alert('✅ Сохранено успешно!');
+          closeModal();
+        } else {
+          alert('❌ Ошибка сохранения');
         }
-      });
-      
-      let accordionsHtml = '';
-      scriptsList.forEach((script, idx) => {
-        let itemsHtml = '';
-        script.items.forEach(item => {
-          itemsHtml += `<div class="hl ok">${escapeHtml(item)}</div>`;
-        });
-        accordionsHtml += `
-          <div class="accordion ${idx === 0 ? 'open' : ''}">
-            <div class="acc-header"><span class="acc-title">${escapeHtml(script.title)}</span><span class="acc-arrow">▼</span></div>
-            <div class="acc-body">
-              ${itemsHtml}
-            </div>
-          </div>
-        `;
-      });
-      
-      await saveContent('sales', 'price', accordionsHtml, contentDiv, closeModal);
-    });
-  }
-  
-  function editColorContent(contentDiv, currentHtml) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
-    
-    // Извлекаем предупреждение
-    let warning = '';
-    const warnDiv = tempDiv.querySelector('.hl.warn');
-    if (warnDiv) warning = warnDiv.textContent.trim();
-    
-    // Извлекаем шаги скрипта
-    const steps = [];
-    const stepDivs = tempDiv.querySelectorAll('.steps .step');
-    stepDivs.forEach(step => {
-      const num = step.querySelector('.step-num')?.textContent.trim() || '';
-      const strong = step.querySelector('.step-body strong')?.textContent.trim() || '';
-      const span = step.querySelector('.step-body span')?.textContent.trim() || '';
-      steps.push({ num, strong, span });
-    });
-    
-    let stepsHtml = '';
-    steps.forEach((step, idx) => {
-      stepsHtml += `
-        <div class="step-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
-          <div class="field">
-            <label>Шаг ${step.num}</label>
-            <input type="text" class="step-title" value="${escapeHtml(step.strong)}" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
-            <textarea class="step-desc" rows="3" placeholder="Описание" style="width:100%">${escapeHtml(step.span)}</textarea>
-          </div>
-          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
-        </div>
-      `;
-    });
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: Цвет жидкости</span>
-          <button class="modal-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="field">
-            <label>⚠️ Важное предупреждение</label>
-            <textarea id="warning" rows="2">${escapeHtml(warning)}</textarea>
-          </div>
-          <div class="field">
-            <label>📋 Скрипт (шаги)</label>
-            <div id="stepsList">${stepsHtml}</div>
-            <button id="addStepBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить шаг</button>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel">Отмена</button>
-          <button class="btn-save">💾 Сохранить</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    const addStepBtn = modal.querySelector('#addStepBtn');
-    if (addStepBtn) {
-      addStepBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#stepsList');
-        const newStepNum = container.querySelectorAll('.step-item').length + 1;
-        const newDiv = document.createElement('div');
-        newDiv.className = 'step-item';
-        newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
-        newDiv.innerHTML = `
-          <div class="field">
-            <label>Шаг ${newStepNum}</label>
-            <input type="text" class="step-title" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
-            <textarea class="step-desc" rows="3" placeholder="Описание" style="width:100%"></textarea>
-          </div>
-          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
-        `;
-        newDiv.querySelector('.remove-step-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
-        const steps = modal.querySelectorAll('.step-item');
-        steps.forEach((step, idx) => {
-          const label = step.querySelector('.field label');
-          if (label) label.textContent = `Шаг ${idx + 1}`;
-        });
-      });
-    }
-    
-    modal.querySelectorAll('.remove-step-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('.step-item').remove();
-        const steps = modal.querySelectorAll('.step-item');
-        steps.forEach((step, idx) => {
-          const label = step.querySelector('.field label');
-          if (label) label.textContent = `Шаг ${idx + 1}`;
-        });
-      });
-    });
-    
-    const closeModal = () => {
-      modal.classList.remove('open');
-      setTimeout(() => modal.remove(), 300);
-    };
-    
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
-    modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const warning = modal.querySelector('#warning').value;
-      
-      const stepsList = [];
-      modal.querySelectorAll('.step-item').forEach((item, idx) => {
-        const title = item.querySelector('.step-title').value.trim();
-        const desc = item.querySelector('.step-desc').value.trim();
-        if (title && desc) {
-          stepsList.push({ num: idx + 1, title, desc });
-        }
-      });
-      
-      let stepsHtmlNew = '';
-      stepsList.forEach(step => {
-        stepsHtmlNew += `
-          <div class="step">
-            <div class="step-num">${step.num}</div>
-            <div class="step-body">
-              <strong>${escapeHtml(step.title)}</strong>
-              <span>${escapeHtml(step.desc)}</span>
-            </div>
-          </div>
-        `;
-      });
-      
-      const newHtml = `
-        <div class="hl warn">${escapeHtml(warning)}</div>
-        <div class="accordion open">
-          <div class="acc-header"><span class="acc-title">Скрипт</span><span class="acc-arrow">▼</span></div>
-          <div class="acc-body">
-            <div class="steps">
-              ${stepsHtmlNew}
-            </div>
-          </div>
-        </div>
-      `;
-      
-      await saveContent('sales', 'color', newHtml, contentDiv, closeModal);
-    });
-  }
-  
-  function editUpsellContent(contentDiv, currentHtml) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
-    
-    // Извлекаем пункты логики
-    const items = [];
-    const ul = tempDiv.querySelector('.info-card ul');
-    if (ul) {
-      ul.querySelectorAll('li').forEach(li => items.push(li.textContent.trim()));
-    }
-    
-    // Извлекаем примечание
-    let note = '';
-    const noteDiv = tempDiv.querySelector('.hl.info');
-    if (noteDiv) note = noteDiv.textContent.trim();
-    
-    let itemsHtml = '';
-    items.forEach((item, idx) => {
-      itemsHtml += `
-        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <input type="text" class="upsell-item" value="${escapeHtml(item)}" style="flex:1" placeholder="Пункт логики">
-          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        </div>
-      `;
-    });
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: Добивание комбо</span>
-          <button class="modal-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="field">
-            <label>🎯 Логика допродажи</label>
-            <div id="itemsList">${itemsHtml}</div>
-            <button id="addItemBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить пункт</button>
-          </div>
-          <div class="field">
-            <label>💡 Примечание</label>
-            <textarea id="note" rows="2">${escapeHtml(note)}</textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel">Отмена</button>
-          <button class="btn-save">💾 Сохранить</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    const addItemBtn = modal.querySelector('#addItemBtn');
-    if (addItemBtn) {
-      addItemBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#itemsList');
-        const newDiv = document.createElement('div');
-        newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-        newDiv.innerHTML = `
-          <input type="text" class="upsell-item" style="flex:1" placeholder="Пункт логики">
-          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        `;
-        newDiv.querySelector('.remove-item-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
-      });
-    }
-    
-    modal.querySelectorAll('.remove-item-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('div').remove();
-      });
-    });
-    
-    const closeModal = () => {
-      modal.classList.remove('open');
-      setTimeout(() => modal.remove(), 300);
-    };
-    
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
-    modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const itemsList = Array.from(modal.querySelectorAll('#itemsList input.upsell-item')).map(i => i.value.trim()).filter(v => v);
-      const note = modal.querySelector('#note').value;
-      
-      const itemsHtmlNew = itemsList.map(item => `<li>${escapeHtml(item)}</li>`).join('');
-      
-      const newHtml = `
-        <div class="info-card">
-          <h3>🎯 Логика допродажи</h3>
-          <ul>${itemsHtmlNew}</ul>
-        </div>
-        <div class="hl info">${escapeHtml(note)}</div>
-      `;
-      
-      await saveContent('sales', 'upsell', newHtml, contentDiv, closeModal);
-    });
-  }
-  
-  async function saveContent(page, section, newHtml, contentDiv, closeModal) {
-    try {
-      const response = await fetch(`/api/content/${page}/${section}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ content: newHtml })
-      });
-      
-      if (response.ok) {
-        contentDiv.innerHTML = newHtml;
-        alert('✅ Сохранено успешно!');
-        closeModal();
-        initAccordions();
-      } else {
-        alert('❌ Ошибка сохранения');
+      } catch (error) {
+        alert('❌ Ошибка: ' + error.message);
       }
-    } catch (error) {
-      alert('❌ Ошибка: ' + error.message);
-    }
+    });
   }
-  
+
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
@@ -940,6 +398,9 @@
     }
   };
 
+  initTabs();
+  initAccordions();
+  initSearch();
   checkPermissions();
 </script>
 </body>
