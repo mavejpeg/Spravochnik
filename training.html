@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Обучение новичков — Справочник</title>
+<link rel="stylesheet" href="style.css?v=22">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="/">☁ СПРАВОЧНИК</a>
+  <div style="flex:1"></div>
+  <a href="/" class="home-btn" style="margin-right: 12px;">🏠 На главную</a>
+  <div id="userInfo" style="display: flex; align-items: center; gap: 12px;">
+    <span id="userName" style="font-size: 12px; color: var(--text);"></span>
+    <button id="ropBtn" class="rop-btn" style="display: none;">👑 Управление</button>
+    <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
+  </div>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-day1">📅 День 1</button>
+  <button class="tab-btn" data-tab="tab-day2">📅 День 2</button>
+  <button class="tab-btn" data-tab="tab-day3">📅 День 3</button>
+  <button class="tab-btn" data-tab="tab-day4">📅 День 4</button>
+  <button class="tab-btn" data-tab="tab-scripts">💬 Скрипты</button>
+  <button class="tab-btn" data-tab="tab-security">🔒 Безопасность</button>
+</nav>
+
+<main>
+
+  <!-- ДЕНЬ 1 -->
+  <div class="section active" id="tab-day1">
+    <div class="sec-header">
+      <span class="sec-title">📅 День 1: Основы</span>
+      <button class="btn-edit-content" data-page="training" data-section="day1" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="day1-content">
+      <div class="info-card">
+        <h3>🎯 Цели первого дня</h3>
+        <ul>
+          <li>Жидкости и картриджи (крепость, альтернативы)</li>
+          <li>Одноразки (крепость производителей)</li>
+          <li>Табаки и устройство кальяна</li>
+          <li>Прогон по товарной матрице</li>
+        </ul>
+      </div>
+
+      <div class="accordion open">
+        <div class="acc-header"><span class="acc-title">💧 Жидкости: виды никотина</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="hl info">Солевой никотин (Salt Nic) — быстро накуривает, мягче при затяжке, для подов</div>
+          <div class="hl info">Щелочной никотин (Freebase) — накопительный эффект, для больших устройств</div>
+          <div class="hl info">Пропиленгликоль (PG) — отвечает за передачу вкуса и удар по горлу</div>
+          <div class="hl info">Глицерин (VG) — отвечает за густоту пара</div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">🏷️ Топовые жидкости</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <ul>
+            <li><strong>Рик и Морти</strong> — топ продаж</li>
+            <li><strong>Поддони</strong> — популярная линейка</li>
+            <li><strong>Анархия</strong> — премиум сегмент</li>
+            <li><strong>Дота</strong> — крепкие вкусы</li>
+            <li><strong>Генг</strong> — стабильное качество</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">💰 Маржинальные позиции жидкостей</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <ul>
+            <li><strong>Хаски</strong> — бюджетный сегмент</li>
+            <li><strong>Брызги</strong> — высокая маржинальность</li>
+            <li><strong>Наркоз</strong> — зарубежные ароматизаторы</li>
+            <li><strong>Соак</strong> — необычные вкусы</li>
+            <li><strong>Фумо</strong> — премиум</li>
+            <li><strong>Крейзи Чил и Вайб</strong> — мятные линейки</li>
+            <li><strong>Малазиан Кетсаилс</strong> — азиатские вкусы</li>
+            <li><strong>Неро</strong> — итальянские ароматы</li>
+            <li><strong>Вейл Клауд</strong> — облачные жидкости</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">⚡ Одноразки: классификация по крепости</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="hl warn">КРЕПКИЕ:</div>
+          <ul><li>Vozol 20k, Fumo 18k, GENG, HQD, Bubble Moon</li></ul>
+          <div class="hl ok">ЛЁГКИЕ:</div>
+          <ul><li>Plonk, Ignite, Lost Mary, Soak, Daft</li></ul>
+          <div class="hl info">СРЕДНИЕ:</div>
+          <ul><li>KRZ, Inflave Strong, Funky Lands</li></ul>
+          <div class="hl warn">⚠️ Важно: держать на зарядке не более 40 минут!</div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">🔧 Сопротивление испарителей</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <ul>
+            <li><strong>0.6-0.8 Ом</strong> — для солевых жидкостей (под-системы)</li>
+            <li><strong>0.2-0.4 Ом</strong> — для щелочных жидкостей (суб-ом)</li>
+            <li><strong>1.0-1.2 Ом</strong> — для крепких солей (MTL)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>📝 Проверка знаний (вопросы)</h3>
+        <ul>
+          <li>Основные различия солевого и щелочного никотина?</li>
+          <li>Чем между собой различаются жидкости?</li>
+          <li>На что влияют разные сопротивления испарителей?</li>
+          <li>Какие одноразки крепкие, какие лёгкие?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ДЕНЬ 2 -->
+  <div class="section" id="tab-day2">
+    <div class="sec-header">
+      <span class="sec-title">📅 День 2: Кальянная тематика</span>
+      <button class="btn-edit-content" data-page="training" data-section="day2" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="day2-content">
+      <div class="info-card">
+        <h3>🎯 Цели второго дня</h3>
+        <ul>
+          <li>Упор на кальянную тематику и жевательный табак</li>
+          <li>Кальянные аксессуары: для чего нужны и как продавать</li>
+          <li>Использование методики продаж</li>
+        </ul>
+      </div>
+
+      <div class="accordion open">
+        <div class="acc-header"><span class="acc-title">🌿 Табаки: топы рынка и крепости</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <ul>
+            <li><strong>Мастях</strong> — классика, средняя крепость</li>
+            <li><strong>Darkside</strong> — премиум, от средней до высокой</li>
+            <li><strong>Black Burn</strong> — крепкий, для опытных</li>
+            <li><strong>Siberia</strong> — очень крепкий</li>
+            <li><strong>HiPrime</strong> — средний, стабильное качество</li>
+            <li><strong>Наш</strong> — бюджетный сегмент</li>
+            <li><strong>Сатир</strong> — фруктовые линейки</li>
+            <li><strong>Бруско</strong> — бестабачные смеси</li>
+            <li><strong>Чабака</strong> — чайный лист</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">🏺 Виды чаш и их применение</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <ul>
+            <li><strong>Турка / Универсальная</strong> — баланс вкуса и крепости (5 отверстий)</li>
+            <li><strong>Убивашка</strong> — усиливает крепость, плотный дым</li>
+            <li><strong>Фанол / Фаннель</strong> — максимально чистый вкус (1 отверстие)</li>
+            <li><strong>Мелассоуловитель</strong> — собирает лишний сироп</li>
+          </ul>
+          <div class="hl info">Срок службы чаши: 6-12 месяцев при правильном уходе</div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">🔧 Аксессуары и их применение</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <ul>
+            <li><strong>Мелассоуловитель</strong> — защита от затекания сиропа</li>
+            <li><strong>Щипцы</strong> — для работы с углём</li>
+            <li><strong>Шило</strong> — для прокалывания фольги</li>
+            <li><strong>Вилки</strong> — для распределения табака</li>
+            <li><strong>Сетка/Калауд</strong> — для равномерного нагрева</li>
+            <li><strong>Колпак</strong> — для розжига и защиты от ветра</li>
+            <li><strong>Печка-плитка</strong> — для розжига углей</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">🫙 Жевательный табак: классификация</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="hl warn">КРЕПКИЕ:</div>
+          <ul><li>Oden's, Siberia, Monster, Angry, Corvus</li></ul>
+          <div class="hl ok">СРЕДНИЕ:</div>
+          <ul><li>Haqman, Stalker, Zверь</li></ul>
+          <div class="hl info">ЛЁГКИЕ:</div>
+          <ul><li>Trava, FAVE, Hismoke</li></ul>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>🍃 Виды забивок кальяна</h3>
+        <ul>
+          <li><strong>Классическая</strong> — равномерное распределение табака</li>
+          <li><strong>Плотная (оверпак)</strong> — для крепких миксов</li>
+          <li><strong>Свободная (андерпак)</strong> — для лёгкого пара</li>
+        </ul>
+        <div class="hl info">Примеры миксов:<br>
+        Сладкий: 1 легкий, 2 средних<br>
+        Свежий: 1 крепкий, 1 легкий, 1 средний<br>
+        Кислый: 2 средних, 1 крепкий<br>
+        Десертный: 2 крепких, 1 средний</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ДЕНЬ 3 -->
+  <div class="section" id="tab-day3">
+    <div class="sec-header">
+      <span class="sec-title">📅 День 3: Касса и маркировка</span>
+      <button class="btn-edit-content" data-page="training" data-section="day3" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="day3-content">
+      <div class="info-card">
+        <h3>🎯 Цели третьего дня</h3>
+        <ul>
+          <li>Обучение работе с программой, кассой и маркировкой</li>
+          <li>Дисциплинарные моменты</li>
+          <li>Работа с закупом и заказами</li>
+          <li>Поведение с мошенниками и гос.органами</li>
+        </ul>
+      </div>
+
+      <div class="accordion open">
+        <div class="acc-header"><span class="acc-title">🧾 Работа с кассой и маркировкой</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="hl warn">ВАЖНО:</div>
+          <ul>
+            <li>Пробивать товар, поиск по названию</li>
+            <li>Скидки: как правильно оформлять</li>
+            <li>Возврат: алгоритм действий</li>
+            <li>Чтение отчетов и структура отчетов</li>
+          </ul>
+          <div class="hl info">Маркированные товары (одноразки, жидкости) — только через QR-сканирование!</div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">📦 Работа с закупом и накладными</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="hl warn">ПРАВИЛА:</div>
+          <ul>
+            <li>ОДНА НАКЛАДНАЯ — ОДНА ПРИЕМКА (никаких частей)</li>
+            <li>Если не успели принять товар в течение текущего дня или следующего — написать в закуп</li>
+            <li>В комментарии приемки указывать расхождения и примечания</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">💰 Как вести себя с мошенниками</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="hl warn">ПРАВИЛА:</div>
+          <ul>
+            <li>Сначала берем деньги, потом отдаем товар</li>
+            <li>Проверка купюр (на просвет, тактильно)</li>
+            <li>Не начинайте считать сдачу, пока не убедились, что получили деньги в руки</li>
+            <li>Стойте в полоборота (спинкой к товару)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">🏛️ Как вести себя с гос.органами</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="hl warn">ПАМЯТКА:</div>
+          <ul>
+            <li>Перед началом рабочего дня знать на каком юр.лице работаете и с какого момента</li>
+            <li>Запоминайте ФИО и орган проверяющих</li>
+            <li>Ничего не подписывать не читая</li>
+            <li>Фотографировать документы — вы имеете право</li>
+            <li>Если изымают — должна быть опись с названиями, ценами и количеством</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">📋 Дисциплинарные моменты</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <ul>
+            <li>Выкладка товара (по полкам, ценниками вверх)</li>
+            <li>Шторки (закрывать после закрытия)</li>
+            <li>Генеральная уборка (график)</li>
+            <li>Отчеты (ежедневные)</li>
+            <li>Таблички об уходах (обед, перекур)</li>
+            <li>Проверка рабочего телефона</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ДЕНЬ 4 -->
+  <div class="section" id="tab-day4">
+    <div class="sec-header">
+      <span class="sec-title">📅 День 4: Закрепление</span>
+      <button class="btn-edit-content" data-page="training" data-section="day4" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="day4-content">
+      <div class="info-card">
+        <h3>🎯 Цели четвертого дня</h3>
+        <ul>
+          <li>Проверка знаний по товарной матрице, работе с кассой и маркировкой</li>
+          <li>Отработка знаний по работе с покупателем</li>
+          <li>Работа с приемкой товара и накладными</li>
+          <li>Новичок работает с продажами (с разбором ошибок)</li>
+        </ul>
+      </div>
+
+      <div class="accordion open">
+        <div class="acc-header"><span class="acc-title">✅ Контрольные вопросы</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <ul>
+            <li>Назовите топ-5 жидкостей и их особенности</li>
+            <li>Какие одноразки крепкие, какие лёгкие?</li>
+            <li>Какой табак для кальяна самый крепкий?</li>
+            <li>Как правильно принимать поставку?</li>
+            <li>Алгоритм действий при проверке гос.органами?</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>💡 Скидки и комбо — подробно</h3>
+        <ul>
+          <li>Как предлагать комбо, не называя скидку</li>
+          <li>«У нас сейчас проходит комбо, при покупке второй жидкости будет скидка»</li>
+          <li>«Программа сама рассчитает»</li>
+          <li>После комбо всегда предлагать испаритель или картридж</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- СКРИПТЫ -->
+  <div class="section" id="tab-scripts">
+    <div class="sec-header">
+      <span class="sec-title">💬 Скрипты продаж</span>
+      <button class="btn-edit-content" data-page="training" data-section="scripts" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="scripts-content">
+      <div class="accordion open">
+        <div class="acc-header"><span class="acc-title">🎯 Стандарты общения</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <ul>
+            <li>Поздороваться, подняться со стула</li>
+            <li>Общаться доброжелательно, сохранять дистанцию</li>
+            <li>Быть активным, подстраиваться под человека</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">💧 Скрипт: жидкости</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="hl info">Покупатель подошел к стеллажу с жидкостями:</div>
+          <div class="hl ok">«Здравствуйте, что по вкусу вы хотели (кислое или сладкое)? И какая крепость?»</div>
+          <div class="hl info">Если ответ «Не знаю, хочу что-нибудь вкусненькое»:</div>
+          <div class="hl ok">«Давайте попробуем определиться. Фруктовые, ягодные или сладкие десертные?»</div>
+          <div class="hl info">После выбора направления — дать 3 варианта на выбор с презентацией:</div>
+          <div class="hl ok">«Можете попробовать жидкость Наркоз — у них в основе зарубежные ароматизаторы, которые влияют на яркость и насыщение вкуса, а так же продлевают жизнь испарителя»</div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">💨 Скрипт: одноразки</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="hl ok">«На какое количество тяг рассматриваете? Крепкую или легкую? Что по вкусу?»</div>
+          <div class="hl ok">«Могу предложить Plonk — это премиальные лёгкие одноразки с насыщенным вкусом»</div>
+          <div class="hl ok">«Если хотите что-то покрепче — обратите внимание на Vozol 20k или Fumo 18k»</div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">🏺 Скрипт: табак для кальяна</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="hl ok">«Какую крепость предпочитаете? Лёгкую, среднюю или крепкую?»</div>
+          <div class="hl ok">«По вкусу: фруктовые, ягодные, мятные или табачные?»</div>
+          <div class="hl ok">«Могу порекомендовать Darkside — премиальный табак с насыщенным вкусом»</div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">🎭 Скрипт: сценка полного процесса</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="hl info">Покупатель: «Здравствуйте, мне нужна жидкость»</div>
+          <div class="hl ok">Продавец: «Здравствуйте, что по вкусу вам бы хотелось, кислое или сладкое и какая крепость?»</div>
+          <div class="hl info">Покупатель: «Мне бы хотелось что-нибудь сладкое и не крепкое»</div>
+          <div class="hl ok">Продавец: «С холодком или без?»</div>
+          <div class="hl info">Покупатель: «Можно немного»</div>
+          <div class="hl ok">Продавец: «У нас есть жидкость Наркоз, там в основе идут зарубежные ароматизаторы, которые влияют на яркость и насыщение вкуса, а так же продлевают жизнь испарителя. (Открыть и дать на выбор понюхать 3 вкуса по запросу). Для конкретики можно еще уточнить, фрукты нужны или ягоды?»</div>
+          <div class="hl ok">«У нас сейчас проходит комбо, при покупке второй жидкости будет скидка. Вам нужен будет испаритель либо картридж? Когда берете новую жидкость, желательно всегда брать новый, т.к новая жидкость может смешаться со старой и он просто перегорит»</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- БЕЗОПАСНОСТЬ -->
+  <div class="section" id="tab-security">
+    <div class="sec-header">
+      <span class="sec-title">🔒 Безопасность и мошенники</span>
+      <button class="btn-edit-content" data-page="training" data-section="security" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="security-content">
+      <div class="info-card">
+        <h3>💰 Правила работы с деньгами</h3>
+        <ul>
+          <li>Сначала берем деньги, потом отдаем товар</li>
+          <li>Проверка купюр (на просвет, тактильно)</li>
+          <li>Не начинайте считать сдачу, пока не убедились, что получили деньги в руки</li>
+          <li>Стойте в полоборота (спинкой к товару — он сам себя не украдет)</li>
+        </ul>
+      </div>
+
+      <div class="info-card">
+        <h3>🏛️ Работа с гос.органами</h3>
+        <ul>
+          <li>Перед началом рабочего дня убедитесь на каком юр.лице вы работаете и знайте с какого момента</li>
+          <li>Запоминайте ФИО и орган, когда к вам пришли проверяющие</li>
+          <li>Ничего не подписывать, пока не прочитали все документы полностью</li>
+          <li>Фотографировать — вы имеете на это право</li>
+          <li>Если изымают — должна быть опись с НАЗВАНИЯМИ, ценами и количеством</li>
+          <li>Молчите и косите под дурачка — вы простой продавец</li>
+        </ul>
+      </div>
+
+      <div class="info-card">
+        <h3>📞 Мошенники: основные схемы</h3>
+        <ul>
+          <li>«Дали крупную купюру, а требуют сдачу» — всегда пересчитывайте вслух</li>
+          <li>Путают сдачу, отвлекают разговорами</li>
+          <li>Просят показать товар и отвлекают второго продавца</li>
+          <li>Если что-то подозрительно — зовите старшего</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="core.js?v=22"></script>
+<script src="main.js?v=22"></script>
+<script>
+  console.log('Training page loaded');
+</script>
+</body>
+</html>
