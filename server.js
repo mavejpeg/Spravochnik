@@ -73,6 +73,21 @@ async function initTables() {
             )
         `);
 
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS products (
+                id SERIAL PRIMARY KEY,
+                category VARCHAR(50) NOT NULL,
+                product_id VARCHAR(100) UNIQUE NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                strength INTEGER DEFAULT 5,
+                product_class VARCHAR(20) DEFAULT 'medium',
+                origin VARCHAR(255),
+                description TEXT,
+                photo_url TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         // Insert default users
         await client.query(`
             INSERT INTO users (username, password, full_name, role) 
@@ -115,6 +130,10 @@ async function initTables() {
             INSERT INTO content (page, section, content) 
             VALUES ('hookah', 'clean', '{"html":"<table class=\"ref-table\"><tr><th>Аксессуар</th><th>Применение</th></tr><tr><td><strong>Уплотнитель для колбы</strong></td><td>Резиновое кольцо на горлышко колбы — герметичность</td></tr><tr><td><strong>Уплотнитель для чаши</strong></td><td>Резиновое кольцо на шахту — герметичность</td></tr><tr><td><strong>Ёршик для колбы</strong></td><td>Широкий, с изогнутой ручкой</td></tr><tr><td><strong>Ёршик для шахты</strong></td><td>Длинный и узкий — прочищает внутренние каналы</td></tr><tr><td><strong>Пружина для шланга</strong></td><td>Надевается на основание шланга — предотвращает перегиб</td></tr><tr><td><strong>Сетка на кальян</strong></td><td>Защитный экран от опрокидывания (животные, дети)</td></tr></table>"}')
             ON CONFLICT (page, section) DO NOTHING
+        `);
+
+        await client.query(`
+            ALTER TABLE products ADD COLUMN IF NOT EXISTS product_class VARCHAR(20) DEFAULT 'medium'
         `);
 
         console.log('✅ Database tables ready');
