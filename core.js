@@ -382,6 +382,42 @@ class ProductModal {
   }
 }
 
+function initPageElements() {
+    // Инициализация табов
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.removeEventListener('click', handleTabClick);
+        btn.addEventListener('click', handleTabClick);
+    });
+    
+    // Инициализация аккордеонов
+    const accordions = document.querySelectorAll('.accordion');
+    accordions.forEach(acc => {
+        const header = acc.querySelector('.acc-header');
+        if (header && !acc.classList.contains('converted')) {
+            header.removeEventListener('click', handleAccordionClick);
+            header.addEventListener('click', handleAccordionClick);
+        }
+    });
+}
+
+function handleTabClick(e) {
+    const btn = e.currentTarget;
+    const target = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    const sec = document.getElementById(target);
+    if (sec) sec.classList.add('active');
+}
+
+function handleAccordionClick(e) {
+    const header = e.currentTarget;
+    header.closest('.accordion').classList.toggle('open');
+}
+
+window.initPageElements = initPageElements;
+
 // ========== EXPORTS ==========
 window.getCategory = getCategory;
 window.addItem = addItem;
