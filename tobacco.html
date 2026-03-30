@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Табак — Справочник</title>
-<link rel="stylesheet" href="style.css?v=6">
+<title>Табак для кальяна — Справочник</title>
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -20,127 +20,667 @@
   </div>
 </header>
 
-<nav class="tab-nav">
-  <button class="tab-btn active" data-tab="tab-catalog">📦 Каталог</button>
-  <button class="tab-btn" data-tab="tab-syrye">🌿 Типы сырья</button>
-  <button class="tab-btn" data-tab="tab-tips">💡 Советы</button>
-</nav>
+<main style="max-width: 1200px; margin: 0 auto; padding: 28px 24px;">
 
-<main>
-
-  <div class="section active" id="tab-catalog">
-    <div class="sec-header">
-      <span class="sec-title">🌿 Табак для кальяна</span>
-      <button class="btn-add" id="btnAddTobacco">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
-        Добавить табак
-      </button>
-    </div>
-    <div class="alert-bar info">
-      <span>📌</span>
-      <span>Крепость указывается по шкале 1–10. Разные чаши по-разному раскрывают один и тот же табак.</span>
-    </div>
-    <div class="cards-grid" id="tobaccoGrid"></div>
+  <div class="sec-header">
+    <span class="sec-title">🌿 Табак для кальяна</span>
+    <button class="btn-add" id="btnAddManufacturer" style="display: none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+      Добавить производителя
+    </button>
   </div>
 
-  <div class="section" id="tab-syrye">
-    <div class="sec-header">
-      <span class="sec-title">Типы табачного сырья</span>
-      <button class="btn-edit-content" data-page="tobacco" data-section="syrye" style="display: none;">✏️ Редактировать</button>
-    </div>
-    <div id="syrye-content">
-      <div class="two-col">
-        <div class="info-card"><h3>🌱 Virginia</h3><ul><li>Лёгкое, сладковатое сырьё</li><li>Хорошо принимает мягкие аромки</li><li>Невысокая крепость</li><li>Примеры: Элемент Воздух, Star Line, Moassel Medium</li></ul></div>
-        <div class="info-card"><h3>🍂 Burley</h3><ul><li>Тёмное, насыщенное сырьё</li><li>Агрессивные аромки (ментол, специи, бергамот)</li><li>Средняя и высокая крепость</li><li>Примеры: Blackburn, Sibera, Darkside, HiPrime</li></ul></div>
-        <div class="info-card"><h3>🍃 Сигарный лист</h3><ul><li>Плотный, насыщенный дым</li><li>Специфический табачный аромат</li><li>Высокая крепость</li><li>Примеры: Dogma, Boncha, Hooligan Цветные</li></ul></div>
-        <div class="info-card"><h3>🍵 Чайный лист (бестабачка)</h3><ul><li>Без табака — никотин из другого источника</li><li>Меньше вреда для лёгких</li><li>Подходит для спортсменов и аллергиков на табак</li><li>Примеры: Чабако, Хук, Brusko, Летим</li></ul></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section" id="tab-tips">
-    <div class="sec-header">
-      <span class="sec-title">Советы продавцу</span>
-      <button class="btn-edit-content" data-page="tobacco" data-section="tips" style="display: none;">✏️ Редактировать</button>
-    </div>
-    <div id="tips-content">
-      <div class="accordion open"><div class="acc-header"><span class="acc-title">Что спросить у покупателя</span><span class="acc-arrow">▼</span></div><div class="acc-body"><div class="hl info">Какой уровень крепости предпочитает?</div><div class="hl info">Что курит сейчас — нравится или нет?</div><div class="hl info">Какие вкусы любит — фруктовые, ментоловые, табачные?</div><div class="hl info">Есть опыт с кальяном или только начинает?</div></div></div>
-      <div class="accordion"><div class="acc-header"><span class="acc-title">Жаростойкость</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>Жаростойкий табак — выдерживает перегрев и восстанавливается. Важно для новичков и тех, кто забывает следить за углём.</p><div class="hl ok">Жаростойкие: Догма, Сибера, Северный, Блэкберн, Рейв</div><div class="hl warn">Нежаростойкие: МастХефф (Burley из 7 стран), Хулиган — требуют внимания</div></div></div>
-      <div class="accordion"><div class="acc-header"><span class="acc-title">Чаши и их влияние на вкус</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><tr><th>Чаша</th><th>Эффект</th></tr><tr><td><strong>Турка / Универсальная</strong></td><td>Баланс вкуса и крепости (5 отверстий)</td></tr><tr><td><strong>Убивашка</strong></td><td>Усиливает крепость, плотный дым</td></tr><tr><td><strong>Фанол / Фаннель</strong></td><td>Максимально раскрывает вкус (1 отверстие)</td></tr></table></div></div>
-    </div>
-  </div>
+  <div class="manufacturers-grid" id="manufacturersGrid"></div>
 
 </main>
 
-<script src="core.js"></script>
-<script src="main.js"></script>
+<script src="core.js?v=10"></script>
 <script>
-  const CATEGORY = 'liquids'; // измените для каждой страницы
   let isRop = false;
+  let currentUser = null;
 
-  // Проверка прав для кнопки добавления
-  async function checkAddButton() {
-    const response = await fetch('/api/check-auth', { credentials: 'include' });
-    const data = await response.json();
-    if (data.authenticated) {
-      isRop = (data.user.role === 'rop' || data.user.role === 'root');
-      window.isRopGlobal = isRop;
-      const addButton = document.getElementById('btnAddLiquid');
-      if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
+  async function checkPermissions() {
+    try {
+      const response = await fetch('/api/check-auth', { credentials: 'include' });
+      const data = await response.json();
+      
+      if (data.authenticated) {
+        currentUser = data.user;
+        isRop = (data.user.role === 'rop' || data.user.role === 'root');
+        window.isRopGlobal = isRop;
+        
+        document.getElementById('userName').textContent = data.user.full_name;
+        
+        const ropBtn = document.getElementById('ropBtn');
+        if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
+        
+        const addBtn = document.getElementById('btnAddManufacturer');
+        if (addBtn) addBtn.style.display = isRop ? 'flex' : 'none';
+      } else {
+        window.location.href = '/login.html';
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      window.location.href = '/login.html';
     }
   }
-  
-  async function renderGrid() {
-    const grid = document.getElementById('liquidsGrid');
-    if (!grid) return;
+
+  async function loadManufacturers() {
+    const response = await fetch('/api/manufacturers', { credentials: 'include' });
+    const manufacturers = await response.json();
     
-    const items = await getCategory(CATEGORY);
+    const grid = document.getElementById('manufacturersGrid');
     grid.innerHTML = '';
-
-    if (!items || items.length === 0) {
-      renderEmpty(grid, '💧', 'Каталог пуст', isRop ? 'Нажмите «Добавить жидкость» чтобы внести первую позицию' : 'Нет доступных позиций');
-      return;
-    }
-
-    for (const item of items) {
-      const card = renderProductCard(item, CATEGORY,
-        () => renderGrid(),
-        (it) => {
-          if (!isRop) return;
-          new ProductModal({
-            category: CATEGORY,
-            title: 'Редактировать',
-            editItem: it,
-            onSave: async (data) => {
-              await updateItem(CATEGORY, it.id, data);
-              renderGrid();
-            }
-          });
-        }
-      );
+    
+    for (const manufacturer of manufacturers) {
+      const card = document.createElement('div');
+      card.className = 'manufacturer-card';
+      card.innerHTML = `
+        <div class="manufacturer-header">
+          <h3>${escapeHtml(manufacturer.name)}</h3>
+          ${isRop ? `<div class="manufacturer-actions">
+            <button class="btn-edit" onclick="editManufacturer(${manufacturer.id})">✏️</button>
+            <button class="btn-delete" onclick="deleteManufacturer(${manufacturer.id})">🗑</button>
+          </div>` : ''}
+        </div>
+        <div class="manufacturer-desc">${escapeHtml(manufacturer.description || '')}</div>
+        <button class="btn-expand" onclick="toggleManufacturer(${manufacturer.id})">📂 Показать линейки</button>
+        <div id="lines-${manufacturer.id}" class="lines-container" style="display: none;">
+          <div class="lines-header">
+            <span>Линейки</span>
+            ${isRop ? `<button class="btn-add-line" onclick="addLine(${manufacturer.id})">➕ Добавить линейку</button>` : ''}
+          </div>
+          <div id="lines-list-${manufacturer.id}" class="lines-list"></div>
+        </div>
+      `;
       grid.appendChild(card);
     }
   }
 
-  const addBtn = document.getElementById('btnAddLiquid');
-  if (addBtn) {
-    addBtn.addEventListener('click', () => {
-      if (!isRop) {
-        alert('У вас нет прав для добавления');
+  async function toggleManufacturer(manufacturerId) {
+    const container = document.getElementById(`lines-${manufacturerId}`);
+    const isVisible = container.style.display === 'block';
+    
+    if (!isVisible) {
+      // Загружаем линейки
+      const response = await fetch(`/api/manufacturers/${manufacturerId}`, { credentials: 'include' });
+      const data = await response.json();
+      
+      const linesList = document.getElementById(`lines-list-${manufacturerId}`);
+      linesList.innerHTML = '';
+      
+      for (const line of data.lines) {
+        const lineDiv = document.createElement('div');
+        lineDiv.className = 'line-card';
+        lineDiv.innerHTML = `
+          <div class="line-header">
+            <span class="line-name">${escapeHtml(line.name)}</span>
+            ${isRop ? `<div>
+              <button class="btn-edit-small" onclick="editLine(${line.id})">✏️</button>
+              <button class="btn-delete-small" onclick="deleteLine(${line.id})">🗑</button>
+            </div>` : ''}
+          </div>
+          <div class="line-desc">${escapeHtml(line.description || '')}</div>
+          <button class="btn-expand-small" onclick="toggleLine(${line.id})">🍃 Показать вкусы</button>
+          <div id="flavors-${line.id}" class="flavors-container" style="display: none;">
+            <div class="flavors-header">
+              <span>Вкусы</span>
+              ${isRop ? `<button class="btn-add-flavor" onclick="addFlavor(${line.id})">➕ Добавить вкус</button>` : ''}
+            </div>
+            <div id="flavors-list-${line.id}" class="flavors-list"></div>
+          </div>
+        `;
+        linesList.appendChild(lineDiv);
+        
+        // Загружаем вкусы для этой линейки
+        const flavorsList = document.getElementById(`flavors-list-${line.id}`);
+        for (const flavor of line.flavors) {
+          const qualityClass = flavor.quality_class || 'medium';
+          const qualityIcon = qualityClass === 'premium' ? '💎' : (qualityClass === 'economy' ? '📦' : '⭐');
+          const qualityName = qualityClass === 'premium' ? 'Премиум' : (qualityClass === 'economy' ? 'Эконом' : 'Средний класс');
+          
+          const flavorDiv = document.createElement('div');
+          flavorDiv.className = 'flavor-card';
+          flavorDiv.innerHTML = `
+            <div class="flavor-header">
+              <div>
+                <span class="flavor-name">${escapeHtml(flavor.name)}</span>
+                <span class="flavor-quality ${qualityClass}">${qualityIcon} ${qualityName}</span>
+              </div>
+              ${isRop ? `<div>
+                <button class="btn-edit-small" onclick="editFlavor(${flavor.id})">✏️</button>
+                <button class="btn-delete-small" onclick="deleteFlavor(${flavor.id})">🗑</button>
+              </div>` : ''}
+            </div>
+            <div class="flavor-strength">Крепость: ${flavor.strength}/10</div>
+            <div class="flavor-desc">${escapeHtml(flavor.description || '')}</div>
+            ${flavor.photo_url ? `<img src="${flavor.photo_url}" class="flavor-img">` : ''}
+          `;
+          flavorsList.appendChild(flavorDiv);
+        }
+      }
+      
+      container.style.display = 'block';
+    } else {
+      container.style.display = 'none';
+    }
+  }
+
+  async function toggleLine(lineId) {
+    const container = document.getElementById(`flavors-${lineId}`);
+    container.style.display = container.style.display === 'block' ? 'none' : 'block';
+  }
+
+  // CRUD операции
+  async function addManufacturer() {
+    const name = prompt('Введите название производителя:');
+    if (!name) return;
+    const description = prompt('Введите описание (необязательно):');
+    
+    const response = await fetch('/api/manufacturers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ name, description })
+    });
+    
+    if (response.ok) {
+      alert('Производитель добавлен');
+      loadManufacturers();
+    } else {
+      alert('Ошибка');
+    }
+  }
+
+  async function editManufacturer(id) {
+    const newName = prompt('Новое название:');
+    if (!newName) return;
+    const newDesc = prompt('Новое описание:');
+    
+    const response = await fetch(`/api/manufacturers/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ name: newName, description: newDesc })
+    });
+    
+    if (response.ok) {
+      alert('Сохранено');
+      loadManufacturers();
+    }
+  }
+
+  async function deleteManufacturer(id) {
+    if (confirm('Удалить производителя и все его линейки?')) {
+      const response = await fetch(`/api/manufacturers/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (response.ok) {
+        alert('Удалено');
+        loadManufacturers();
+      }
+    }
+  }
+
+  async function addLine(manufacturerId) {
+    const name = prompt('Название линейки:');
+    if (!name) return;
+    const description = prompt('Описание линейки:');
+    
+    const response = await fetch('/api/lines', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ manufacturer_id: manufacturerId, name, description })
+    });
+    
+    if (response.ok) {
+      alert('Линейка добавлена');
+      // Обновляем отображение
+      const container = document.getElementById(`lines-${manufacturerId}`);
+      if (container.style.display === 'block') {
+        container.style.display = 'none';
+        toggleManufacturer(manufacturerId);
+      }
+    }
+  }
+
+  async function editLine(id) {
+    const newName = prompt('Новое название линейки:');
+    if (!newName) return;
+    const newDesc = prompt('Новое описание:');
+    
+    const response = await fetch(`/api/lines/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ name: newName, description: newDesc })
+    });
+    
+    if (response.ok) {
+      alert('Сохранено');
+      location.reload();
+    }
+  }
+
+  async function deleteLine(id) {
+    if (confirm('Удалить линейку и все вкусы?')) {
+      const response = await fetch(`/api/lines/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (response.ok) {
+        alert('Удалено');
+        location.reload();
+      }
+    }
+  }
+
+  async function addFlavor(lineId) {
+    const name = prompt('Название вкуса:');
+    if (!name) return;
+    const strength = prompt('Крепость (1-10):', '5');
+    const quality = prompt('Класс (premium/medium/economy):', 'medium');
+    const description = prompt('Описание:');
+    
+    const response = await fetch('/api/flavors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ 
+        line_id: lineId, 
+        name, 
+        strength: parseInt(strength) || 5, 
+        quality_class: quality,
+        description 
+      })
+    });
+    
+    if (response.ok) {
+      alert('Вкус добавлен');
+      location.reload();
+    }
+  }
+
+  async function editFlavor(id) {
+    const newName = prompt('Новое название вкуса:');
+    if (!newName) return;
+    const newStrength = prompt('Новая крепость (1-10):', '5');
+    const newQuality = prompt('Новый класс (premium/medium/economy):', 'medium');
+    const newDesc = prompt('Новое описание:');
+    
+    const response = await fetch(`/api/flavors/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ 
+        name: newName, 
+        strength: parseInt(newStrength) || 5, 
+        quality_class: newQuality,
+        description: newDesc 
+      })
+    });
+    
+    if (response.ok) {
+      alert('Сохранено');
+      location.reload();
+    }
+  }
+
+  async function deleteFlavor(id) {
+    if (confirm('Удалить вкус?')) {
+      const response = await fetch(`/api/flavors/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (response.ok) {
+        alert('Удалено');
+        location.reload();
+      }
+    }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+    window.location.href = '/login.html';
+  });
+
+  document.getElementById('ropBtn')?.addEventListener('click', () => {
+    openRopPanel();
+  });
+
+  document.getElementById('btnAddManufacturer')?.addEventListener('click', addManufacturer);
+
+  async function openRopPanel() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+          <span class="modal-title">👑 Панель управления</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>➕ Добавить пользователя</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
+              <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
+              <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
+              <button id="addUserBtn" class="btn-add">Добавить</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>📋 Список пользователей</label>
+            <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Закрыть</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    const closeModal = () => {
+      modal.classList.remove('open');
+      setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    await loadUsersList(modal);
+    
+    document.getElementById('addUserBtn').addEventListener('click', async () => {
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newPassword').value;
+      const full_name = document.getElementById('newFullName').value.trim();
+      
+      if (!username || !password || !full_name) {
+        alert('Заполните все поля');
         return;
       }
-      new ProductModal({
-        category: CATEGORY,
-        title: 'Добавить жидкость',
-        onSave: async (item) => {
-          await addItem(CATEGORY, item);
-          renderGrid();
-        }
+      if (!/^\d{4}$/.test(password)) {
+        alert('Пароль должен состоять из 4 цифр');
+        return;
+      }
+      
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, password, full_name, role: 'user' })
       });
+      
+      if (response.ok) {
+        alert('Пользователь добавлен');
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('newFullName').value = '';
+        await loadUsersList(modal);
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
     });
   }
 
-  checkAddButton().then(() => renderGrid());
+  async function loadUsersList(modal) {
+    const response = await fetch('/api/users', { credentials: 'include' });
+    const users = await response.json();
+    const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
+    const me = await meResponse.json();
+    
+    const container = modal.querySelector('#usersList');
+    if (!container) return;
+    
+    container.innerHTML = users.map(user => {
+      let canChange = false;
+      if (me.user.role === 'root') canChange = true;
+      else if (me.user.role === 'rop' && user.role === 'user') canChange = true;
+      
+      let canDelete = false;
+      if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) canDelete = true;
+      
+      return `
+        <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong>${escapeHtml(user.full_name)}</strong><br>
+              <span style="font-size: 11px;">Логин: ${user.username} | Роль: ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              ${canChange ? `<button onclick="window.changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
+              ${canDelete ? `<button onclick="window.deleteUserById(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.changePasswordUser = async function(userId, userName) {
+    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
+    if (!newPassword) return;
+    if (!/^\d{4}$/.test(newPassword)) {
+      alert('Пароль должен состоять из 4 цифр');
+      return;
+    }
+    const response = await fetch(`/api/users/${userId}/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ newPassword })
+    });
+    if (response.ok) alert('Пароль успешно изменен');
+    else alert('Ошибка смены пароля');
+  };
+
+  window.deleteUserById = async function(userId) {
+    if (confirm('Удалить пользователя?')) {
+      const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
+      if (response.ok) {
+        alert('Пользователь удален');
+        location.reload();
+      } else alert('Ошибка удаления');
+    }
+  };
+
+  checkPermissions().then(() => loadManufacturers());
 </script>
+
+<style>
+.manufacturers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.manufacturer-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.2s;
+}
+
+.manufacturer-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+
+.manufacturer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.manufacturer-header h3 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 16px;
+  color: var(--accent);
+  margin: 0;
+}
+
+.manufacturer-desc {
+  color: var(--text2);
+  font-size: 13px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.btn-expand, .btn-expand-small {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.btn-expand:hover, .btn-expand-small:hover {
+  background: var(--surface3);
+  border-color: var(--accent);
+}
+
+.lines-container, .flavors-container {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.lines-header, .flavors-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: var(--accent3);
+}
+
+.line-card {
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.line-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.line-name {
+  font-weight: 600;
+  color: var(--accent4);
+}
+
+.flavor-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.flavor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.flavor-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.flavor-quality {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 8px;
+}
+
+.flavor-quality.premium {
+  background: rgba(124,92,252,0.2);
+  color: var(--accent);
+}
+
+.flavor-quality.medium {
+  background: rgba(252,184,48,0.2);
+  color: var(--accent4);
+}
+
+.flavor-quality.economy {
+  background: rgba(60,255,160,0.2);
+  color: var(--accent3);
+}
+
+.flavor-strength {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.flavor-desc {
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.4;
+}
+
+.flavor-img {
+  width: 100%;
+  max-height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.btn-edit-small, .btn-delete-small {
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+.btn-edit-small {
+  color: var(--accent);
+}
+
+.btn-delete-small {
+  color: var(--accent2);
+}
+
+.btn-add-line, .btn-add-flavor {
+  background: var(--accent-glow);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+}
+</style>
 </body>
 </html>
