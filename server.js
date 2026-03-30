@@ -780,6 +780,7 @@ app.put('/api/lines/:id', requireRop, async (req, res) => {
     }
 });
 
+
 app.delete('/api/lines/:id', requireRop, async (req, res) => {
     const { id } = req.params;
     try {
