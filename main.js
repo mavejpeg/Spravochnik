@@ -2,7 +2,7 @@
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Main.js loaded');
+    console.log('Main.js loaded - starting initialization');
     
     // 1. Инициализация табов
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -96,6 +96,7 @@ async function loadUserInfo() {
             const addBtn = document.querySelector('.btn-add');
             if (addBtn) {
                 addBtn.style.display = isRop ? 'flex' : 'none';
+                console.log('Add button display set to:', addBtn.style.display);
             }
         } else {
             window.location.href = '/login.html';
@@ -276,8 +277,8 @@ async function loadUsersList(modal) {
                         <span style="font-size: 11px;">Логин: ${user.username} | Роль: ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
                     </div>
                     <div style="display: flex; gap: 6px;">
-                        ${canChange ? `<button onclick="changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
-                        ${canDelete ? `<button onclick="deleteUserById(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
+                        ${canChange ? `<button onclick="window.changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
+                        ${canDelete ? `<button onclick="window.deleteUserById(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
                     </div>
                 </div>
             </div>
