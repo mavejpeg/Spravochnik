@@ -237,6 +237,10 @@ app.get('/api/check-auth', (req, res) => {
     }
 });
 
+app.get('/main.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'main.js'));
+});
+
 app.post('/api/simple-login', async (req, res) => {
     const { password } = req.body;
     
