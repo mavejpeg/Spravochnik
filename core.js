@@ -157,19 +157,31 @@ function renderProductCard(item, category, onDelete, onEdit) {
   
   const canEdit = window.isRopGlobal === true;
   
+  // Добавляем стиль для обводки в зависимости от класса
+  let borderStyle = '';
+  if (qualityClass === 'premium') {
+    borderStyle = 'border-left: 4px solid var(--accent);';
+  } else if (qualityClass === 'medium') {
+    borderStyle = 'border-left: 4px solid var(--accent4);';
+  } else if (qualityClass === 'economy') {
+    borderStyle = 'border-left: 4px solid var(--accent3);';
+  }
+  
   div.innerHTML = `
     <div class="card-actions" style="${canEdit ? '' : 'display: none !important;'}">
       <button class="card-action-btn btn-edit" data-id="${productId}" title="Редактировать">✏️</button>
       <button class="card-action-btn btn-delete" data-id="${productId}" title="Удалить">🗑</button>
     </div>
-    <div class="card-img ${photoUrl ? '' : 'no-img'}">
+    <div class="card-img ${photoUrl ? '' : 'no-img'}" style="${borderStyle}">
       ${photoUrl ? `<img src="${photoUrl}" alt="${escapeHtml(item.name)}" loading="lazy">` : '📦'}
     </div>
     <div class="card-body">
       <div class="card-name">${escapeHtml(item.name)}</div>
       <div class="card-meta">
         <span class="badge ${badgeClass}">${STRENGTH_LABELS[strength]}</span>
-        <span class="badge quality-badge ${qualityClass}" style="background: ${quality.color}20; color: ${quality.color};">${quality.icon} ${quality.name}</span>
+        <span class="badge quality-badge ${qualityClass}" style="background: ${quality.color}20; color: ${quality.color}; border: 1px solid ${quality.color}40;">
+          ${quality.icon} ${quality.name}
+        </span>
         ${item.origin ? `<span class="badge badge-origin">🌍 ${escapeHtml(item.origin)}</span>` : ''}
       </div>
       <div class="strength-compact">
