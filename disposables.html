@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Одноразки — Справочник</title>
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=21">
 </head>
 <body>
 
@@ -56,33 +56,40 @@
 
 </main>
 
-<script src="core.js"></script>
-<script src="main.js"></script>
+<script src="core.js?v=21"></script>
 <script>
-  const CATEGORY = 'liquids'; // измените для каждой страницы
+  const CATEGORY = 'disposables';
   let isRop = false;
 
-  // Проверка прав для кнопки добавления
-  async function checkAddButton() {
+  async function checkPermissions() {
     const response = await fetch('/api/check-auth', { credentials: 'include' });
     const data = await response.json();
     if (data.authenticated) {
       isRop = (data.user.role === 'rop' || data.user.role === 'root');
       window.isRopGlobal = isRop;
-      const addButton = document.getElementById('btnAddLiquid');
+      document.getElementById('userName').textContent = data.user.full_name;
+      document.getElementById('ropBtn').style.display = isRop ? 'block' : 'none';
+      const addButton = document.getElementById('btnAddDisposable');
       if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
+      
+      const editBtns = document.querySelectorAll('.btn-edit-content');
+      editBtns.forEach(btn => {
+        btn.style.display = isRop ? 'inline-flex' : 'none';
+      });
+    } else {
+      window.location.href = '/login.html';
     }
   }
   
   async function renderGrid() {
-    const grid = document.getElementById('liquidsGrid');
+    const grid = document.getElementById('disposablesGrid');
     if (!grid) return;
     
     const items = await getCategory(CATEGORY);
     grid.innerHTML = '';
 
     if (!items || items.length === 0) {
-      renderEmpty(grid, '💧', 'Каталог пуст', isRop ? 'Нажмите «Добавить жидкость» чтобы внести первую позицию' : 'Нет доступных позиций');
+      renderEmpty(grid, '⚡', 'Каталог пуст', isRop ? 'Нажмите «Добавить одноразку» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
 
@@ -106,7 +113,7 @@
     }
   }
 
-  const addBtn = document.getElementById('btnAddLiquid');
+  const addBtn = document.getElementById('btnAddDisposable');
   if (addBtn) {
     addBtn.addEventListener('click', () => {
       if (!isRop) {
@@ -115,7 +122,7 @@
       }
       new ProductModal({
         category: CATEGORY,
-        title: 'Добавить жидкость',
+        title: 'Добавить одноразку',
         onSave: async (item) => {
           await addItem(CATEGORY, item);
           renderGrid();
@@ -124,7 +131,32 @@
     });
   }
 
-  checkAddButton().then(() => renderGrid());
+  function initTabs() {
+    const btns = document.querySelectorAll('.tab-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const target = this.dataset.tab;
+        btns.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        const sec = document.getElementById(target);
+        if (sec) sec.classList.add('active');
+      });
+    });
+  }
+
+  function initAccordions() {
+    const headers = document.querySelectorAll('.acc-header');
+    headers.forEach(header => {
+      header.addEventListener('click', function() {
+        this.closest('.accordion').classList.toggle('open');
+      });
+    });
+  }
+
+  initTabs();
+  initAccordions();
+  checkPermissions().then(() => renderGrid());
 </script>
 </body>
 </html>
