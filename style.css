@@ -1564,3 +1564,211 @@ progress::-webkit-progress-value {
     color: var(--accent2);
     cursor: pointer;
 }
+
+/* Стили для выпадающих списков (details/summary) */
+details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+details summary {
+    cursor: pointer;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: var(--accent);
+    list-style: none;
+    transition: background 0.2s;
+}
+
+details summary:hover {
+    background: var(--surface2);
+}
+
+details[open] summary {
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+}
+
+details[open] summary span {
+    transform: rotate(180deg);
+}
+
+/* Стили для текстового редактора */
+.text-format-toolbar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+    padding: 6px;
+    background: var(--surface2);
+    border-radius: 8px;
+}
+
+.format-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.format-btn:hover {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+}
+
+.text-editor {
+    min-height: 100px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+.text-editor:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* Стили для редактора */
+.editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+    background: var(--surface2);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+}
+
+.tool-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tool-btn:hover {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+}
+
+.editor-area {
+    min-height: 400px;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.editor-empty {
+    text-align: center;
+    padding: 60px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.editor-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.editor-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: var(--surface3);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.remove-editor-item {
+    background: rgba(252, 92, 124, 0.2);
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: var(--accent2);
+    cursor: pointer;
+}
+
+.remove-editor-item:hover {
+    background: rgba(252, 92, 124, 0.4);
+}
+
+.editor-item-content {
+    padding: 16px;
+}
+
+.editor-item-content input,
+.editor-item-content textarea,
+.editor-item-content select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.editor-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+.editor-table th,
+.editor-table td {
+    border: 1px solid var(--border);
+    padding: 8px;
+}
+
+.editor-table th input,
+.editor-table td input {
+    width: 100%;
+    margin: 0;
+    background: transparent;
+}
+
+.add-table-row {
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--accent);
+    cursor: pointer;
+}
+
+.add-table-row:hover {
+    background: var(--accent);
+    color: white;
+}
+
+.remove-table-row {
+    background: rgba(252, 92, 124, 0.2);
+    border: none;
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: var(--accent2);
+    cursor: pointer;
+}
