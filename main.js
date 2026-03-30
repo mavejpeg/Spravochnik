@@ -113,22 +113,17 @@ function setupEditButtons() {
     const editBtns = document.querySelectorAll('.btn-edit-content');
     editBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            openVisualEditor(this.dataset.page, this.dataset.section);
+            openEditModal(this.dataset.page, this.dataset.section);
         });
     });
 }
 
-// ========== ВИЗУАЛЬНЫЙ РЕДАКТОР ==========
-
-function openVisualEditor(page, section) {
+function openEditModal(page, section) {
     const contentDiv = document.getElementById(`${section}-content`);
     if (!contentDiv) return;
     
-    const currentHtml = contentDiv.innerHTML;
-    
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
-    modal.style.zIndex = '2000';
     modal.innerHTML = `
         <div class="modal" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
             <div class="modal-header">
@@ -147,7 +142,7 @@ function openVisualEditor(page, section) {
                     <button class="tool-btn" data-action="add-card">🃏 Карточка</button>
                 </div>
                 <div class="editor-area" id="editorArea">
-                    ${parseContentToEditor(currentHtml)}
+                    ${parseContentToEditor(contentDiv.innerHTML)}
                 </div>
             </div>
             <div class="modal-footer">
@@ -670,7 +665,7 @@ function initTableEditor(container) {
         html += `。<button class="remove-table-row">🗑</button>。`;
         html += '   </tr>';
     }
-    html += '</tbody>   </table>';
+    html += '</tbody>    </table>';
     container.innerHTML = html;
     
     container.querySelectorAll('.remove-table-row').forEach(btn => {
@@ -745,15 +740,15 @@ function convertEditorToHtml(editorArea) {
             case 'table':
                 const tableData = JSON.parse(item.querySelector('.table-editor')?.dataset.rows || '[]');
                 if (tableData.length > 1) {
-                    let tableHtml = '<table class="ref-table"><thead>   <tr>';
+                    let tableHtml = '<table class="ref-table"><thead>    <tr>';
                     tableData[0].forEach(cell => tableHtml += `<th>${escapeHtml(cell)}</th>`);
-                    tableHtml += '   </tr></thead><tbody>';
+                    tableHtml += '    </tr></thead><tbody>';
                     for (let i = 1; i < tableData.length; i++) {
-                        tableHtml += '   <tr>';
-                        tableData[i].forEach(cell => tableHtml += `   <td>${escapeHtml(cell)}</td>`);
-                        tableHtml += '   </tr>';
+                        tableHtml += '    <tr>';
+                        tableData[i].forEach(cell => tableHtml += `    <td>${escapeHtml(cell)}</td>`);
+                        tableHtml += '    </tr>';
                     }
-                    tableHtml += '</tbody>   </table>';
+                    tableHtml += '</tbody>    </table>';
                     html += tableHtml;
                 }
                 break;
@@ -801,8 +796,6 @@ function convertEditorToHtml(editorArea) {
     
     return html;
 }
-
-// ========== ПАНЕЛЬ УПРАВЛЕНИЯ РОП ==========
 
 async function openRopPanel() {
     const modal = document.createElement('div');
