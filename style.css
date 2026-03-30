@@ -2249,3 +2249,42 @@ details[open] summary span {
 .line-desc li {
     margin: 3px 0;
 }
+
+/* Обводка карточки в зависимости от класса */
+.product-card .card-img {
+  position: relative;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+}
+
+.product-card .card-img[style*="border-left"] {
+  border-radius: 12px 12px 0 0;
+}
+
+/* Для премиум класса - фиолетовая обводка */
+.product-card .card-img[style*="var(--accent)"] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* Для среднего класса - золотая обводка */
+.product-card .card-img[style*="var(--accent4)"] {
+  box-shadow: inset 0 0 0 2px var(--accent4);
+}
+
+/* Для эконом класса - зеленая обводка */
+.product-card .card-img[style*="var(--accent3)"] {
+  box-shadow: inset 0 0 0 2px var(--accent3);
+}
+
+/* Альтернативный способ через data-атрибут */
+.product-card.premium .card-img {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.product-card.medium .card-img {
+  box-shadow: inset 0 0 0 2px var(--accent4);
+}
+
+.product-card.economy .card-img {
+  box-shadow: inset 0 0 0 2px var(--accent3);
+}
