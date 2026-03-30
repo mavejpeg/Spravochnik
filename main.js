@@ -1,4 +1,4 @@
-// main.js - полная версия с визуальным редактором и опросниками
+// main.js - полная версия
 let isRop = false;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -9,21 +9,24 @@ document.addEventListener('DOMContentLoaded', function() {
     loadUserInfo();
     setupLogout();
     setupRopPanel();
-    setupEditButtons();
 });
 
 function initTabs() {
     const tabBtns = document.querySelectorAll('.tab-btn');
     tabBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const target = this.dataset.tab;
-            tabBtns.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            const sec = document.getElementById(target);
-            if (sec) sec.classList.add('active');
-        });
+        btn.removeEventListener('click', handleTabClick);
+        btn.addEventListener('click', handleTabClick);
     });
+}
+
+function handleTabClick(e) {
+    const btn = e.currentTarget;
+    const target = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    const sec = document.getElementById(target);
+    if (sec) sec.classList.add('active');
 }
 
 function initAccordionsToDetails() {
@@ -53,29 +56,36 @@ function initAccordionsToDetails() {
     details.forEach(detail => {
         const summary = detail.querySelector('summary');
         if (summary && !detail.hasAttribute('data-initialized')) {
-            summary.addEventListener('click', (e) => {
-                e.preventDefault();
-                detail.open = !detail.open;
-            });
+            summary.removeEventListener('click', handleDetailsClick);
+            summary.addEventListener('click', handleDetailsClick);
             detail.setAttribute('data-initialized', 'true');
         }
     });
 }
 
+function handleDetailsClick(e) {
+    e.preventDefault();
+    const detail = e.currentTarget.closest('details');
+    if (detail) detail.open = !detail.open;
+}
+
 function initSearch() {
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const val = this.value.toLowerCase();
-            document.querySelectorAll('[data-searchable]').forEach(el => {
-                if (el.textContent.toLowerCase().includes(val)) {
-                    el.classList.remove('search-hidden');
-                } else {
-                    el.classList.add('search-hidden');
-                }
-            });
-        });
+        searchInput.removeEventListener('input', handleSearch);
+        searchInput.addEventListener('input', handleSearch);
     }
+}
+
+function handleSearch(e) {
+    const val = e.target.value.toLowerCase();
+    document.querySelectorAll('[data-searchable]').forEach(el => {
+        if (el.textContent.toLowerCase().includes(val)) {
+            el.classList.remove('search-hidden');
+        } else {
+            el.classList.add('search-hidden');
+        }
+    });
 }
 
 async function loadUserInfo() {
@@ -92,13 +102,7 @@ async function loadUserInfo() {
             window.isRopGlobal = isRop;
             if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
             
-            const editBtns = document.querySelectorAll('.btn-edit-content');
-            editBtns.forEach(btn => {
-                btn.style.display = isRop ? 'inline-flex' : 'none';
-                btn.addEventListener('click', function() {
-                    openVisualEditor(this.dataset.page, this.dataset.section);
-                });
-            });
+            setupEditButtons();
             
             const addBtn = document.querySelector('.btn-add');
             if (addBtn) addBtn.style.display = isRop ? 'flex' : 'none';
@@ -114,27 +118,42 @@ async function loadUserInfo() {
 function setupLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            await fetch('/api/logout', { method: 'POST', credentials: 'include' });
-            window.location.href = '/login.html';
-        });
+        logoutBtn.removeEventListener('click', handleLogout);
+        logoutBtn.addEventListener('click', handleLogout);
     }
+}
+
+async function handleLogout() {
+    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+    window.location.href = '/login.html';
 }
 
 function setupRopPanel() {
     const ropBtn = document.getElementById('ropBtn');
     if (ropBtn) {
-        ropBtn.addEventListener('click', openRopPanel);
+        ropBtn.removeEventListener('click', handleRopPanel);
+        ropBtn.addEventListener('click', handleRopPanel);
     }
+}
+
+async function handleRopPanel() {
+    await openRopPanel();
 }
 
 function setupEditButtons() {
     const editBtns = document.querySelectorAll('.btn-edit-content');
     editBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            openVisualEditor(this.dataset.page, this.dataset.section);
-        });
+        btn.removeEventListener('click', handleEditClick);
+        btn.addEventListener('click', handleEditClick);
+        btn.style.display = isRop ? 'inline-flex' : 'none';
     });
+}
+
+function handleEditClick(e) {
+    const btn = e.currentTarget;
+    const page = btn.dataset.page;
+    const section = btn.dataset.section;
+    openVisualEditor(page, section);
 }
 
 // ========== ВИЗУАЛЬНЫЙ РЕДАКТОР ==========
@@ -143,10 +162,14 @@ function openVisualEditor(page, section) {
     const contentDiv = document.getElementById(`${section}-content`);
     if (!contentDiv) return;
     
+    const existingModal = document.getElementById('visualEditorModal');
+    if (existingModal) existingModal.remove();
+    
     const currentHtml = contentDiv.innerHTML;
     
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
+    modal.id = 'visualEditorModal';
     modal.style.zIndex = '2000';
     modal.innerHTML = `
         <div class="modal" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
@@ -184,10 +207,14 @@ function openVisualEditor(page, section) {
     
     const toolBtns = modal.querySelectorAll('.tool-btn');
     toolBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            addElementToEditor(editorArea, btn.dataset.action);
-        });
+        btn.removeEventListener('click', handleToolBtnClick);
+        btn.addEventListener('click', handleToolBtnClick);
     });
+    
+    function handleToolBtnClick(e) {
+        const action = e.currentTarget.dataset.action;
+        addElementToEditor(editorArea, action);
+    }
     
     setupRemoveButtons(editorArea);
     setupRichEditors(editorArea);
@@ -202,12 +229,20 @@ function openVisualEditor(page, section) {
     
     modal.querySelector('.modal-close').addEventListener('click', closeModal);
     modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
     
     modal.querySelector('.btn-save').addEventListener('click', async () => {
         const newContent = convertEditorToHtml(editorArea);
         
+        let url = `/api/content/${page}/${section}`;
+        if (page === 'training') {
+            url = `/api/content/training/${section}`;
+        }
+        
         try {
-            const response = await fetch(`/api/content/${page}/${section}`, {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -606,15 +641,19 @@ function setupRichEditors(container) {
         const toolbar = editor.closest('.rich-editor-container')?.querySelector('.format-toolbar');
         if (toolbar) {
             toolbar.querySelectorAll('.format-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const format = btn.dataset.format;
-                    document.execCommand(format, false, null);
-                    editor.focus();
-                });
+                btn.removeEventListener('click', handleFormatClick);
+                btn.addEventListener('click', handleFormatClick);
             });
         }
     });
+}
+
+function handleFormatClick(e) {
+    e.preventDefault();
+    const format = e.currentTarget.dataset.format;
+    document.execCommand(format, false, null);
+    const editor = e.currentTarget.closest('.rich-editor-container')?.querySelector('.rich-editor');
+    if (editor) editor.focus();
 }
 
 function setupListEditors(container) {
@@ -622,20 +661,30 @@ function setupListEditors(container) {
     listEditors.forEach(editor => {
         const addBtn = editor.querySelector('.add-list-item');
         if (addBtn) {
-            addBtn.addEventListener('click', () => {
-                const itemsContainer = editor.querySelector('.list-items');
-                const newItem = document.createElement('div');
-                newItem.className = 'list-item';
-                newItem.innerHTML = `<input type="text" placeholder="Пункт списка"><button class="remove-list-item">✕</button>`;
-                newItem.querySelector('.remove-list-item').addEventListener('click', () => newItem.remove());
-                itemsContainer.appendChild(newItem);
-            });
+            addBtn.removeEventListener('click', handleAddListItem);
+            addBtn.addEventListener('click', handleAddListItem);
         }
         
         editor.querySelectorAll('.remove-list-item').forEach(btn => {
-            btn.addEventListener('click', () => btn.closest('.list-item').remove());
+            btn.removeEventListener('click', handleRemoveListItem);
+            btn.addEventListener('click', handleRemoveListItem);
         });
     });
+}
+
+function handleAddListItem(e) {
+    const editor = e.currentTarget.closest('.list-editor');
+    const itemsContainer = editor.querySelector('.list-items');
+    const newItem = document.createElement('div');
+    newItem.className = 'list-item';
+    newItem.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
+    newItem.innerHTML = `<input type="text" placeholder="Пункт списка" style="flex:1; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;"><button class="remove-list-item" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer;">✕</button>`;
+    newItem.querySelector('.remove-list-item').addEventListener('click', () => newItem.remove());
+    itemsContainer.appendChild(newItem);
+}
+
+function handleRemoveListItem(e) {
+    e.currentTarget.closest('.list-item').remove();
 }
 
 function setupStepsEditors(container) {
@@ -643,28 +692,41 @@ function setupStepsEditors(container) {
     stepsEditors.forEach(editor => {
         const addBtn = editor.closest('.editor-item-content')?.querySelector('.add-step-btn');
         if (addBtn) {
-            addBtn.addEventListener('click', () => {
-                const stepNum = editor.querySelectorAll('.step-item').length + 1;
-                const newStep = document.createElement('div');
-                newStep.className = 'step-item';
-                newStep.innerHTML = `
-                    <div class="step-header"><span class="step-num-display">${stepNum}</span><input type="text" class="step-title" placeholder="Заголовок"></div>
-                    <textarea class="step-desc" rows="2" placeholder="Описание"></textarea>
-                    <button class="remove-step-btn">🗑 Удалить шаг</button>
-                `;
-                newStep.querySelector('.remove-step-btn').addEventListener('click', () => newStep.remove());
-                editor.appendChild(newStep);
-                updateStepNumbers(editor);
-            });
+            addBtn.removeEventListener('click', handleAddStep);
+            addBtn.addEventListener('click', handleAddStep);
         }
         
         editor.querySelectorAll('.remove-step-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                btn.closest('.step-item').remove();
-                updateStepNumbers(editor);
-            });
+            btn.removeEventListener('click', handleRemoveStep);
+            btn.addEventListener('click', handleRemoveStep);
         });
     });
+}
+
+function handleAddStep(e) {
+    const editor = e.currentTarget.closest('.editor-item-content')?.querySelector('.steps-editor');
+    if (editor) {
+        const stepNum = editor.querySelectorAll('.step-item').length + 1;
+        const newStep = document.createElement('div');
+        newStep.className = 'step-item';
+        newStep.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
+        newStep.innerHTML = `
+            <div class="step-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <span class="step-num-display" style="background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">${stepNum}</span>
+                <input type="text" class="step-title" placeholder="Заголовок" style="flex:1; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;">
+            </div>
+            <textarea class="step-desc" rows="2" placeholder="Описание" style="width:100%; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px;"></textarea>
+            <button class="remove-step-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; cursor: pointer;">🗑 Удалить шаг</button>
+        `;
+        editor.appendChild(newStep);
+        updateStepNumbers(editor);
+    }
+}
+
+function handleRemoveStep(e) {
+    e.currentTarget.closest('.step-item').remove();
+    const editor = e.currentTarget.closest('.steps-editor');
+    if (editor) updateStepNumbers(editor);
 }
 
 function updateStepNumbers(editor) {
@@ -680,13 +742,8 @@ function setupQuizEditors(container) {
     quizEditors.forEach(editor => {
         initQuizEditor(editor);
         
-        // Находим кнопку добавления вопроса
         const addBtn = editor.closest('.editor-item-content')?.querySelector('.add-quiz-question');
         if (addBtn) {
-            // Применяем стили к кнопке
-            addBtn.style.cssText = 'background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 16px; color: var(--accent); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;';
-            addBtn.innerHTML = '➕ Добавить вопрос';
-            
             addBtn.removeEventListener('click', () => handleAddQuestion(editor));
             addBtn.addEventListener('click', () => handleAddQuestion(editor));
         }
@@ -732,36 +789,38 @@ function handleAddQuestion(editor) {
 function setupQuestionHandlers(questionDiv, questionId) {
     const addOptionBtn = questionDiv.querySelector('.add-option-btn');
     if (addOptionBtn) {
-        addOptionBtn.addEventListener('click', () => {
-            const optionsContainer = questionDiv.querySelector('.quiz-options-editor');
-            const optionCount = optionsContainer.querySelectorAll('.quiz-option-editor').length;
-            const newOption = document.createElement('div');
-            newOption.className = 'quiz-option-editor';
-            newOption.style.cssText = 'display: flex; gap: 10px; align-items: center; margin-top: 8px;';
-            newOption.innerHTML = `
-                <input type="text" placeholder="Вариант ответа" style="flex: 1; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
-                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                    <input type="radio" name="correct_${questionId}" value="${optionCount}" class="correct-radio">
-                    <span style="font-size: 12px; color: var(--accent3);">✓ Правильный</span>
-                </label>
-                <button class="remove-option-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 10px; color: var(--accent2); cursor: pointer;">🗑</button>
-            `;
-            optionsContainer.appendChild(newOption);
-            setupOptionHandlers(newOption, questionId);
-        });
+        addOptionBtn.removeEventListener('click', () => handleAddOption(questionDiv, questionId));
+        addOptionBtn.addEventListener('click', () => handleAddOption(questionDiv, questionId));
     }
     
     const removeQuestionBtn = questionDiv.querySelector('.remove-question-btn');
     if (removeQuestionBtn) {
-        removeQuestionBtn.addEventListener('click', () => {
-            questionDiv.remove();
-        });
+        removeQuestionBtn.removeEventListener('click', () => questionDiv.remove());
+        removeQuestionBtn.addEventListener('click', () => questionDiv.remove());
     }
     
     const optionEditors = questionDiv.querySelectorAll('.quiz-option-editor');
     optionEditors.forEach(option => {
         setupOptionHandlers(option, questionId);
     });
+}
+
+function handleAddOption(questionDiv, questionId) {
+    const optionsContainer = questionDiv.querySelector('.quiz-options-editor');
+    const optionCount = optionsContainer.querySelectorAll('.quiz-option-editor').length;
+    const newOption = document.createElement('div');
+    newOption.className = 'quiz-option-editor';
+    newOption.style.cssText = 'display: flex; gap: 10px; align-items: center; margin-top: 8px;';
+    newOption.innerHTML = `
+        <input type="text" placeholder="Вариант ответа" style="flex: 1; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
+        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+            <input type="radio" name="correct_${questionId}" value="${optionCount}" class="correct-radio">
+            <span style="font-size: 12px; color: var(--accent3);">✓ Правильный</span>
+        </label>
+        <button class="remove-option-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 10px; color: var(--accent2); cursor: pointer;">🗑</button>
+    `;
+    optionsContainer.appendChild(newOption);
+    setupOptionHandlers(newOption, questionId);
 }
 
 function setupOptionHandlers(optionDiv, questionId) {
@@ -774,6 +833,7 @@ function setupOptionHandlers(optionDiv, questionId) {
     }
     
     if (removeBtn) {
+        removeBtn.removeEventListener('click', () => optionDiv.remove());
         removeBtn.addEventListener('click', () => {
             const container = optionDiv.parentNode;
             optionDiv.remove();
@@ -841,69 +901,85 @@ function initQuizEditor(container) {
 function setupRemoveButtons(container) {
     const removeBtns = container.querySelectorAll('.remove-editor-item');
     removeBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.target.closest('.editor-item').remove();
-            const editorArea = e.target.closest('#editorArea');
-            if (editorArea && editorArea.children.length === 0) {
-                editorArea.innerHTML = '<div class="editor-empty">Нажмите кнопку выше, чтобы добавить элемент</div>';
-            }
-        });
+        btn.removeEventListener('click', handleRemoveEditorItem);
+        btn.addEventListener('click', handleRemoveEditorItem);
     });
     
     const addRowBtns = container.querySelectorAll('.add-table-row');
     addRowBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const tableItem = e.target.closest('.table-item');
-            const tableEditor = tableItem.querySelector('.table-editor');
-            const rows = JSON.parse(tableEditor.dataset.rows || '[]');
-            const cols = rows[0]?.length || 2;
-            rows.push(Array(cols).fill(''));
-            tableEditor.dataset.rows = JSON.stringify(rows);
-            initTableEditor(tableEditor);
-        });
+        btn.removeEventListener('click', handleAddTableRow);
+        btn.addEventListener('click', handleAddTableRow);
     });
     
     const addColBtns = container.querySelectorAll('.add-table-col');
     addColBtns.forEach(btn => {
-        const tableItem = btn.closest('.table-item');
-        const tableEditor = tableItem.querySelector('.table-editor');
-        let rows = JSON.parse(tableEditor.dataset.rows || '[]');
-        rows = rows.map(row => [...row, '']);
-        tableEditor.dataset.rows = JSON.stringify(rows);
-        initTableEditor(tableEditor);
+        btn.removeEventListener('click', handleAddTableCol);
+        btn.addEventListener('click', handleAddTableCol);
     });
+}
+
+function handleRemoveEditorItem(e) {
+    e.currentTarget.closest('.editor-item').remove();
+    const editorArea = e.currentTarget.closest('#editorArea');
+    if (editorArea && editorArea.children.length === 0) {
+        editorArea.innerHTML = '<div class="editor-empty">Нажмите кнопку выше, чтобы добавить элемент</div>';
+    }
+}
+
+function handleAddTableRow(e) {
+    const tableItem = e.currentTarget.closest('.table-item');
+    const tableEditor = tableItem.querySelector('.table-editor');
+    const rows = JSON.parse(tableEditor.dataset.rows || '[]');
+    const cols = rows[0]?.length || 2;
+    rows.push(Array(cols).fill(''));
+    tableEditor.dataset.rows = JSON.stringify(rows);
+    initTableEditor(tableEditor);
+}
+
+function handleAddTableCol(e) {
+    const tableItem = e.currentTarget.closest('.table-item');
+    const tableEditor = tableItem.querySelector('.table-editor');
+    let rows = JSON.parse(tableEditor.dataset.rows || '[]');
+    rows = rows.map(row => [...row, '']);
+    tableEditor.dataset.rows = JSON.stringify(rows);
+    initTableEditor(tableEditor);
 }
 
 function initTableEditor(container) {
     const rows = JSON.parse(container.dataset.rows || '[]');
     if (rows.length === 0) rows.push(['', '']);
     
-    let html = '<table class="editor-table"><thead>   \\(';
+    let html = '<table class="editor-table" style="width:100%; border-collapse: collapse;"><thead>  <tr>';
     for (let i = 0; i < rows[0].length; i++) {
-        html += `<th><input type="text" class="table-header" value="${escapeHtml(rows[0][i] || '')}" placeholder="Заголовок ${i+1}"></th>`;
+        html += `<th style="border: 1px solid var(--border); padding: 8px;"><input type="text" class="table-header" value="${escapeHtml(rows[0][i] || '')}" placeholder="Заголовок ${i+1}" style="width:100%; background: transparent; border: none; padding: 4px;"></th>`;
     }
-    html += '<th style="width:40px;"></th>   </thead><tbody>';
+    html += '<th style="width:40px;"></th>  </tr></thead><tbody>';
     for (let i = 1; i < rows.length; i++) {
-        html += '   <tr>';
+        html += '  <tr>';
         for (let j = 0; j < rows[i].length; j++) {
-            html += `<td><input type="text" class="table-cell" value="${escapeHtml(rows[i][j] || '')}" placeholder="Значение"></td>`;
+            html += `<td style="border: 1px solid var(--border); padding: 8px;"><input type="text" class="table-cell" value="${escapeHtml(rows[i][j] || '')}" placeholder="Значение" style="width:100%; background: transparent; border: none; padding: 4px;"></td>`;
         }
-        html += `<td><button class="remove-table-row">🗑</button></td>`;
-        html += '   </tr>';
+        html += `<td style="border: 1px solid var(--border); text-align: center;"><button class="remove-table-row" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer;">🗑</button></td>`;
+        html += '  </tr>';
     }
     html += '</tbody></table>';
     container.innerHTML = html;
     
     container.querySelectorAll('.remove-table-row').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.target.closest('tr').remove();
-            updateTableData(container);
-        });
+        btn.removeEventListener('click', handleRemoveTableRow);
+        btn.addEventListener('click', handleRemoveTableRow);
     });
     
     container.querySelectorAll('input').forEach(input => {
+        input.removeEventListener('change', () => updateTableData(container));
         input.addEventListener('change', () => updateTableData(container));
     });
+}
+
+function handleRemoveTableRow(e) {
+    e.currentTarget.closest('tr').remove();
+    const container = e.currentTarget.closest('.table-editor');
+    if (container) updateTableData(container);
 }
 
 function updateTableData(container) {
@@ -966,13 +1042,13 @@ function convertEditorToHtml(editorArea) {
             case 'table':
                 const tableData = JSON.parse(item.querySelector('.table-editor')?.dataset.rows || '[]');
                 if (tableData.length > 1) {
-                    let tableHtml = '<table class="ref-table"><thead><tr>';
+                    let tableHtml = '<table class="ref-table"><thead>  <tr>';
                     tableData[0].forEach(cell => tableHtml += `<th>${escapeHtml(cell)}</th>`);
-                    tableHtml += '</tr></thead><tbody>';
+                    tableHtml += '  </tr></thead><tbody>';
                     for (let i = 1; i < tableData.length; i++) {
-                        tableHtml += '<tr>';
+                        tableHtml += '  <tr>';
                         tableData[i].forEach(cell => tableHtml += `<td>${escapeHtml(cell)}</td>`);
-                        tableHtml += '</tr>';
+                        tableHtml += '  </tr>';
                     }
                     tableHtml += '</tbody></table>';
                     html += tableHtml;
@@ -1000,7 +1076,7 @@ function convertEditorToHtml(editorArea) {
                 if (dropdownTitle && dropdownContent) {
                     html += `
                         <details style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px;">
-                            <summary style="cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none;">${escapeHtml(dropdownTitle)}<span style="float: right;">▼</span></summary>
+                            <summary style="cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none; display: flex; justify-content: space-between;">${escapeHtml(dropdownTitle)}<span style="font-size: 12px;">▼</span></summary>
                             ${dropdownContent}
                         </details>
                     `;
@@ -1066,7 +1142,6 @@ window.checkQuizInline = function(btn) {
     const quizBlock = btn.closest('.quiz-block');
     const questions = quizBlock.querySelectorAll('.quiz-question');
     let correctCount = 0;
-    const answers = [];
     
     questions.forEach((q, idx) => {
         const selected = q.querySelector('input[type="radio"]:checked');
@@ -1221,7 +1296,7 @@ async function loadUsersList(modal) {
 }
 
 window.changePasswordUser = async function(userId, userName) {
-    const newPassword = prompt(`Введите новый пароль (4 цифры) para пользователя ${userName}`);
+    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
     if (!newPassword) return;
     if (!/^\d{4}$/.test(newPassword)) {
         alert('Пароль должен быть 4 цифры');
