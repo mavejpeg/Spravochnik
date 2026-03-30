@@ -723,6 +723,14 @@ app.get('/api/count/manufacturers', requireAuth, async (req, res) => {
     }
 });
 
+// Логирование попыток взлома
+app.post('/api/devtools-detected', requireAuth, (req, res) => {
+    const username = req.session.user?.username || 'unknown';
+    console.log(`⚠️ DevTools detected for user: ${username} at ${new Date().toISOString()}`);
+    // Здесь можно записать в базу данных
+    res.json({ success: true });
+});
+
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
