@@ -73,9 +73,9 @@
 
 </main>
 
-<script src="core.js?v=4"></script>
+<script src="core.js?v=5"></script>
 <script>
-  const CATEGORY = 'disposables';
+  const CATEGORY = 'disposables'; // измените для каждой страницы
   let currentUser = null;
   let isRop = false;
 
@@ -85,28 +85,42 @@
   
   async function checkPermissions() {
     try {
+      console.log('Checking permissions...');
       const response = await fetch('/api/check-auth', { credentials: 'include' });
       const data = await response.json();
+      
+      console.log('Auth response:', data);
       
       if (data.authenticated) {
         currentUser = data.user;
         isRop = (data.user.role === 'rop' || data.user.role === 'root');
         window.isRopGlobal = isRop;
         
-        document.getElementById('userName').textContent = data.user.full_name;
+        console.log('User role:', data.user.role, 'isRop:', isRop);
         
+        // Показываем имя пользователя
+        const userNameSpan = document.getElementById('userName');
+        if (userNameSpan) userNameSpan.textContent = data.user.full_name;
+        
+        // Показываем кнопку РОП если нужно
         const ropBtn = document.getElementById('ropBtn');
-        if (ropBtn && isRop) ropBtn.style.display = 'block';
+        if (ropBtn) {
+          ropBtn.style.display = isRop ? 'block' : 'none';
+        }
         
-        const addButton = document.getElementById('btnAddDisposable');
-        if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
+        // Показываем/скрываем кнопку добавления
+        const addButton = document.getElementById('btnAddLiquid');
+        if (addButton) {
+          addButton.style.display = isRop ? 'flex' : 'none';
+          console.log('Add button display:', addButton.style.display);
+        }
         
-        const editBtns = document.querySelectorAll('.btn-edit-content');
-        editBtns.forEach(btn => {
-          btn.style.display = isRop ? 'inline-flex' : 'none';
-          btn.addEventListener('click', () => editContent(btn.dataset.page, btn.dataset.section));
-        });
+        // Обновляем счетчики на главной если нужно
+        if (typeof updateAllCounters === 'function') {
+          updateAllCounters();
+        }
       } else {
+        console.log('Not authenticated, redirecting to login');
         window.location.href = '/login.html';
       }
     } catch (error) {
@@ -116,12 +130,20 @@
   }
   
   async function renderGrid() {
-    const grid = document.getElementById('disposablesGrid');
+    console.log('Rendering grid for category:', CATEGORY);
+    const grid = document.getElementById(`${CATEGORY}Grid`);
+    if (!grid) {
+      console.error('Grid element not found for:', CATEGORY);
+      return;
+    }
+    
     const items = await getCategory(CATEGORY);
+    console.log('Items loaded:', items.length);
+    
     grid.innerHTML = '';
 
     if (!items || items.length === 0) {
-      renderEmpty(grid, '⚡', 'Каталог пуст', isRop ? 'Нажмите «Добавить одноразку» чтобы внести первую позицию' : 'Нет доступных позиций');
+      renderEmpty(grid, getCategoryIcon(), 'Каталог пуст', isRop ? 'Нажмите «Добавить» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
 
@@ -141,266 +163,73 @@
           });
         }
       );
+      
       grid.appendChild(card);
     }
   }
-
-  const addBtn = document.getElementById('btnAddDisposable');
+  
+  function getCategoryIcon() {
+    const icons = {
+      'tobacco': '🌿',
+      'liquids': '💧',
+      'snus': '🫙',
+      'disposables': '⚡'
+    };
+    return icons[CATEGORY] || '📦';
+  }
+  
+  // Кнопка добавления
+  const addBtn = document.getElementById(`btnAdd${CATEGORY.charAt(0).toUpperCase() + CATEGORY.slice(1)}`);
   if (addBtn) {
+    console.log('Add button found, attaching listener');
     addBtn.addEventListener('click', () => {
+      console.log('Add button clicked, isRop:', isRop);
       if (!isRop) {
         alert('У вас нет прав для добавления');
         return;
       }
       new ProductModal({
         category: CATEGORY,
-        title: 'Добавить одноразку',
+        title: getModalTitle(),
         onSave: async (item) => {
+          console.log('Saving item:', item);
           await addItem(CATEGORY, item);
           renderGrid();
         }
       });
     });
+  } else {
+    console.log('Add button not found for:', CATEGORY);
   }
-
-  // ========== ФУНКЦИИ РЕДАКТИРОВАНИЯ КОНТЕНТА ==========
   
-  function editContent(page, section) {
-    const contentDiv = document.getElementById(`${section}-content`);
-    const currentHtml = contentDiv.innerHTML;
-    
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
-    
-    // Извлекаем категории
-    const categories = [];
-    const accordions = tempDiv.querySelectorAll('.accordion');
-    accordions.forEach(acc => {
-      const title = acc.querySelector('.acc-header .acc-title')?.textContent.trim() || '';
-      const items = [];
-      const lis = acc.querySelectorAll('.acc-body ul li');
-      lis.forEach(li => items.push(li.textContent.trim()));
-      categories.push({ title, items });
-    });
-    
-    let categoriesHtml = '';
-    categories.forEach((cat, idx) => {
-      let itemsHtml = '';
-      cat.items.forEach((item, itemIdx) => {
-        itemsHtml += `
-          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-            <input type="text" class="category-item-${idx}" value="${escapeHtml(item)}" style="flex:1" placeholder="Бренд и описание">
-            <button class="remove-item-btn" data-cat="${idx}" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-          </div>
-        `;
-      });
-      
-      categoriesHtml += `
-        <div class="category-group" style="background: var(--surface2); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-          <div class="field">
-            <label>📁 Название категории</label>
-            <input type="text" class="category-title" value="${escapeHtml(cat.title)}" style="width:100%; margin-bottom: 12px;">
-          </div>
-          <div class="field">
-            <label>📋 Список брендов</label>
-            <div id="items-list-${idx}" class="items-list">${itemsHtml}</div>
-            <button class="add-item-btn btn-add" data-cat="${idx}" style="margin-top: 8px;">➕ Добавить бренд</button>
-          </div>
-          <button class="remove-category-btn" style="margin-top: 12px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить категорию</button>
-        </div>
-      `;
-    });
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: Гид по брендам</span>
-          <button class="modal-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div id="categoriesContainer">${categoriesHtml}</div>
-          <button id="addCategoryBtn" class="btn-add" style="margin-top: 16px; width: 100%;">➕ Добавить категорию</button>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel">Отмена</button>
-          <button class="btn-save">💾 Сохранить</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    // Функция для обновления индексов
-    function updateIndices() {
-      const categories = modal.querySelectorAll('.category-group');
-      categories.forEach((cat, catIdx) => {
-        const itemsContainer = cat.querySelector('.items-list');
-        const items = itemsContainer.querySelectorAll('div');
-        items.forEach((item, itemIdx) => {
-          const input = item.querySelector('input');
-          if (input) input.className = `category-item-${catIdx}`;
-          const removeBtn = item.querySelector('.remove-item-btn');
-          if (removeBtn) removeBtn.setAttribute('data-cat', catIdx);
-        });
-        const addBtn = cat.querySelector('.add-item-btn');
-        if (addBtn) addBtn.setAttribute('data-cat', catIdx);
-      });
-    }
-    
-    // Добавление категории
-    const addCategoryBtn = modal.querySelector('#addCategoryBtn');
-    if (addCategoryBtn) {
-      addCategoryBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#categoriesContainer');
-        const newCatIndex = modal.querySelectorAll('.category-group').length;
-        const newDiv = document.createElement('div');
-        newDiv.className = 'category-group';
-        newDiv.style.cssText = 'background: var(--surface2); border-radius: 12px; padding: 16px; margin-bottom: 16px;';
-        newDiv.innerHTML = `
-          <div class="field">
-            <label>📁 Название категории</label>
-            <input type="text" class="category-title" placeholder="Например: 🔥 Крепкие бренды" style="width:100%; margin-bottom: 12px;">
-          </div>
-          <div class="field">
-            <label>📋 Список брендов</label>
-            <div id="items-list-${newCatIndex}" class="items-list"></div>
-            <button class="add-item-btn btn-add" data-cat="${newCatIndex}" style="margin-top: 8px;">➕ Добавить бренд</button>
-          </div>
-          <button class="remove-category-btn" style="margin-top: 12px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить категорию</button>
-        `;
-        
-        // Добавляем обработчики для новой категории
-        const addItemBtn = newDiv.querySelector('.add-item-btn');
-        addItemBtn.addEventListener('click', (e) => {
-          const catIdx = e.target.getAttribute('data-cat');
-          const itemsContainer = newDiv.querySelector(`#items-list-${catIdx}`);
-          const newItemDiv = document.createElement('div');
-          newItemDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-          newItemDiv.innerHTML = `
-            <input type="text" class="category-item-${catIdx}" style="flex:1" placeholder="Бренд и описание">
-            <button class="remove-item-btn" data-cat="${catIdx}" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-          `;
-          newItemDiv.querySelector('.remove-item-btn').addEventListener('click', () => newItemDiv.remove());
-          itemsContainer.appendChild(newItemDiv);
-        });
-        
-        const removeCatBtn = newDiv.querySelector('.remove-category-btn');
-        removeCatBtn.addEventListener('click', () => newDiv.remove());
-        
-        container.appendChild(newDiv);
-        updateIndices();
-      });
-    }
-    
-    // Обработчики для существующих категорий
-    modal.querySelectorAll('.add-item-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const catIdx = e.target.getAttribute('data-cat');
-        const catGroup = e.target.closest('.category-group');
-        const itemsContainer = catGroup.querySelector(`#items-list-${catIdx}`);
-        const newItemDiv = document.createElement('div');
-        newItemDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-        newItemDiv.innerHTML = `
-          <input type="text" class="category-item-${catIdx}" style="flex:1" placeholder="Бренд и описание">
-          <button class="remove-item-btn" data-cat="${catIdx}" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        `;
-        newItemDiv.querySelector('.remove-item-btn').addEventListener('click', () => newItemDiv.remove());
-        itemsContainer.appendChild(newItemDiv);
-      });
-    });
-    
-    modal.querySelectorAll('.remove-item-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('div').remove();
-      });
-    });
-    
-    modal.querySelectorAll('.remove-category-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.target.closest('.category-group').remove();
-      });
-    });
-    
-    const closeModal = () => {
-      modal.classList.remove('open');
-      setTimeout(() => modal.remove(), 300);
+  function getModalTitle() {
+    const titles = {
+      'tobacco': 'Добавить табак',
+      'liquids': 'Добавить жидкость',
+      'snus': 'Добавить жевательный табак',
+      'disposables': 'Добавить одноразку'
     };
-    
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
-    modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const categoriesList = [];
-      modal.querySelectorAll('.category-group').forEach(catGroup => {
-        const title = catGroup.querySelector('.category-title').value.trim();
-        const items = [];
-        catGroup.querySelectorAll('.items-list input').forEach(input => {
-          const val = input.value.trim();
-          if (val) items.push(val);
-        });
-        if (title && items.length > 0) {
-          categoriesList.push({ title, items });
-        }
-      });
-      
-      let accordionsHtml = '';
-      categoriesList.forEach(cat => {
-        let itemsHtml = '';
-        cat.items.forEach(item => {
-          itemsHtml += `<li>${escapeHtml(item)}</li>`;
-        });
-        accordionsHtml += `
-          <div class="accordion ${categoriesList.indexOf(cat) === 0 ? 'open' : ''}">
-            <div class="acc-header"><span class="acc-title">${escapeHtml(cat.title)}</span><span class="acc-arrow">▼</span></div>
-            <div class="acc-body">
-              <ul>${itemsHtml}</ul>
-            </div>
-          </div>
-        `;
-      });
-      
-      const newHtml = accordionsHtml;
-      
-      try {
-        const response = await fetch(`/api/content/disposables/guide`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ content: newHtml })
-        });
-        
-        if (response.ok) {
-          contentDiv.innerHTML = newHtml;
-          alert('✅ Сохранено успешно!');
-          closeModal();
-          // Переинициализируем аккордеоны
-          initAccordions();
-        } else {
-          alert('❌ Ошибка сохранения');
-        }
-      } catch (error) {
-        alert('❌ Ошибка: ' + error.message);
-      }
+    return titles[CATEGORY] || 'Добавить товар';
+  }
+  
+  // Выход
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+      window.location.href = '/login.html';
     });
   }
   
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  // Кнопка управления РОП
+  const ropBtn = document.getElementById('ropBtn');
+  if (ropBtn) {
+    ropBtn.addEventListener('click', () => {
+      openRopPanel();
+    });
   }
-
-  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
-    window.location.href = '/login.html';
-  });
-
-  document.getElementById('ropBtn')?.addEventListener('click', () => {
-    openRopPanel();
-  });
-
+  
+  // Функция открытия панели РОП (как в других файлах)
   async function openRopPanel() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -477,7 +306,7 @@
       }
     });
   }
-
+  
   async function loadUsers(modal) {
     const response = await fetch('/api/users', { credentials: 'include' });
     const users = await response.json();
@@ -511,7 +340,7 @@
       `;
     }).join('');
   }
-
+  
   window.changePasswordUser = async (userId, userName) => {
     const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
     if (!newPassword) return;
@@ -528,7 +357,7 @@
     if (response.ok) alert('Пароль успешно изменен');
     else alert('Ошибка смены пароля');
   };
-
+  
   window.deleteUserById = async (userId) => {
     if (confirm('Удалить пользователя?')) {
       const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
@@ -538,7 +367,13 @@
       } else alert('Ошибка удаления');
     }
   };
-
+  
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+  
+  // Запуск
   checkPermissions().then(() => renderGrid());
 </script>
 </body>
