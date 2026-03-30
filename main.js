@@ -939,3 +939,72 @@ function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
 }
+
+// Защита от копирования
+function setupCopyProtection() {
+    // Запрет на копирование
+    document.addEventListener('copy', function(e) {
+        e.preventDefault();
+        showCopyWarning('📋 Копирование запрещено!');
+        
+        // Можно подменить текст в буфере обмена
+        e.clipboardData.setData('text/plain', '🚫 КОПИРОВАНИЕ ЗАПРЕЩЕНО 🚫\nДанные защищены авторским правом');
+        return false;
+    });
+    
+    // Запрет на вырезание
+    document.addEventListener('cut', function(e) {
+        e.preventDefault();
+        showCopyWarning('✂️ Вырезание запрещено!');
+        return false;
+    });
+    
+    // Запрет на контекстное меню (правая кнопка мыши)
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        showCopyWarning('🔒 Контекстное меню отключено');
+        return false;
+    });
+    
+    // Запрет на Ctrl+C, Ctrl+X, Ctrl+V
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'x' || e.key === 'v')) {
+            e.preventDefault();
+            const action = e.key === 'c' ? 'Копирование' : (e.key === 'x' ? 'Вырезание' : 'Вставка');
+            showCopyWarning(`🔒 ${action} запрещено!`);
+            return false;
+        }
+        
+        // Запрет на F12 (DevTools)
+        if (e.key === 'F12') {
+            e.preventDefault();
+            showCopyWarning('🛠️ Инструменты разработчика отключены');
+            return false;
+        }
+    });
+    
+    // Запрет на drag and drop
+    document.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+        showCopyWarning('📎 Перетаскивание запрещено');
+        return false;
+    });
+}
+
+function showCopyWarning(message) {
+    // Удаляем предыдущее предупреждение если есть
+    const oldWarning = document.querySelector('.copy-warning');
+    if (oldWarning) oldWarning.remove();
+    
+    const warning = document.createElement('div');
+    warning.className = 'copy-warning';
+    warning.innerHTML = message;
+    document.body.appendChild(warning);
+    
+    setTimeout(() => {
+        if (warning) warning.remove();
+    }, 2000);
+}
+
+// Запускаем защиту
+setupCopyProtection();
