@@ -1,146 +1,140 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Табак — Справочник</title>
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="/css/main.css">
 </head>
 <body>
-
 <header class="site-header">
-  <a class="logo" href="/">☁ СПРАВОЧНИК</a>
-  <div style="flex:1"></div>
-  <a href="/" class="home-btn" style="margin-right: 12px;">🏠 На главную</a>
-  <div id="userInfo" style="display: flex; align-items: center; gap: 12px;">
-    <span id="userName" style="font-size: 12px; color: var(--text);"></span>
-    <button id="ropBtn" class="rop-btn" style="display: none;">👑 Управление</button>
-    <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
-  </div>
+  <a class="logo" href="/">☁</a>
+  <nav class="tab-nav" style="border:none;padding:0;background:transparent;flex:1">
+    <button class="tab-btn active" data-tab="tab-brands">🌿 Бренды</button>
+    <button class="tab-btn" data-tab="tab-tips">💡 Советы</button>
+  </nav>
+  <span id="roleBadge" class="role-badge">...</span>
+  <a class="btn-home" href="/">← Главная</a>
 </header>
 
-<nav class="tab-nav">
-  <button class="tab-btn active" data-tab="tab-catalog">📦 Каталог</button>
-  <button class="tab-btn" data-tab="tab-syrye">🌿 Типы сырья</button>
-  <button class="tab-btn" data-tab="tab-tips">💡 Советы</button>
-</nav>
-
 <main>
-
-  <div class="section active" id="tab-catalog">
+  <!-- BRANDS -->
+  <div class="section active" id="tab-brands">
     <div class="sec-header">
       <span class="sec-title">🌿 Табак для кальяна</span>
-      <button class="btn-add" id="btnAddTobacco">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
-        Добавить табак
+      <button class="btn btn-primary editor-only" style="display:none" id="btnAddBrand">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+        Добавить бренд
       </button>
     </div>
-    <div class="alert-bar info">
-      <span>📌</span>
-      <span>Крепость указывается по шкале 1–10. Разные чаши по-разному раскрывают один и тот же табак.</span>
+    <div class="alert alert-info">
+      <span>💡</span><span>Выберите бренд чтобы просмотреть его линейку и добавить позиции.</span>
     </div>
-    <div class="cards-grid" id="tobaccoGrid"></div>
-  </div>
-
-  <div class="section" id="tab-syrye">
-    <div class="sec-header">
-      <span class="sec-title">Типы табачного сырья</span>
-      <button class="btn-edit-content" data-page="tobacco" data-section="syrye" style="display: none;">✏️ Редактировать</button>
-    </div>
-    <div id="syrye-content">
-      <div class="two-col">
-        <div class="info-card"><h3>🌱 Virginia</h3><ul><li>Лёгкое, сладковатое сырьё</li><li>Хорошо принимает мягкие аромки</li><li>Невысокая крепость</li><li>Примеры: Элемент Воздух, Star Line, Moassel Medium</li></ul></div>
-        <div class="info-card"><h3>🍂 Burley</h3><ul><li>Тёмное, насыщенное сырьё</li><li>Агрессивные аромки (ментол, специи, бергамот)</li><li>Средняя и высокая крепость</li><li>Примеры: Blackburn, Sibera, Darkside, HiPrime</li></ul></div>
-        <div class="info-card"><h3>🍃 Сигарный лист</h3><ul><li>Плотный, насыщенный дым</li><li>Специфический табачный аромат</li><li>Высокая крепость</li><li>Примеры: Dogma, Boncha, Hooligan Цветные</li></ul></div>
-        <div class="info-card"><h3>🍵 Чайный лист (бестабачка)</h3><ul><li>Без табака — никотин из другого источника</li><li>Меньше вреда для лёгких</li><li>Подходит для спортсменов и аллергиков на табак</li><li>Примеры: Чабако, Хук, Brusko, Летим</li></ul></div>
-      </div>
+    <div class="brand-grid" id="brandsGrid">
+      <div class="loader"><div class="spinner"></div> Загрузка...</div>
     </div>
   </div>
 
+  <!-- TIPS -->
   <div class="section" id="tab-tips">
-    <div class="sec-header">
-      <span class="sec-title">Советы продавцу</span>
-      <button class="btn-edit-content" data-page="tobacco" data-section="tips" style="display: none;">✏️ Редактировать</button>
+    <div class="sec-header"><span class="sec-title">Советы продавцу</span></div>
+    <div class="two-col">
+      <div class="info-card"><h3>🌱 Virginia</h3><ul>
+        <li>Лёгкое, сладковатое сырьё</li>
+        <li>Мягкие аромки — фрукты, ягоды</li>
+        <li>Невысокая крепость</li>
+        <li>Элемент Воздух, Star Line, Moassel Medium</li>
+      </ul></div>
+      <div class="info-card"><h3>🍂 Burley</h3><ul>
+        <li>Тёмное, насыщенное сырьё</li>
+        <li>Агрессивные аромки — ментол, специи</li>
+        <li>Средняя и высокая крепость</li>
+        <li>Blackburn, Sibera, Darkside, HiPrime</li>
+      </ul></div>
+      <div class="info-card"><h3>🍃 Сигарный лист</h3><ul>
+        <li>Плотный дым, насыщенный аромат</li>
+        <li>Высокая крепость</li>
+        <li>Dogma, Boncha, Hooligan</li>
+      </ul></div>
+      <div class="info-card"><h3>🍵 Чайный лист (бестабачка)</h3><ul>
+        <li>Без табака — никотин отдельно</li>
+        <li>Для спортсменов и аллергиков</li>
+        <li>Чабако, Хук, Brusko, Летим</li>
+      </ul></div>
     </div>
-    <div id="tips-content">
-      <div class="accordion open"><div class="acc-header"><span class="acc-title">Что спросить у покупателя</span><span class="acc-arrow">▼</span></div><div class="acc-body"><div class="hl info">Какой уровень крепости предпочитает?</div><div class="hl info">Что курит сейчас — нравится или нет?</div><div class="hl info">Какие вкусы любит — фруктовые, ментоловые, табачные?</div><div class="hl info">Есть опыт с кальяном или только начинает?</div></div></div>
-      <div class="accordion"><div class="acc-header"><span class="acc-title">Жаростойкость</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>Жаростойкий табак — выдерживает перегрев и восстанавливается. Важно для новичков и тех, кто забывает следить за углём.</p><div class="hl ok">Жаростойкие: Догма, Сибера, Северный, Блэкберн, Рейв</div><div class="hl warn">Нежаростойкие: МастХефф (Burley из 7 стран), Хулиган — требуют внимания</div></div></div>
-      <div class="accordion"><div class="acc-header"><span class="acc-title">Чаши и их влияние на вкус</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><tr><th>Чаша</th><th>Эффект</th></tr><tr><td><strong>Турка / Универсальная</strong></td><td>Баланс вкуса и крепости (5 отверстий)</td></tr><tr><td><strong>Убивашка</strong></td><td>Усиливает крепость, плотный дым</td></tr><tr><td><strong>Фанол / Фаннель</strong></td><td>Максимально раскрывает вкус (1 отверстие)</td></tr></table></div></div>
+    <div id="tips-content-blocks"></div>
+    <div class="editor-only" style="display:none;margin-top:12px">
+      <button class="btn btn-ghost btn-sm" id="btnAddTipsBlock">➕ Добавить блок</button>
     </div>
   </div>
-
 </main>
 
-<script src="core.js"></script>
-<script src="main.js"></script>
+<script src="/js/app.js"></script>
 <script>
-  const CATEGORY = 'liquids'; // измените для каждой страницы
-  let isRop = false;
-
-  // Проверка прав для кнопки добавления
-  async function checkAddButton() {
-    const response = await fetch('/api/check-auth', { credentials: 'include' });
-    const data = await response.json();
-    if (data.authenticated) {
-      isRop = (data.user.role === 'rop' || data.user.role === 'root');
-      window.isRopGlobal = isRop;
-      const addButton = document.getElementById('btnAddLiquid');
-      if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
-    }
-  }
-  
-  async function renderGrid() {
-    const grid = document.getElementById('liquidsGrid');
-    if (!grid) return;
-    
-    const items = await getCategory(CATEGORY);
+async function loadBrands() {
+  const grid = document.getElementById('brandsGrid');
+  try {
+    const brands = await api.get('/api/brands');
     grid.innerHTML = '';
-
-    if (!items || items.length === 0) {
-      renderEmpty(grid, '💧', 'Каталог пуст', isRop ? 'Нажмите «Добавить жидкость» чтобы внести первую позицию' : 'Нет доступных позиций');
+    if (!brands.length) {
+      showEmpty(grid, '🌿', 'Бренды не добавлены', 'Нажмите «Добавить бренд» чтобы создать первый');
       return;
     }
+    brands.forEach(brand => {
+      const card = document.createElement('a');
+      card.className = 'brand-card';
+      card.href = `/tobacco/${brand.id}`;
+      card.innerHTML = `
+        ${canEdit() ? `<div class="brand-actions">
+          <button class="icon-btn icon-btn-edit" title="Редактировать">✏️</button>
+          <button class="icon-btn icon-btn-del root-only" title="Удалить" style="display:none">🗑️</button>
+        </div>` : ''}
+        <div class="brand-logo">
+          ${brand.logo_url ? `<img src="${brand.logo_url}" alt="${brand.name}">` : '🌿'}
+        </div>
+        <div class="brand-name">${brand.name}</div>
+        <div class="brand-count" id="bc-${brand.id}">Загрузка...</div>
+      `;
 
-    for (const item of items) {
-      const card = renderProductCard(item, CATEGORY,
-        () => renderGrid(),
-        (it) => {
-          if (!isRop) return;
-          new ProductModal({
-            category: CATEGORY,
-            title: 'Редактировать',
-            editItem: it,
-            onSave: async (data) => {
-              await updateItem(CATEGORY, it.id, data);
-              renderGrid();
-            }
-          });
-        }
-      );
-      grid.appendChild(card);
-    }
-  }
-
-  const addBtn = document.getElementById('btnAddLiquid');
-  if (addBtn) {
-    addBtn.addEventListener('click', () => {
-      if (!isRop) {
-        alert('У вас нет прав для добавления');
-        return;
+      if (canEdit()) {
+        card.querySelector('.icon-btn-edit')?.addEventListener('click', e => {
+          e.preventDefault(); e.stopPropagation();
+          new BrandModal({ brand, onSave: loadBrands });
+        });
+        card.querySelector('.icon-btn-del')?.addEventListener('click', async e => {
+          e.preventDefault(); e.stopPropagation();
+          if (!await confirmDialog(`Удалить бренд «${brand.name}» и все его позиции?`)) return;
+          await api.del(`/api/brands/${brand.id}`);
+          toast('Бренд удалён', 'success');
+          loadBrands();
+        });
       }
-      new ProductModal({
-        category: CATEGORY,
-        title: 'Добавить жидкость',
-        onSave: async (item) => {
-          await addItem(CATEGORY, item);
-          renderGrid();
-        }
-      });
-    });
-  }
+      grid.appendChild(card);
 
-  checkAddButton().then(() => renderGrid());
+      // Load count async
+      api.get(`/api/products?brand_id=${brand.id}`).then(items => {
+        const el = document.getElementById(`bc-${brand.id}`);
+        if (el) el.textContent = items.length ? `${items.length} позиций` : 'Пусто';
+      }).catch(() => {});
+    });
+  } catch (e) {
+    grid.innerHTML = `<div class="loader"><span style="color:var(--accent2)">${e.message}</span></div>`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadBrands();
+  loadContentSection('tips-content-blocks', 'tobacco', 'tips');
+});
+
+document.getElementById('btnAddBrand')?.addEventListener('click', () => {
+  new BrandModal({ onSave: loadBrands });
+});
+
+document.getElementById('btnAddTipsBlock')?.addEventListener('click', () => {
+  document.body.dataset.page = 'tobacco';
+  document.body.dataset.section = 'tips';
+  openBlockEditor(null, () => loadContentSection('tips-content-blocks', 'tobacco', 'tips'));
+});
 </script>
 </body>
 </html>
