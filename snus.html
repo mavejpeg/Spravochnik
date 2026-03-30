@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Жевательный табак — Справочник</title>
+<link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="/">☁ СПРАВОЧНИК</a>
+  <div style="flex:1"></div>
+  <a href="/" class="home-btn" style="margin-right: 12px;">🏠 На главную</a>
+  <div id="userInfo" style="display: flex; align-items: center; gap: 12px;">
+    <span id="userName" style="font-size: 12px; color: var(--text);"></span>
+    <button id="ropBtn" class="rop-btn" style="display: none;">👑 Управление</button>
+    <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
+  </div>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-catalog">📦 Каталог</button>
+  <button class="tab-btn" data-tab="tab-howto">📖 Как применять</button>
+  <button class="tab-btn" data-tab="tab-formats">📐 Форматы</button>
+  <button class="tab-btn" data-tab="tab-strength">⚡ По крепости</button>
+</nav>
+
+<main>
+
+  <div class="section active" id="tab-catalog">
+    <div class="sec-header">
+      <span class="sec-title">🫙 Жевательный табак</span>
+      <button class="btn-add" id="btnAddSnus">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+        Добавить позицию
+      </button>
+    </div>
+    <div class="alert-bar success">
+      <span>✅</span>
+      <span>Жевательный табак (шайба) — бездымный способ потребления никотина.</span>
+    </div>
+    <div class="cards-grid" id="snusGrid"></div>
+  </div>
+
+  <div class="section" id="tab-howto">
+    <div class="sec-header">
+      <span class="sec-title">Как применять</span>
+      <button class="btn-edit-content" data-page="snus" data-section="howto" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="howto-content">
+      <div class="info-card"><h3>📋 Инструкция для клиента</h3><div class="steps"><div class="step"><div class="step-num">1</div><div class="step-body"><strong>Подготовить область</strong><span>Промокнуть область между верхней губой и десной сухой салфеткой.</span></div></div><div class="step"><div class="step-num">2</div><div class="step-body"><strong>Вложить пауч</strong><span>Пауч кладётся между верхней губой и верхней десной. Левая/правая сторона — чередовать.</span></div></div><div class="step"><div class="step-num">3</div><div class="step-body"><strong>Держать 1–15 минут</strong><span>Никотин поступает через слизистую постепенно. Не жевать!</span></div></div><div class="step"><div class="step-num">4</div><div class="step-body"><strong>Утилизировать</strong><span>Выбросить в мусор. Некоторые банки имеют отсек для использованных паучей.</span></div></div></div></div>
+      <div class="hl warn">Несмотря на название «жевательный» — пауч НЕ жуётся.</div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-formats">
+    <div class="sec-header">
+      <span class="sec-title">Форматы паучей</span>
+      <button class="btn-edit-content" data-page="snus" data-section="formats" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="formats-content">
+      <div class="two-col"><div class="info-card"><h3>📦 Размеры</h3><ul><li><strong>Large</strong> — стандарт, 0.8–1 г</li><li><strong>Slim</strong> — тонкий и широкий, ~1 г</li><li><strong>Mini</strong> — маленький, ~0.4 г</li></ul></div><div class="info-card"><h3>🌿 Типы сырья</h3><ul><li><strong>White</strong> — промытый табак</li><li><strong>Классический тёмный</strong> — менее промытый</li></ul></div></div>
+      <div class="info-card"><h3>🧮 Как считается крепость пауча</h3><ul><li>Крепость сырья ÷ вес пауча = крепость пауча</li><li>Mini ~0.4 г → крепость ≈ –23 мг / пауч</li><li>Slim и Large одинаковы по весу → одинаковая крепость</li></ul></div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-strength">
+    <div class="sec-header">
+      <span class="sec-title">Классификация по крепости</span>
+      <button class="btn-edit-content" data-page="snus" data-section="strength" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="strength-content">
+      <div class="accordion open"><div class="acc-header"><span class="acc-title">🔥 Крепкие</span><span class="acc-arrow">▼</span></div><div class="acc-body"><ul><li><strong>Corvus Crash</strong> — 68 мг</li><li><strong>Адекс</strong> — мощный удар</li><li><strong>Iceberg Strong</strong> — 60 мг</li></ul></div></div>
+      <div class="accordion"><div class="acc-header"><span class="acc-title">🟡 Средние</span><span class="acc-arrow">▼</span></div><div class="acc-body"><ul><li><strong>Siberia</strong> — 43 мг</li><li><strong>Dzen Strong</strong> — 50 мг</li><li><strong>Zверь</strong> — 40 мг</li></ul></div></div>
+      <div class="accordion"><div class="acc-header"><span class="acc-title">💨 Лёгкие</span><span class="acc-arrow">▼</span></div><div class="acc-body"><ul><li><strong>Husky Soft</strong> — 10 мг</li><li><strong>FAVE</strong> — 25–28 мг</li><li><strong>Hismoke Classic</strong> — 22 мг</li></ul></div></div>
+    </div>
+  </div>
+
+</main>
+
+<script src="core.js"></script>
+<script src="main.js"></script>
+<script>
+  const CATEGORY = 'liquids'; // измените для каждой страницы
+  let isRop = false;
+
+  // Проверка прав для кнопки добавления
+  async function checkAddButton() {
+    const response = await fetch('/api/check-auth', { credentials: 'include' });
+    const data = await response.json();
+    if (data.authenticated) {
+      isRop = (data.user.role === 'rop' || data.user.role === 'root');
+      window.isRopGlobal = isRop;
+      const addButton = document.getElementById('btnAddLiquid');
+      if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
+    }
+  }
+  
+  async function renderGrid() {
+    const grid = document.getElementById('liquidsGrid');
+    if (!grid) return;
+    
+    const items = await getCategory(CATEGORY);
+    grid.innerHTML = '';
+
+    if (!items || items.length === 0) {
+      renderEmpty(grid, '💧', 'Каталог пуст', isRop ? 'Нажмите «Добавить жидкость» чтобы внести первую позицию' : 'Нет доступных позиций');
+      return;
+    }
+
+    for (const item of items) {
+      const card = renderProductCard(item, CATEGORY,
+        () => renderGrid(),
+        (it) => {
+          if (!isRop) return;
+          new ProductModal({
+            category: CATEGORY,
+            title: 'Редактировать',
+            editItem: it,
+            onSave: async (data) => {
+              await updateItem(CATEGORY, it.id, data);
+              renderGrid();
+            }
+          });
+        }
+      );
+      grid.appendChild(card);
+    }
+  }
+
+  const addBtn = document.getElementById('btnAddLiquid');
+  if (addBtn) {
+    addBtn.addEventListener('click', () => {
+      if (!isRop) {
+        alert('У вас нет прав для добавления');
+        return;
+      }
+      new ProductModal({
+        category: CATEGORY,
+        title: 'Добавить жидкость',
+        onSave: async (item) => {
+          await addItem(CATEGORY, item);
+          renderGrid();
+        }
+      });
+    });
+  }
+
+  checkAddButton().then(() => renderGrid());
+</script>
+</body>
+</html>

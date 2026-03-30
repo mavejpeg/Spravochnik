@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход — Справочник</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #09090e 0%, #111118 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Manrope', sans-serif;
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+        
+        .login-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 48px 40px;
+            text-align: center;
+            animation: fadeInUp 0.5s ease;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .logo {
+            margin-bottom: 32px;
+        }
+        
+        .logo-icon {
+            font-size: 64px;
+            margin-bottom: 12px;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        
+        .logo h1 {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo p {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 8px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: 'Manrope', sans-serif;
+            transition: all 0.2s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        
+        .input-group input::placeholder {
+            color: var(--muted);
+            opacity: 0.5;
+        }
+        
+        .hidden-field {
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+        
+        .hidden-field.show {
+            display: block;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none;
+            border-radius: 14px;
+            padding: 14px;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Manrope', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(124, 92, 252, 0.3);
+        }
+        
+        .login-btn:active {
+            transform: translateY(0);
+        }
+        
+        .rop-toggle-btn {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px;
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Manrope', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 12px;
+        }
+        
+        .rop-toggle-btn:hover {
+            background: var(--accent-glow);
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+        
+        .error-message {
+            background: rgba(252, 92, 124, 0.1);
+            border: 1px solid var(--accent2);
+            border-radius: 12px;
+            padding: 10px;
+            font-size: 12px;
+            color: var(--accent2);
+            text-align: center;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+            animation: shake 0.3s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .info-text {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .mode-badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: var(--surface2);
+            color: var(--muted);
+            margin-bottom: 16px;
+        }
+        
+        .mode-badge.rop-mode {
+            background: var(--accent-glow);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo">
+                <div class="logo-icon">☁</div>
+                <h1>СПРАВОЧНИК</h1>
+                <p>Введите пароль для доступа</p>
+            </div>
+            
+            <div class="error-message" id="errorMessage">
+                ❌ Неверный пароль
+            </div>
+            
+            <form id="loginForm">
+                <!-- Обычный режим (только пароль) -->
+                <div id="userMode">
+                    <div class="input-group">
+                        <label>🔐 ПАРОЛЬ ДОСТУПА</label>
+                        <input type="password" id="userPassword" placeholder="Введите пароль" autofocus>
+                    </div>
+                </div>
+                
+                <!-- РОП режим (логин + пароль) -->
+                <div id="ropMode" class="hidden-field">
+                    <div class="mode-badge rop-mode">👑 РЕЖИМ РОП</div>
+                    <div class="input-group">
+                        <label>👤 ЛОГИН</label>
+                        <input type="text" id="ropUsername" placeholder="Введите логин">
+                    </div>
+                    <div class="input-group">
+                        <label>🔐 ПАРОЛЬ</label>
+                        <input type="password" id="ropPassword" placeholder="Введите пароль">
+                    </div>
+                </div>
+                
+                <button type="submit" class="login-btn" id="submitBtn">ВОЙТИ</button>
+            </form>
+            
+            <button class="rop-toggle-btn" id="ropToggleBtn">
+                👑 Вход для РОП
+            </button>
+            
+            <div class="info-text">
+                🔐 Если не знаешь пароль, напиши РОПу <span></span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('loginForm');
+        const errorDiv = document.getElementById('errorMessage');
+        const ropToggleBtn = document.getElementById('ropToggleBtn');
+        const userMode = document.getElementById('userMode');
+        const ropMode = document.getElementById('ropMode');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        let isRopMode = false;
+        
+        // Проверяем, не залогинен ли уже пользователь
+        fetch('/api/check-auth', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.authenticated) {
+                    window.location.href = '/';
+                }
+            })
+            .catch(err => console.error('Auth check error:', err));
+        
+        // Переключение режима РОП
+        ropToggleBtn.addEventListener('click', () => {
+            isRopMode = !isRopMode;
+            
+            if (isRopMode) {
+                userMode.style.display = 'none';
+                ropMode.classList.add('show');
+                ropToggleBtn.textContent = '← Обычный вход';
+                ropToggleBtn.style.borderColor = 'var(--accent)';
+                submitBtn.textContent = 'ВОЙТИ КАК РОП';
+                setTimeout(() => document.getElementById('ropUsername').focus(), 100);
+            } else {
+                userMode.style.display = 'block';
+                ropMode.classList.remove('show');
+                ropToggleBtn.textContent = '👑 Вход для РОП';
+                ropToggleBtn.style.borderColor = 'var(--border)';
+                submitBtn.textContent = 'ВОЙТИ';
+                setTimeout(() => document.getElementById('userPassword').focus(), 100);
+            }
+        });
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (isRopMode) {
+                // РОП режим - нужны логин и пароль
+                const username = document.getElementById('ropUsername').value.trim();
+                const password = document.getElementById('ropPassword').value;
+                
+                if (!username || !password) {
+                    showError('Заполните логин и пароль');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ username, password })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        window.location.href = '/';
+                    } else {
+                        showError(data.error || 'Неверный логин или пароль');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showError('Ошибка соединения с сервером');
+                }
+            } else {
+                // Обычный режим - только пароль
+                const password = document.getElementById('userPassword').value;
+                
+                if (!password) {
+                    showError('Введите пароль');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/simple-login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ password })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        window.location.href = '/';
+                    } else {
+                        showError(data.error || 'Неверный пароль');
+                    }
+                } catch (error) {
+                    console.error('Simple login error:', error);
+                    showError('Ошибка соединения с сервером');
+                }
+            }
+        });
+        
+        function showError(message) {
+            errorDiv.textContent = `❌ ${message}`;
+            errorDiv.classList.add('show');
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Enter key submit для всех полей
+        const handleEnter = (e) => {
+            if (e.key === 'Enter') {
+                form.dispatchEvent(new Event('submit'));
+            }
+        };
+        
+        document.getElementById('userPassword').addEventListener('keypress', handleEnter);
+        document.getElementById('ropUsername').addEventListener('keypress', handleEnter);
+        document.getElementById('ropPassword').addEventListener('keypress', handleEnter);
+    </script>
+</body>
+</html>

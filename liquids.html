@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Жидкости — Справочник</title>
+<link rel="stylesheet" href="style.css?v=7">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="/">☁ СПРАВОЧНИК</a>
+  <div style="flex:1"></div>
+  <a href="/" class="home-btn" style="margin-right: 12px;">🏠 На главную</a>
+  <div id="userInfo" style="display: flex; align-items: center; gap: 12px;">
+    <span id="userName" style="font-size: 12px; color: var(--text);"></span>
+    <button id="ropBtn" class="rop-btn" style="display: none;">👑 Управление</button>
+    <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
+  </div>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-catalog">📦 Каталог</button>
+  <button class="tab-btn" data-tab="tab-info">ℹ️ Справочник</button>
+  <button class="tab-btn" data-tab="tab-alts">🔄 Альтернативы</button>
+  <button class="tab-btn" data-tab="tab-coils">⚙️ Коилы</button>
+</nav>
+
+<main>
+
+  <div class="section active" id="tab-catalog">
+    <div class="sec-header">
+      <span class="sec-title">💧 Жидкости — каталог</span>
+      <button class="btn-add" id="btnAddLiquid">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+        Добавить жидкость
+      </button>
+    </div>
+    <div class="alert-bar info">
+      <span>ℹ️</span>
+      <span><strong>Солевые жидкости</strong> накуривают быстрее. <strong>Щелочные</strong> — накопительный эффект.</span>
+    </div>
+    <div class="cards-grid" id="liquidsGrid"></div>
+  </div>
+
+  <div class="section" id="tab-info">
+    <div class="sec-header">
+      <span class="sec-title">Общая информация</span>
+      <button class="btn-edit-content" data-page="liquids" data-section="info" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="info-content">
+      <div class="two-col">
+        <div class="info-card"><h3>⚗️ Типы жидкостей</h3><ul><li><strong>Солевые (Salt Nic)</strong> — быстро накуривают, мягче при затяжке, для подов</li><li><strong>Щелочные (Freebase)</strong> — накопительный эффект, для больших устройств</li><li><strong>Безникотиновые (0 мг)</strong> — только вкус, без никотина</li></ul></div>
+        <div class="info-card"><h3>💡 Уровни никотина</h3><ul><li>0 мг — нулёвки</li><li>20 мг — стандарт, большинство</li><li>20/50 — два варианта крепости</li><li>50 мг — крепкие</li><li>70+ мг — экстремальные</li></ul></div>
+      </div>
+      <div class="accordion"><div class="acc-header"><span class="acc-title">Black Jack vs Camel — в чём разница?</span><span class="acc-arrow">▼</span></div><div class="acc-body"><div class="two-col"><div class="info-card"><h3>🐫 Camel</h3><ul><li>1-й план — вкус</li><li>2-й план — табачная нота</li></ul></div><div class="info-card"><h3>🃏 Black Jack</h3><ul><li>1-й план — табак</li><li>2-й план — вкус</li></ul></div></div></div></div>
+      <div class="accordion"><div class="acc-header"><span class="acc-title">Почему жидкость темнеет?</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>Жидкость темнеет при карамелизации — когда долго стоит или находится в тепле. Цвет не означает плохое качество.</p><div class="hl ok">Скрипт: «Цвет ароматизатора ни на что не влияет — он может быть светлым и тёмным. Это зависит от производителя»</div></div></div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-alts">
+    <div class="sec-header">
+      <span class="sec-title">Альтернативы</span>
+      <button class="btn-edit-content" data-page="liquids" data-section="alternatives" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="alternatives-content">
+      <div class="info-card"><h3>🔄 Чем заменить</h3><ul><li><strong>Брызги</strong> → Провинция, Наркоз, Дуал, Трава, Хром</li><li><strong>Рик и Морти</strong> → Сайонара, Злая Монашка, Ронин</li><li><strong>Vape Cloud</strong> → Хром</li><li><strong>Скала, Монстр, Angry Vape</strong> → Бруско</li><li><strong>Скала</strong> → Чакра</li><li><strong>Тойз</strong> → Антагонист</li></ul></div>
+      <div class="info-card"><h3>🎨 Цвета Хром</h3><ul><li>Розовая — сладкая</li><li>Оранжевая — генетик</li><li>Голубая — холодная</li><li>Белая — классика</li><li>Зелёная — кислая</li></ul></div>
+    </div>
+  </div>
+
+  <div class="section" id="tab-coils">
+    <div class="sec-header">
+      <span class="sec-title">Совместимость испарителей</span>
+      <button class="btn-edit-content" data-page="liquids" data-section="coils" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="coils-content">
+      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead><tr><th>Устройство / Платформа</th><th>Тип коила</th><th>Совместимые модели</th></tr></thead><tbody><tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr><tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco (все модели)</td></tr><tr><td>X-ross 4</td><td>Сменные картриджи</td><td>0.4, 0.6, 0.8, 1.2 Ом</td></tr><tr><td>Vmate</td><td>Сменные картриджи</td><td>0.4, 0.7, 1.2 Ом</td></tr></tbody></table><p style="margin-top:14px; font-size:12px; color:var(--muted)">Серии: Pnp, TW, WM, TPP, PNP-X, Dragy, Argus</p></div></div>
+    </div>
+  </div>
+
+</main>
+
+<script src="core.js?v=7"></script>
+<script src="main.js?v=7"></script>
+<script>
+  const CATEGORY = 'liquids';
+  let isRop = false;
+
+  async function checkAddButton() {
+    const response = await fetch('/api/check-auth', { credentials: 'include' });
+    const data = await response.json();
+    if (data.authenticated) {
+      isRop = (data.user.role === 'rop' || data.user.role === 'root');
+      window.isRopGlobal = isRop;
+      const addButton = document.getElementById('btnAddLiquid');
+      if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
+    }
+  }
+  
+  async function renderGrid() {
+    const grid = document.getElementById('liquidsGrid');
+    if (!grid) return;
+    
+    const items = await getCategory(CATEGORY);
+    grid.innerHTML = '';
+
+    if (!items || items.length === 0) {
+      renderEmpty(grid, '💧', 'Каталог пуст', isRop ? 'Нажмите «Добавить жидкость» чтобы внести первую позицию' : 'Нет доступных позиций');
+      return;
+    }
+
+    for (const item of items) {
+      const card = renderProductCard(item, CATEGORY,
+        () => renderGrid(),
+        (it) => {
+          if (!isRop) return;
+          new ProductModal({
+            category: CATEGORY,
+            title: 'Редактировать',
+            editItem: it,
+            onSave: async (data) => {
+              await updateItem(CATEGORY, it.id, data);
+              renderGrid();
+            }
+          });
+        }
+      );
+      grid.appendChild(card);
+    }
+  }
+
+  const addBtn = document.getElementById('btnAddLiquid');
+  if (addBtn) {
+    addBtn.addEventListener('click', () => {
+      if (!isRop) {
+        alert('У вас нет прав для добавления');
+        return;
+      }
+      new ProductModal({
+        category: CATEGORY,
+        title: 'Добавить жидкость',
+        onSave: async (item) => {
+          await addItem(CATEGORY, item);
+          renderGrid();
+        }
+      });
+    });
+  }
+
+  checkAddButton().then(() => renderGrid());
+</script>
+</body>
+</html>

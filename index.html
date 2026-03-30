@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Справочник сотрудника</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .hub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .hub-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 28px 24px;
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .hub-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.25s;
+    border-radius: 18px;
+  }
+  .hub-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .hub-card:hover::before { opacity: 1; }
+  
+  .hub-card.liq::before { background: radial-gradient(ellipse at top left, rgba(60,186,252,0.07), transparent 60%); border: 1px solid rgba(60,186,252,0.2); }
+  .hub-card.liq { border-color: rgba(60,186,252,0.15); }
+  .hub-card.liq .hub-icon { background: linear-gradient(135deg, rgba(60,186,252,0.15), rgba(60,186,252,0.05)); color: var(--accent5); }
+
+  .hub-card.tab::before { background: radial-gradient(ellipse at top left, rgba(60,255,160,0.07), transparent 60%); border: 1px solid rgba(60,255,160,0.2); }
+  .hub-card.tab { border-color: rgba(60,255,160,0.15); }
+  .hub-card.tab .hub-icon { background: linear-gradient(135deg, rgba(60,255,160,0.15), rgba(60,255,160,0.05)); color: var(--accent3); }
+
+  .hub-card.snus::before { background: radial-gradient(ellipse at top left, rgba(252,184,48,0.07), transparent 60%); border: 1px solid rgba(252,184,48,0.2); }
+  .hub-card.snus { border-color: rgba(252,184,48,0.15); }
+  .hub-card.snus .hub-icon { background: linear-gradient(135deg, rgba(252,184,48,0.15), rgba(252,184,48,0.05)); color: var(--accent4); }
+
+  .hub-card.hookah::before { background: radial-gradient(ellipse at top left, rgba(124,92,252,0.07), transparent 60%); border: 1px solid rgba(124,92,252,0.2); }
+  .hub-card.hookah { border-color: rgba(124,92,252,0.15); }
+  .hub-card.hookah .hub-icon { background: linear-gradient(135deg, rgba(124,92,252,0.15), rgba(124,92,252,0.05)); color: var(--accent); }
+
+  .hub-card.sales::before { background: radial-gradient(ellipse at top left, rgba(252,92,124,0.07), transparent 60%); border: 1px solid rgba(252,92,124,0.2); }
+  .hub-card.sales { border-color: rgba(252,92,124,0.15); }
+  .hub-card.sales .hub-icon { background: linear-gradient(135deg, rgba(252,92,124,0.15), rgba(252,92,124,0.05)); color: var(--accent2); }
+
+  .hub-card.checks::before { background: radial-gradient(ellipse at top left, rgba(252,92,124,0.07), transparent 60%); border: 1px solid rgba(252,92,124,0.2); }
+  .hub-card.checks { border-color: rgba(252,92,124,0.15); }
+  .hub-card.checks .hub-icon { background: linear-gradient(135deg, rgba(252,92,124,0.15), rgba(252,92,124,0.05)); color: var(--accent2); }
+
+  .hub-card.cash::before { background: radial-gradient(ellipse at top left, rgba(60,255,160,0.07), transparent 60%); border: 1px solid rgba(60,255,160,0.2); }
+  .hub-card.cash { border-color: rgba(60,255,160,0.15); }
+  .hub-card.cash .hub-icon { background: linear-gradient(135deg, rgba(60,255,160,0.15), rgba(60,255,160,0.05)); color: var(--accent3); }
+
+  .hub-icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+  }
+  .hub-label {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--strong);
+    line-height: 1.4;
+  }
+  .hub-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .hub-count {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: auto;
+  }
+
+  .hero {
+    padding: 48px 0 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+  }
+  .hero-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(22px, 4vw, 38px);
+    font-weight: 900;
+    line-height: 1.2;
+    color: var(--strong);
+    margin-bottom: 12px;
+  }
+  .hero-title span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero-sub { font-size: 14px; color: var(--text2); max-width: 480px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="index.html">☁ СПРАВОЧНИК</a>
+  <div style="flex:1"></div>
+  <div id="userInfo" style="display: flex; align-items: center; gap: 12px;">
+    <span id="userName" style="font-size: 12px; color: var(--text);"></span>
+    <button id="ropBtn" class="rop-btn" style="display: none;">👑 Управление</button>
+    <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="hero-eyebrow">База знаний сотрудника</div>
+    <h1 class="hero-title">Всё, что нужно<br>знать для <span>продаж</span></h1>
+    <p class="hero-sub">Выберите раздел. Каждый модуль независим — можно открыть напрямую или добавить в закладки.</p>
+  </div>
+
+  <div class="hub-grid" id="hubGrid">
+
+    <a href="liquids.html" class="hub-card liq">
+      <div class="hub-icon">💧</div>
+      <div class="hub-label">Жидкости</div>
+      <div class="hub-sub">Крепость, альтернативы, коилы, никотин</div>
+      <div class="hub-count" id="cnt-liquids">Загрузка...</div>
+    </a>
+
+    <a href="disposables.html" class="hub-card disposables">
+      <div class="hub-icon">⚡</div>
+      <div class="hub-label">Одноразки</div>
+      <div class="hub-sub">Бренды, крепость, затяжки</div>
+      <div class="hub-count" id="cnt-disposables">Загрузка...</div>
+    </a>
+
+    <a href="tobacco.html" class="hub-card tab">
+      <div class="hub-icon">🌿</div>
+      <div class="hub-label">Табак для кальяна</div>
+      <div class="hub-sub">Бренды, крепость, сырьё, особенности</div>
+      <div class="hub-count" id="cnt-tobacco">Загрузка...</div>
+    </a>
+
+    <a href="snus.html" class="hub-card snus">
+      <div class="hub-icon">🫙</div>
+      <div class="hub-label">Жевательный табак</div>
+      <div class="hub-sub">Снюс, шайбы, форматы, применение</div>
+      <div class="hub-count" id="cnt-snus">Загрузка...</div>
+    </a>
+
+    <a href="hookah.html" class="hub-card hookah">
+      <div class="hub-icon">💨</div>
+      <div class="hub-label">Кальяны</div>
+      <div class="hub-sub">Комплектация, чаши, аксессуары</div>
+      <div class="hub-count">Справочник</div>
+    </a>
+
+    <a href="sales.html" class="hub-card sales">
+      <div class="hub-icon">💬</div>
+      <div class="hub-label">Скрипты продаж</div>
+      <div class="hub-sub">Возражения, отработка, добивание</div>
+      <div class="hub-count">Справочник</div>
+    </a>
+
+    <a href="checks.html" class="hub-card checks">
+      <div class="hub-icon">📋</div>
+      <div class="hub-label">Проверки</div>
+      <div class="hub-sub">Роспотребнадзор, порядок действий</div>
+      <div class="hub-count">Инструкция</div>
+    </a>
+
+    <a href="cash.html" class="hub-card cash">
+      <div class="hub-icon">🧾</div>
+      <div class="hub-label">Касса и маркировка</div>
+      <div class="hub-sub">QR-коды, акциз, типы товаров</div>
+      <div class="hub-count">Справочник</div>
+    </a>
+
+  </div>
+</main>
+
+<script src="core.js"></script>
+<script>
+  // Show counts
+  const counts = {
+    'cnt-liquids': 'liquids',
+    'cnt-tobacco': 'tobacco',
+    'cnt-snus': 'snus'
+  };
+  Object.entries(counts).forEach(([elId, cat]) => {
+    const el = document.getElementById(elId);
+    const items = getCategory(cat);
+    el.textContent = items.length ? `${items.length} позиций` : 'Пусто — добавьте первую';
+  });
+</script>
+
+<script>
+// Auth check
+async function checkAuth() {
+    try {
+        const response = await fetch('/api/check-session');
+        const data = await response.json();
+        
+        const loginBtn = document.getElementById('loginBtn');
+        const userInfo = document.getElementById('userInfo');
+        const userName = document.getElementById('userName');
+        const ropBtn = document.getElementById('ropBtn');
+        
+        if (data.authenticated) {
+            loginBtn.style.display = 'none';
+            userInfo.style.display = 'flex';
+            userInfo.style.alignItems = 'center';
+            userName.textContent = data.user.full_name;
+            
+            if (data.user.role === 'rop') {
+                ropBtn.style.display = 'block';
+            }
+        } else {
+            loginBtn.style.display = 'block';
+            userInfo.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Auth check error:', error);
+    }
+}
+
+// Logout
+document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.reload();
+});
+
+// ROP panel button
+document.getElementById('ropBtn')?.addEventListener('click', () => {
+    openRopPanel();
+});
+
+function openRopPanel() {
+    // Create modal for ROP panel
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'ropModal';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <span class="modal-title">👑 Панель управления РОП</span>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="field">
+                    <label>➕ Добавить пользователя</label>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
+                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
+                        <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
+                        <button id="addUserBtn" class="btn-add">Добавить</button>
+                    </div>
+                </div>
+                
+                <div class="field">
+                    <label>📋 Список пользователей</label>
+                    <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    loadUsers();
+    
+    document.getElementById('addUserBtn').addEventListener('click', async () => {
+        const username = document.getElementById('newUsername').value.trim();
+        const password = document.getElementById('newPassword').value;
+        const full_name = document.getElementById('newFullName').value.trim();
+        
+        if (!username || !password || !full_name) {
+            alert('Заполните все поля');
+            return;
+        }
+        
+        if (!/^\d{4}$/.test(password)) {
+            alert('Пароль должен состоять из 4 цифр');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, full_name, role: 'user' })
+            });
+            
+            if (response.ok) {
+                alert('Пользователь добавлен');
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('newFullName').value = '';
+                loadUsers();
+            } else {
+                const error = await response.json();
+                alert(error.error);
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    });
+}
+
+async function loadUsers() {
+    try {
+        const response = await fetch('/api/users', { credentials: 'include' });
+        const users = await response.json();
+        
+        const container = document.getElementById('usersList');
+        if (!container) return;
+        
+        // Получаем текущего пользователя
+        const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
+        const me = await meResponse.json();
+        
+        container.innerHTML = users.map(user => {
+            // Определяем, можно ли менять пароль
+            let canChangePassword = false;
+            
+            if (me.user.role === 'root') {
+                // Root может менять пароль всем
+                canChangePassword = true;
+            } else if (me.user.role === 'rop') {
+                // ROP может менять пароль только обычным пользователям
+                if (user.role === 'user') {
+                    canChangePassword = true;
+                }
+            }
+            
+            // Определяем, можно ли удалять
+            let canDelete = false;
+            if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) {
+                canDelete = true;
+            }
+            
+            return `
+                <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <strong>${escapeHtml(user.full_name)}</strong><br>
+                            <span style="font-size: 11px; color: var(--muted);">
+                                Логин: ${user.username} | Роль: ${user.role === 'root' ? '👑 ROOT' : (user.role === 'rop' ? '👑 РОП' : '👤 Пользователь')}
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            ${canChangePassword ? `<button onclick="changePassword(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
+                            ${canDelete ? `<button onclick="deleteUser(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Load users error:', error);
+    }
+}
+
+async function changePassword(userId, userName) {
+    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
+    
+    if (!newPassword) return;
+    
+    if (!/^\d{4}$/.test(newPassword)) {
+        alert('Пароль должен состоять из 4 цифр');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/users/${userId}/change-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ newPassword })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert('Пароль успешно изменен');
+        } else {
+            alert(data.error || 'Ошибка смены пароля');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+async function deleteUser(userId) {
+    if (confirm('Удалить пользователя?')) {
+        try {
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                alert('Пользователь удален');
+                loadUsers();
+            } else {
+                const error = await response.json();
+                alert(error.error);
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+checkAuth();
+</script>
+<script>
+// Информация о пользователе
+async function loadUserInfo() {
+    try {
+        const response = await fetch('/api/check-auth');
+        const data = await response.json();
+        
+        if (data.authenticated) {
+            document.getElementById('userName').textContent = data.user.full_name;
+            if (data.user.role === 'rop') {
+                document.getElementById('ropBtn').style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading user info:', error);
+    }
+}
+
+// Выход
+document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+});
+
+// Кнопка управления РОП
+document.getElementById('ropBtn')?.addEventListener('click', () => {
+    openRopPanel();
+});
+
+function openRopPanel() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'ropModal';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <span class="modal-title">👑 Панель управления</span>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="field">
+                    <label>➕ Добавить пользователя</label>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
+                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
+                        <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
+                        <button id="addUserBtn" class="btn-add">Добавить</button>
+                    </div>
+                </div>
+                
+                <div class="field">
+                    <label>📋 Список пользователей</label>
+                    <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    loadUsers();
+    
+    document.getElementById('addUserBtn').addEventListener('click', async () => {
+        const username = document.getElementById('newUsername').value.trim();
+        const password = document.getElementById('newPassword').value;
+        const full_name = document.getElementById('newFullName').value.trim();
+        
+        if (!username || !password || !full_name) {
+            alert('Заполните все поля');
+            return;
+        }
+        
+        if (!/^\d{4}$/.test(password)) {
+            alert('Пароль должен состоять из 4 цифр');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, full_name, role: 'user' })
+            });
+            
+            if (response.ok) {
+                alert('Пользователь добавлен');
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('newFullName').value = '';
+                loadUsers();
+            } else {
+                const error = await response.json();
+                alert(error.error);
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    });
+}
+
+async function loadUsers() {
+    try {
+        const response = await fetch('/api/users');
+        const users = await response.json();
+        
+        const container = document.getElementById('usersList');
+        if (!container) return;
+        
+        container.innerHTML = users.map(user => `
+            <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <strong>${escapeHtml(user.full_name)}</strong><br>
+                        <span style="font-size: 11px; color: var(--muted);">Логин: ${user.username} | Роль: ${user.role}</span>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button onclick="changePassword(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>
+                        ${user.username !== 'ROOT' ? `<button onclick="deleteUser(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Load users error:', error);
+    }
+}
+
+async function changePassword(userId, userName) {
+    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
+    
+    if (!newPassword) return;
+    
+    if (!/^\d{4}$/.test(newPassword)) {
+        alert('Пароль должен состоять из 4 цифр');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/users/${userId}/change-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newPassword })
+        });
+        
+        if (response.ok) {
+            alert('Пароль успешно изменен');
+        } else {
+            const error = await response.json();
+            alert(error.error);
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+async function deleteUser(userId) {
+    if (confirm('Удалить пользователя?')) {
+        try {
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                alert('Пользователь удален');
+                loadUsers();
+            } else {
+                const error = await response.json();
+                alert(error.error);
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+loadUserInfo();
+</script>
+
+<script>
+// Информация о пользователе
+async function loadUserInfo() {
+    try {
+        const response = await fetch('/api/check-auth', { credentials: 'include' });
+        const data = await response.json();
+        
+        if (data.authenticated) {
+            document.getElementById('userName').textContent = data.user.full_name;
+            if (data.user.role === 'rop' || data.user.role === 'root') {
+                document.getElementById('ropBtn').style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading user info:', error);
+    }
+}
+
+// Выход
+document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+    window.location.href = '/login.html';
+});
+
+// Кнопка управления РОП
+document.getElementById('ropBtn')?.addEventListener('click', () => {
+    openRopPanel();
+});
+
+function openRopPanel() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'ropModal';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <span class="modal-title">👑 Панель управления</span>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="field">
+                    <label>➕ Добавить пользователя</label>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
+                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
+                        <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
+                        <button id="addUserBtn" class="btn-add">Добавить</button>
+                    </div>
+                </div>
+                
+                <div class="field">
+                    <label>📋 Список пользователей</label>
+                    <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    loadUsers();
+    
+    document.getElementById('addUserBtn').addEventListener('click', async () => {
+        const username = document.getElementById('newUsername').value.trim();
+        const password = document.getElementById('newPassword').value;
+        const full_name = document.getElementById('newFullName').value.trim();
+        
+        if (!username || !password || !full_name) {
+            alert('Заполните все поля');
+            return;
+        }
+        
+        if (!/^\d{4}$/.test(password)) {
+            alert('Пароль должен состоять из 4 цифр');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ username, password, full_name, role: 'user' })
+            });
+            
+            if (response.ok) {
+                alert('Пользователь добавлен');
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('newFullName').value = '';
+                loadUsers();
+            } else {
+                const error = await response.json();
+                alert(error.error);
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    });
+}
+
+async function loadUsers() {
+    try {
+        const response = await fetch('/api/users', { credentials: 'include' });
+        const users = await response.json();
+        const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
+        const me = await meResponse.json();
+        
+        const container = document.getElementById('usersList');
+        if (!container) return;
+        
+        container.innerHTML = users.map(user => {
+            let canChangePassword = false;
+            if (me.user.role === 'root') {
+                canChangePassword = true;
+            } else if (me.user.role === 'rop' && user.role === 'user') {
+                canChangePassword = true;
+            }
+            
+            let canDelete = false;
+            if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) {
+                canDelete = true;
+            }
+            
+            return `
+                <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <strong>${escapeHtml(user.full_name)}</strong><br>
+                            <span style="font-size: 11px; color: var(--muted);">
+                                Логин: ${user.username} | Роль: ${user.role === 'root' ? '👑 ROOT' : (user.role === 'rop' ? '👑 РОП' : '👤 Пользователь')}
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            ${canChangePassword ? `<button onclick="changePassword(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
+                            ${canDelete ? `<button onclick="deleteUser(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Load users error:', error);
+    }
+}
+
+async function changePassword(userId, userName) {
+    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
+    if (!newPassword) return;
+    if (!/^\d{4}$/.test(newPassword)) {
+        alert('Пароль должен состоять из 4 цифр');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/users/${userId}/change-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ newPassword })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+            alert('Пароль успешно изменен');
+        } else {
+            alert(data.error || 'Ошибка смены пароля');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+async function deleteUser(userId) {
+    if (confirm('Удалить пользователя?')) {
+        try {
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                alert('Пользователь удален');
+                loadUsers();
+            } else {
+                const error = await response.json();
+                alert(error.error);
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+loadUserInfo();
+</script>
+
+<script>
+async function updateAllCounters() {
+  const categories = ['tobacco', 'liquids', 'snus', 'disposables'];
+  const elements = {
+    'tobacco': 'cnt-tobacco',
+    'liquids': 'cnt-liquids',
+    'snus': 'cnt-snus',
+    'disposables': 'cnt-disposables'
+  };
+  
+  for (const cat of categories) {
+    try {
+      const response = await fetch(`/api/products/${cat}`, { credentials: 'include' });
+      const items = await response.json();
+      const el = document.getElementById(elements[cat]);
+      if (el) {
+        el.textContent = items.length ? `${items.length} позиций` : 'Пусто — добавьте первую';
+      }
+    } catch (e) {
+      console.error('Error updating counter:', e);
+    }
+  }
+}
+
+updateAllCounters();
+</script>
+</body>
+</html>
