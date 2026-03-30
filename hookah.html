@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Жидкости — Справочник</title>
+<title>Кальяны — Справочник</title>
 <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
@@ -21,127 +21,122 @@
 </header>
 
 <nav class="tab-nav">
-  <button class="tab-btn active" data-tab="tab-catalog">📦 Каталог</button>
-  <button class="tab-btn" data-tab="tab-info">ℹ️ Справочник</button>
-  <button class="tab-btn" data-tab="tab-alts">🔄 Альтернативы</button>
-  <button class="tab-btn" data-tab="tab-coils">⚙️ Коилы</button>
+  <button class="tab-btn active" data-tab="tab-parts">🔧 Комплектация</button>
+  <button class="tab-btn" data-tab="tab-bowls">🏺 Чаши</button>
+  <button class="tab-btn" data-tab="tab-coal">🔥 Уголь</button>
+  <button class="tab-btn" data-tab="tab-clean">🧼 Чистка</button>
 </nav>
 
 <main>
 
-  <!-- CATALOG -->
-  <div class="section active" id="tab-catalog">
+  <!-- PARTS -->
+  <div class="section active" id="tab-parts">
     <div class="sec-header">
-      <span class="sec-title">💧 Жидкости — каталог</span>
-      <button class="btn-add" id="btnAddLiquid" style="display: none;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
-        Добавить жидкость
-      </button>
+      <span class="sec-title">💨 Комплектация кальяна</span>
+      <button class="btn-edit-content" data-page="hookah" data-section="parts" style="display: none;">✏️ Редактировать</button>
     </div>
-    <div class="alert-bar info">
-      <span>ℹ️</span>
-      <span><strong>Солевые жидкости</strong> накуривают быстрее. <strong>Щелочные</strong> — накопительный эффект.</span>
-    </div>
-    <div class="cards-grid" id="liquidsGrid"></div>
-  </div>
-
-  <!-- INFO -->
-  <div class="section" id="tab-info">
-    <div class="sec-header">
-      <span class="sec-title">Общая информация</span>
-      <button class="btn-edit-content" data-page="liquids" data-section="info" style="display: none;">✏️ Редактировать</button>
-    </div>
-    <div id="info-content">
+    <div id="parts-content">
+      <div class="info-card" style="margin-bottom:16px">
+        <h3>ℹ️ Что такое кальян</h3>
+        <ul>
+          <li>Приспособление для курения кальянной смеси</li>
+          <li>Охлаждение испарений через воду</li>
+          <li>Вода фильтрует испарения от твёрдых частиц</li>
+          <li>Охлаждённый пар наносит меньше вреда дыхательным путям</li>
+        </ul>
+      </div>
       <div class="two-col">
         <div class="info-card">
-          <h3>⚗️ Типы жидкостей</h3>
+          <h3>🔝 Верхняя часть</h3>
           <ul>
-            <li><strong>Солевые (Salt Nic)</strong> — быстро накуривают, мягче при затяжке, для подов</li>
-            <li><strong>Щелочные (Freebase)</strong> — накопительный эффект, для больших устройств</li>
-            <li><strong>Безникотиновые (0 мг)</strong> — только вкус, без никотина</li>
+            <li>Экран / Фольга / Калауд</li>
+            <li>Чаша (чашка)</li>
+            <li>Тарелка (блюдце) для пепла</li>
+            <li>Шахта</li>
+            <li>Держатель трубки</li>
           </ul>
         </div>
         <div class="info-card">
-          <h3>💡 Уровни никотина</h3>
+          <h3>🔽 Нижняя часть</h3>
           <ul>
-            <li>0 мг — нулёвки</li>
-            <li>20 мг — стандарт, большинство</li>
-            <li>20/50 — два варианта крепости</li>
-            <li>50 мг — крепкие</li>
-            <li>70+ мг — экстремальные</li>
+            <li>Пружина от перегиба шланга</li>
+            <li>Коннектор трубки</li>
+            <li>Система фиксации</li>
+            <li>Нижняя часть шахты</li>
+            <li>Диффузор</li>
+            <li>Колба</li>
+            <li>Трубка / Шланг</li>
+            <li>Клапан</li>
+            <li>Мундштук</li>
           </ul>
         </div>
       </div>
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">Black Jack vs Camel — в чём разница?</span><span class="acc-arrow">▼</span></div>
-        <div class="acc-body">
-          <div class="two-col">
-            <div class="info-card"><h3>🐫 Camel</h3><ul><li>1-й план — вкус</li><li>2-й план — табачная нота</li></ul></div>
-            <div class="info-card"><h3>🃏 Black Jack</h3><ul><li>1-й план — табак</li><li>2-й план — вкус</li></ul></div>
-          </div>
-        </div>
+      <div class="hl info">Тарелка правильно называется блюдцем. Система фиксации удерживает шахту в колбе.</div>
+    </div>
+  </div>
+
+  <!-- BOWLS -->
+  <div class="section" id="tab-bowls">
+    <div class="sec-header">
+      <span class="sec-title">🏺 Чаши и их влияние на вкус</span>
+      <button class="btn-edit-content" data-page="hookah" data-section="bowls" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="bowls-content">
+      <div class="alert-bar info">
+        <span>💡</span><span>Разные чаши по-разному раскрывают табак — влияют на крепость и вкус.</span>
       </div>
-      <div class="accordion">
-        <div class="acc-header"><span class="acc-title">Почему жидкость темнеет?</span><span class="acc-arrow">▼</span></div>
-        <div class="acc-body">
-          <p>Жидкость темнеет при карамелизации — когда долго стоит или находится в тепле. Цвет не означает плохое качество.</p>
-          <div class="hl ok">Скрипт: «Цвет ароматизатора ни на что не влияет — он может быть светлым и тёмным. Это зависит от производителя»</div>
-        </div>
+      <table class="ref-table">
+        <tr><th>Чаша</th><th>Описание</th><th>Для кого</th></tr>
+        <tr><td><strong>Турка / Универсальная</strong></td><td>5 отверстий. Классический баланс вкуса и крепости.</td><td>Все категории</td></tr>
+        <tr><td><strong>Убивашка</strong></td><td>5 отверстий, особая форма. Плотный дым, усиленная крепость.</td><td>Опытные</td></tr>
+        <tr><td><strong>Фанол / Фаннель</strong></td><td>1 центральное отверстие. Максимально чистый вкус.</td><td>Ценители вкуса</td></tr>
+        <tr><td><strong>Мелассоуловитель</strong></td><td>Ставится между чашей и шахтой. Собирает лишний сироп.</td><td>Для чистоты</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- COAL -->
+  <div class="section" id="tab-coal">
+    <div class="sec-header">
+      <span class="sec-title">🔥 Уголь и управление</span>
+      <button class="btn-edit-content" data-page="hookah" data-section="coal" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="coal-content">
+      <table class="ref-table" style="margin-bottom:20px">
+        <tr><th>Инструмент</th><th>Описание</th></tr>
+        <tr><td><strong>Щипцы дешёвые</strong></td><td>Короткие, быстро нагреваются, покрытие облезает</td></tr>
+        <tr><td><strong>Щипцы дорогие</strong></td><td>Длинные, прочные, надёжная фиксация угля</td></tr>
+        <tr><td><strong>Колпак</strong></td><td>Накрывает чашу — помогает разжечься, защищает от ветра</td></tr>
+        <tr><td><strong>Печка / Каляница</strong></td><td>Электроплитка для равномерного и быстрого нагрева</td></tr>
+        <tr><td><strong>Кадило</strong></td><td>Металлическая ёмкость для переноски раскалённых углей</td></tr>
+        <tr><td><strong>Шило / Прокалыватель</strong></td><td>Отверстия в фольге. Также для распределения табака в чаше.</td></tr>
+      </table>
+      <div class="info-card">
+        <h3>⚫ Размеры углей</h3>
+        <ul>
+          <li><strong>22 мм</strong> — компактный, для небольших чаш</li>
+          <li><strong>25 мм</strong> — стандарт, универсальный</li>
+        </ul>
       </div>
     </div>
   </div>
 
-  <!-- ALTERNATIVES -->
-  <div class="section" id="tab-alts">
+  <!-- CLEAN -->
+  <div class="section" id="tab-clean">
     <div class="sec-header">
-      <span class="sec-title">Альтернативы</span>
-      <button class="btn-edit-content" data-page="liquids" data-section="alternatives" style="display: none;">✏️ Редактировать</button>
+      <span class="sec-title">🧼 Обслуживание и чистка</span>
+      <button class="btn-edit-content" data-page="hookah" data-section="clean" style="display: none;">✏️ Редактировать</button>
     </div>
-    <div id="alternatives-content">
-      <div class="info-card">
-        <h3>🔄 Чем заменить</h3>
-        <ul>
-          <li><strong>Брызги</strong> → Провинция, Наркоз, Дуал, Трава, Хром</li>
-          <li><strong>Рик и Морти</strong> → Сайонара, Злая Монашка, Ронин</li>
-          <li><strong>Vape Cloud</strong> → Хром</li>
-          <li><strong>Скала, Монстр, Angry Vape</strong> → Бруско</li>
-          <li><strong>Скала</strong> → Чакра</li>
-          <li><strong>Тойз</strong> → Антагонист</li>
-        </ul>
-      </div>
-      <div class="info-card">
-        <h3>🎨 Цвета Хром</h3>
-        <ul>
-          <li>Розовая — сладкая</li>
-          <li>Оранжевая — генетик</li>
-          <li>Голубая — холодная</li>
-          <li>Белая — классика</li>
-          <li>Зелёная — кислая</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- COILS -->
-  <div class="section" id="tab-coils">
-    <div class="sec-header">
-      <span class="sec-title">Совместимость испарителей</span>
-      <button class="btn-edit-content" data-page="liquids" data-section="coils" style="display: none;">✏️ Редактировать</button>
-    </div>
-    <div id="coils-content">
-      <div class="accordion open">
-        <div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div>
-        <div class="acc-body">
-          <table class="ref-table">
-            <tr><th>Устройство / Платформа</th><th>Тип коила</th><th>Совместимые модели</th></tr>
-            <tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td> </tr>
-             <tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco (все модели)</td> </tr>
-             <tr><td>X-ross 4</td><td>Сменные картриджи</td><td>0.4, 0.6, 0.8, 1.2 Ом</td> </tr>
-             <tr><td>Vmate</td><td>Сменные картриджи</td><td>0.4, 0.7, 1.2 Ом</td> </tr>
-           </table>
-          <p style="margin-top:14px; font-size:12px; color:var(--muted)">Серии: Pnp, TW, WM, TPP, PNP-X, Dragy, Argus</p>
-        </div>
-      </div>
+    <div id="clean-content">
+      <table class="ref-table">
+        <tr><th>Аксессуар</th><th>Применение</th></tr>
+        <tr><td><strong>Уплотнитель для колбы</strong></td><td>Резиновое кольцо на горлышко колбы — герметичность</td></tr>
+        <tr><td><strong>Уплотнитель для чаши</strong></td><td>Резиновое кольцо на шахту — герметичность</td></tr>
+        <tr><td><strong>Ёршик для колбы</strong></td><td>Широкий, с изогнутой ручкой</td></tr>
+        <tr><td><strong>Ёршик для шахты</strong></td><td>Длинный и узкий — прочищает внутренние каналы</td></tr>
+        <tr><td><strong>Пружина для шланга</strong></td><td>Надевается на основание шланга — предотвращает перегиб</td></tr>
+        <tr><td><strong>Сетка на кальян</strong></td><td>Защитный экран от опрокидывания (животные, дети)</td></tr>
+      </table>
     </div>
   </div>
 
@@ -149,8 +144,6 @@
 
 <script src="core.js?v=4"></script>
 <script>
-  const CATEGORY = 'liquids';
-  let currentUser = null;
   let isRop = false;
 
   initTabs();
@@ -163,7 +156,6 @@
       const data = await response.json();
       
       if (data.authenticated) {
-        currentUser = data.user;
         isRop = (data.user.role === 'rop' || data.user.role === 'root');
         window.isRopGlobal = isRop;
         
@@ -171,9 +163,6 @@
         
         const ropBtn = document.getElementById('ropBtn');
         if (ropBtn && isRop) ropBtn.style.display = 'block';
-        
-        const addButton = document.getElementById('btnAddLiquid');
-        if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
         
         const editBtns = document.querySelectorAll('.btn-edit-content');
         editBtns.forEach(btn => {
@@ -188,213 +177,484 @@
       window.location.href = '/login.html';
     }
   }
+
+  // ========== ФУНКЦИИ ДЛЯ РАБОТЫ С КОМПЛЕКТАЦИЕЙ (parts) ==========
   
-  async function renderGrid() {
-    const grid = document.getElementById('liquidsGrid');
-    const items = await getCategory(CATEGORY);
-    grid.innerHTML = '';
-
-    if (!items || items.length === 0) {
-      renderEmpty(grid, '💧', 'Каталог пуст', isRop ? 'Нажмите «Добавить жидкость» чтобы внести первую позицию' : 'Нет доступных позиций');
-      return;
-    }
-
-    for (const item of items) {
-      const card = renderProductCard(item, CATEGORY,
-        () => renderGrid(),
-        (it) => {
-          if (!isRop) return;
-          new ProductModal({
-            category: CATEGORY,
-            title: 'Редактировать',
-            editItem: it,
-            onSave: async (data) => {
-              await updateItem(CATEGORY, it.id, data);
-              renderGrid();
-            }
-          });
-        }
-      );
-      grid.appendChild(card);
-    }
-  }
-
-  const addBtn = document.getElementById('btnAddLiquid');
-  if (addBtn) {
-    addBtn.addEventListener('click', () => {
-      if (!isRop) {
-        alert('У вас нет прав для добавления');
-        return;
-      }
-      new ProductModal({
-        category: CATEGORY,
-        title: 'Добавить жидкость',
-        onSave: async (item) => {
-          await addItem(CATEGORY, item);
-          renderGrid();
-        }
+  function buildPartsEditor(currentHtml) {
+    // Парсим текущий HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = currentHtml;
+    
+    // Извлекаем "Что такое кальян"
+    const whatIsHookahItems = [];
+    const whatIsHookahUl = tempDiv.querySelector('.info-card:first-child ul');
+    if (whatIsHookahUl) {
+      whatIsHookahUl.querySelectorAll('li').forEach(li => {
+        whatIsHookahItems.push(li.textContent.trim());
       });
+    }
+    
+    // Извлекаем "Верхняя часть"
+    const topPartsItems = [];
+    const topPartsUl = tempDiv.querySelector('.two-col .info-card:first-child ul');
+    if (topPartsUl) {
+      topPartsUl.querySelectorAll('li').forEach(li => {
+        topPartsItems.push(li.textContent.trim());
+      });
+    }
+    
+    // Извлекаем "Нижняя часть"
+    const bottomPartsItems = [];
+    const bottomPartsUl = tempDiv.querySelector('.two-col .info-card:last-child ul');
+    if (bottomPartsUl) {
+      bottomPartsUl.querySelectorAll('li').forEach(li => {
+        bottomPartsItems.push(li.textContent.trim());
+      });
+    }
+    
+    // Извлекаем примечание
+    let note = '';
+    const noteDiv = tempDiv.querySelector('.hl.info');
+    if (noteDiv) note = noteDiv.textContent.trim();
+    
+    let whatIsHookahHtml = '';
+    whatIsHookahItems.forEach((item, idx) => {
+      whatIsHookahHtml += `
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <input type="text" class="whatis-item" value="${escapeHtml(item)}" style="flex:1" placeholder="Пункт списка">
+          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+        </div>
+      `;
     });
+    
+    let topPartsHtml = '';
+    topPartsItems.forEach((item, idx) => {
+      topPartsHtml += `
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <input type="text" class="top-item" value="${escapeHtml(item)}" style="flex:1" placeholder="Пункт списка">
+          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+        </div>
+      `;
+    });
+    
+    let bottomPartsHtml = '';
+    bottomPartsItems.forEach((item, idx) => {
+      bottomPartsHtml += `
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <input type="text" class="bottom-item" value="${escapeHtml(item)}" style="flex:1" placeholder="Пункт списка">
+          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+        </div>
+      `;
+    });
+    
+    return `
+      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <span class="modal-title">✏️ Редактировать: Комплектация кальяна</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <!-- Что такое кальян -->
+          <div class="field">
+            <label>📖 Что такое кальян</label>
+            <div id="whatIsHookayList">${whatIsHookahHtml}</div>
+            <button id="addWhatIsItemBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить пункт</button>
+          </div>
+          
+          <!-- Верхняя часть -->
+          <div class="field">
+            <label>🔝 Верхняя часть</label>
+            <div id="topPartsList">${topPartsHtml}</div>
+            <button id="addTopItemBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить пункт</button>
+          </div>
+          
+          <!-- Нижняя часть -->
+          <div class="field">
+            <label>🔽 Нижняя часть</label>
+            <div id="bottomPartsList">${bottomPartsHtml}</div>
+            <button id="addBottomItemBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить пункт</button>
+          </div>
+          
+          <!-- Примечание -->
+          <div class="field">
+            <label>💡 Примечание</label>
+            <textarea id="note" rows="3" placeholder="Дополнительная информация">${escapeHtml(note)}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Отмена</button>
+          <button class="btn-save">💾 Сохранить</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  function savePartsEditor(modal, contentDiv) {
+    const whatIsItems = Array.from(modal.querySelectorAll('#whatIsHookayList input.whatis-item')).map(i => i.value.trim()).filter(v => v);
+    const topItems = Array.from(modal.querySelectorAll('#topPartsList input.top-item')).map(i => i.value.trim()).filter(v => v);
+    const bottomItems = Array.from(modal.querySelectorAll('#bottomPartsList input.bottom-item')).map(i => i.value.trim()).filter(v => v);
+    const note = modal.querySelector('#note').value;
+    
+    const whatIsHtml = whatIsItems.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+    const topHtml = topItems.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+    const bottomHtml = bottomItems.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+    
+    return `
+      <div class="info-card" style="margin-bottom:16px">
+        <h3>ℹ️ Что такое кальян</h3>
+        <ul>${whatIsHtml}</ul>
+      </div>
+      <div class="two-col">
+        <div class="info-card">
+          <h3>🔝 Верхняя часть</h3>
+          <ul>${topHtml}</ul>
+        </div>
+        <div class="info-card">
+          <h3>🔽 Нижняя часть</h3>
+          <ul>${bottomHtml}</ul>
+        </div>
+      </div>
+      <div class="hl info">${escapeHtml(note)}</div>
+    `;
   }
 
-  // ========== ФУНКЦИИ РЕДАКТИРОВАНИЯ КОНТЕНТА ==========
+  // ========== ФУНКЦИИ ДЛЯ РАБОТЫ С УГЛЯМИ (coal) ==========
+  
+  function buildCoalEditor(currentHtml) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = currentHtml;
+    
+    // Инструменты
+    const tools = [];
+    const toolRows = tempDiv.querySelectorAll('.ref-table:first-child tr');
+    for (let i = 1; i < toolRows.length; i++) {
+      const cells = toolRows[i].querySelectorAll('td');
+      if (cells.length >= 2) {
+        tools.push({
+          name: cells[0].textContent.trim(),
+          desc: cells[1].textContent.trim()
+        });
+      }
+    }
+    
+    // Размеры углей
+    const coalSizes = [];
+    const coalUl = tempDiv.querySelector('.info-card ul');
+    if (coalUl) {
+      coalUl.querySelectorAll('li').forEach(li => {
+        coalSizes.push(li.textContent.trim());
+      });
+    }
+    
+    let toolsHtml = '';
+    tools.forEach((tool, idx) => {
+      toolsHtml += `
+        <div class="tool-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+          <input type="text" class="tool-name" value="${escapeHtml(tool.name)}" placeholder="Инструмент" style="width:100%; margin-bottom: 8px;">
+          <textarea class="tool-desc" rows="2" placeholder="Описание" style="width:100%">${escapeHtml(tool.desc)}</textarea>
+          <button class="remove-tool-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
+        </div>
+      `;
+    });
+    
+    let coalSizesHtml = '';
+    coalSizes.forEach((size, idx) => {
+      coalSizesHtml += `
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <input type="text" class="coal-size" value="${escapeHtml(size)}" style="flex:1" placeholder="Размер угля">
+          <button class="remove-size-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+        </div>
+      `;
+    });
+    
+    return `
+      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <span class="modal-title">✏️ Редактировать: Уголь и управление</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>🔥 Инструменты</label>
+            <div id="toolsList">${toolsHtml}</div>
+            <button id="addToolBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить инструмент</button>
+          </div>
+          
+          <div class="field">
+            <label>⚫ Размеры углей</label>
+            <div id="coalSizesList">${coalSizesHtml}</div>
+            <button id="addSizeBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить размер</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Отмена</button>
+          <button class="btn-save">💾 Сохранить</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  function saveCoalEditor(modal) {
+    const tools = [];
+    modal.querySelectorAll('.tool-item').forEach(item => {
+      const name = item.querySelector('.tool-name').value.trim();
+      const desc = item.querySelector('.tool-desc').value.trim();
+      if (name && desc) {
+        tools.push({ name, desc });
+      }
+    });
+    
+    const coalSizes = [];
+    modal.querySelectorAll('.coal-size').forEach(input => {
+      const val = input.value.trim();
+      if (val) coalSizes.push(val);
+    });
+    
+    let toolsHtml = '';
+    tools.forEach(tool => {
+      toolsHtml += `<tr><td><strong>${escapeHtml(tool.name)}</strong></td><td>${escapeHtml(tool.desc)}</td></tr>`;
+    });
+    
+    let sizesHtml = '';
+    coalSizes.forEach(size => {
+      sizesHtml += `<li>${escapeHtml(size)}</li>`;
+    });
+    
+    return `
+      <table class="ref-table" style="margin-bottom:20px">
+        <tr><th>Инструмент</th><th>Описание</th></tr>
+        ${toolsHtml}
+      </table>
+      <div class="info-card">
+        <h3>⚫ Размеры углей</h3>
+        <ul>${sizesHtml}</ul>
+      </div>
+    `;
+  }
+
+  // ========== ФУНКЦИИ ДЛЯ РАБОТЫ С ЧИСТКОЙ (clean) ==========
+  
+  function buildCleanEditor(currentHtml) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = currentHtml;
+    
+    const accessories = [];
+    const accRows = tempDiv.querySelectorAll('.ref-table tr');
+    for (let i = 1; i < accRows.length; i++) {
+      const cells = accRows[i].querySelectorAll('td');
+      if (cells.length >= 2) {
+        accessories.push({
+          name: cells[0].textContent.trim(),
+          desc: cells[1].textContent.trim()
+        });
+      }
+    }
+    
+    let accHtml = '';
+    accessories.forEach((acc, idx) => {
+      accHtml += `
+        <div class="acc-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+          <input type="text" class="acc-name" value="${escapeHtml(acc.name)}" placeholder="Аксессуар" style="width:100%; margin-bottom: 8px;">
+          <textarea class="acc-desc" rows="2" placeholder="Применение" style="width:100%">${escapeHtml(acc.desc)}</textarea>
+          <button class="remove-acc-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
+        </div>
+      `;
+    });
+    
+    return `
+      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <span class="modal-title">✏️ Редактировать: Обслуживание и чистка</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>🧼 Аксессуары для чистки</label>
+            <div id="accList">${accHtml}</div>
+            <button id="addAccBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить аксессуар</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Отмена</button>
+          <button class="btn-save">💾 Сохранить</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  function saveCleanEditor(modal) {
+    const accessories = [];
+    modal.querySelectorAll('.acc-item').forEach(item => {
+      const name = item.querySelector('.acc-name').value.trim();
+      const desc = item.querySelector('.acc-desc').value.trim();
+      if (name && desc) {
+        accessories.push({ name, desc });
+      }
+    });
+    
+    let accHtml = '';
+    accessories.forEach(acc => {
+      accHtml += `<tr><td><strong>${escapeHtml(acc.name)}</strong></td><td>${escapeHtml(acc.desc)}</td></tr>`;
+    });
+    
+    return `
+      <table class="ref-table">
+        <tr><th>Аксессуар</th><th>Применение</th></tr>
+        ${accHtml}
+      </table>
+    `;
+  }
+
+  // ========== ОСНОВНАЯ ФУНКЦИЯ РЕДАКТИРОВАНИЯ ==========
   
   function editContent(page, section) {
     const contentDiv = document.getElementById(`${section}-content`);
     const currentHtml = contentDiv.innerHTML;
     
-    if (section === 'info') {
-      editInfoContent(contentDiv, currentHtml);
-    } else if (section === 'alternatives') {
-      editAlternativesContent(contentDiv, currentHtml);
-    } else if (section === 'coils') {
-      editCoilsContent(contentDiv, currentHtml);
-    }
-  }
-  
-  function editInfoContent(contentDiv, currentHtml) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
+    let modalHtml = '';
+    let saveFunction = null;
     
-    // Извлекаем типы жидкостей
-    const liquidTypes = [];
-    const typesUl = tempDiv.querySelector('.two-col .info-card:first-child ul');
-    if (typesUl) {
-      typesUl.querySelectorAll('li').forEach(li => liquidTypes.push(li.textContent.trim()));
+    if (section === 'parts') {
+      modalHtml = buildPartsEditor(currentHtml);
+      saveFunction = (modal) => savePartsEditor(modal, contentDiv);
+    } 
+    else if (section === 'bowls') {
+      // Чаши - оставляем как было
+      editBowls(contentDiv);
+      return;
     }
-    
-    // Извлекаем уровни никотина
-    const nicLevels = [];
-    const nicUl = tempDiv.querySelector('.two-col .info-card:last-child ul');
-    if (nicUl) {
-      nicUl.querySelectorAll('li').forEach(li => nicLevels.push(li.textContent.trim()));
+    else if (section === 'coal') {
+      modalHtml = buildCoalEditor(currentHtml);
+      saveFunction = (modal) => saveCoalEditor(modal);
+    }
+    else if (section === 'clean') {
+      modalHtml = buildCleanEditor(currentHtml);
+      saveFunction = (modal) => saveCleanEditor(modal);
     }
     
-    // Извлекаем информацию о Black Jack vs Camel
-    let camelText = '', blackjackText = '';
-    const camelCard = tempDiv.querySelector('.accordion .two-col .info-card:first-child ul');
-    const blackjackCard = tempDiv.querySelector('.accordion .two-col .info-card:last-child ul');
-    if (camelCard) {
-      camelText = Array.from(camelCard.querySelectorAll('li')).map(li => li.textContent.trim()).join('\n');
-    }
-    if (blackjackCard) {
-      blackjackText = Array.from(blackjackCard.querySelectorAll('li')).map(li => li.textContent.trim()).join('\n');
-    }
-    
-    // Извлекаем информацию о потемнении жидкости
-    let darkeningText = '';
-    const darkeningP = tempDiv.querySelector('.accordion:last-child .acc-body p');
-    const darkeningScript = tempDiv.querySelector('.accordion:last-child .acc-body .hl.ok');
-    if (darkeningP) darkeningText = darkeningP.textContent.trim();
-    let scriptText = '';
-    if (darkeningScript) scriptText = darkeningScript.textContent.trim();
-    
-    let typesHtml = '';
-    liquidTypes.forEach((item, idx) => {
-      typesHtml += `
-        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <input type="text" class="type-item" value="${escapeHtml(item)}" style="flex:1" placeholder="Тип жидкости">
-          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        </div>
-      `;
-    });
-    
-    let nicHtml = '';
-    nicLevels.forEach((item, idx) => {
-      nicHtml += `
-        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <input type="text" class="nic-item" value="${escapeHtml(item)}" style="flex:1" placeholder="Уровень никотина">
-          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        </div>
-      `;
-    });
+    if (!modalHtml) return;
     
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: Общая информация</span>
-          <button class="modal-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="field">
-            <label>⚗️ Типы жидкостей</label>
-            <div id="typesList">${typesHtml}</div>
-            <button id="addTypeBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить тип</button>
-          </div>
-          
-          <div class="field">
-            <label>💡 Уровни никотина</label>
-            <div id="nicList">${nicHtml}</div>
-            <button id="addNicBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить уровень</button>
-          </div>
-          
-          <div class="field">
-            <label>🐫 Camel (список преимуществ)</label>
-            <textarea id="camelText" rows="3" placeholder="Каждый пункт с новой строки">${camelText}</textarea>
-          </div>
-          
-          <div class="field">
-            <label>🃏 Black Jack (список преимуществ)</label>
-            <textarea id="blackjackText" rows="3" placeholder="Каждый пункт с новой строки">${blackjackText}</textarea>
-          </div>
-          
-          <div class="field">
-            <label>📝 Почему жидкость темнеет? (текст)</label>
-            <textarea id="darkeningText" rows="3">${escapeHtml(darkeningText)}</textarea>
-          </div>
-          
-          <div class="field">
-            <label>💬 Скрипт для клиента</label>
-            <textarea id="scriptText" rows="3">${escapeHtml(scriptText)}</textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel">Отмена</button>
-          <button class="btn-save">💾 Сохранить</button>
-        </div>
-      </div>
-    `;
+    modal.innerHTML = modalHtml;
     
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
     
-    // Добавление типов жидкостей
-    const addTypeBtn = modal.querySelector('#addTypeBtn');
-    if (addTypeBtn) {
-      addTypeBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#typesList');
-        const newDiv = document.createElement('div');
-        newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-        newDiv.innerHTML = `
-          <input type="text" class="type-item" style="flex:1" placeholder="Тип жидкости">
-          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        `;
-        newDiv.querySelector('.remove-item-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
+    // Добавляем обработчики для кнопок добавления
+    if (section === 'parts') {
+      // Добавление пунктов в "Что такое кальян"
+      const addWhatIsBtn = modal.querySelector('#addWhatIsItemBtn');
+      if (addWhatIsBtn) {
+        addWhatIsBtn.addEventListener('click', () => {
+          const container = modal.querySelector('#whatIsHookayList');
+          const newDiv = document.createElement('div');
+          newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+          newDiv.innerHTML = `
+            <input type="text" class="whatis-item" style="flex:1" placeholder="Пункт списка">
+            <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+          `;
+          newDiv.querySelector('.remove-item-btn').addEventListener('click', () => newDiv.remove());
+          container.appendChild(newDiv);
+        });
+      }
+      
+      // Добавление пунктов в "Верхняя часть"
+      const addTopBtn = modal.querySelector('#addTopItemBtn');
+      if (addTopBtn) {
+        addTopBtn.addEventListener('click', () => {
+          const container = modal.querySelector('#topPartsList');
+          const newDiv = document.createElement('div');
+          newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+          newDiv.innerHTML = `
+            <input type="text" class="top-item" style="flex:1" placeholder="Пункт списка">
+            <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+          `;
+          newDiv.querySelector('.remove-item-btn').addEventListener('click', () => newDiv.remove());
+          container.appendChild(newDiv);
+        });
+      }
+      
+      // Добавление пунктов в "Нижняя часть"
+      const addBottomBtn = modal.querySelector('#addBottomItemBtn');
+      if (addBottomBtn) {
+        addBottomBtn.addEventListener('click', () => {
+          const container = modal.querySelector('#bottomPartsList');
+          const newDiv = document.createElement('div');
+          newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+          newDiv.innerHTML = `
+            <input type="text" class="bottom-item" style="flex:1" placeholder="Пункт списка">
+            <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+          `;
+          newDiv.querySelector('.remove-item-btn').addEventListener('click', () => newDiv.remove());
+          container.appendChild(newDiv);
+        });
+      }
+      
+      // Удаление элементов
+      modal.querySelectorAll('.remove-item-btn').forEach(btn => {
+        btn.addEventListener('click', () => btn.closest('div').remove());
       });
     }
-    
-    // Добавление уровней никотина
-    const addNicBtn = modal.querySelector('#addNicBtn');
-    if (addNicBtn) {
-      addNicBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#nicList');
-        const newDiv = document.createElement('div');
-        newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-        newDiv.innerHTML = `
-          <input type="text" class="nic-item" style="flex:1" placeholder="Уровень никотина">
-          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        `;
-        newDiv.querySelector('.remove-item-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
+    else if (section === 'coal') {
+      const addToolBtn = modal.querySelector('#addToolBtn');
+      if (addToolBtn) {
+        addToolBtn.addEventListener('click', () => {
+          const container = modal.querySelector('#toolsList');
+          const newDiv = document.createElement('div');
+          newDiv.className = 'tool-item';
+          newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
+          newDiv.innerHTML = `
+            <input type="text" class="tool-name" placeholder="Инструмент" style="width:100%; margin-bottom: 8px;">
+            <textarea class="tool-desc" rows="2" placeholder="Описание" style="width:100%"></textarea>
+            <button class="remove-tool-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
+          `;
+          newDiv.querySelector('.remove-tool-btn').addEventListener('click', () => newDiv.remove());
+          container.appendChild(newDiv);
+        });
+      }
+      
+      const addSizeBtn = modal.querySelector('#addSizeBtn');
+      if (addSizeBtn) {
+        addSizeBtn.addEventListener('click', () => {
+          const container = modal.querySelector('#coalSizesList');
+          const newDiv = document.createElement('div');
+          newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+          newDiv.innerHTML = `
+            <input type="text" class="coal-size" style="flex:1" placeholder="Размер угля">
+            <button class="remove-size-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+          `;
+          newDiv.querySelector('.remove-size-btn').addEventListener('click', () => newDiv.remove());
+          container.appendChild(newDiv);
+        });
+      }
+      
+      modal.querySelectorAll('.remove-tool-btn, .remove-size-btn').forEach(btn => {
+        btn.addEventListener('click', () => btn.closest('.tool-item, div').remove());
       });
     }
-    
-    modal.querySelectorAll('.remove-item-btn').forEach(btn => {
-      btn.addEventListener('click', () => btn.closest('div').remove());
-    });
+    else if (section === 'clean') {
+      const addAccBtn = modal.querySelector('#addAccBtn');
+      if (addAccBtn) {
+        addAccBtn.addEventListener('click', () => {
+          const container = modal.querySelector('#accList');
+          const newDiv = document.createElement('div');
+          newDiv.className = 'acc-item';
+          newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
+          newDiv.innerHTML = `
+            <input type="text" class="acc-name" placeholder="Аксессуар" style="width:100%; margin-bottom: 8px;">
+            <textarea class="acc-desc" rows="2" placeholder="Применение" style="width:100%"></textarea>
+            <button class="remove-acc-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
+          `;
+          newDiv.querySelector('.remove-acc-btn').addEventListener('click', () => newDiv.remove());
+          container.appendChild(newDiv);
+        });
+      }
+      
+      modal.querySelectorAll('.remove-acc-btn').forEach(btn => {
+        btn.addEventListener('click', () => btn.closest('.acc-item').remove());
+      });
+    }
     
     const closeModal = () => {
       modal.classList.remove('open');
@@ -405,215 +665,61 @@
     modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
     
     modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const types = Array.from(modal.querySelectorAll('#typesList input.type-item')).map(i => i.value.trim()).filter(v => v);
-      const nics = Array.from(modal.querySelectorAll('#nicList input.nic-item')).map(i => i.value.trim()).filter(v => v);
-      const camel = modal.querySelector('#camelText').value.split('\n').filter(l => l.trim());
-      const blackjack = modal.querySelector('#blackjackText').value.split('\n').filter(l => l.trim());
-      const darkening = modal.querySelector('#darkeningText').value;
-      const script = modal.querySelector('#scriptText').value;
+      const newHtml = saveFunction(modal);
       
-      const typesHtmlNew = types.map(t => `<li>${escapeHtml(t)}</li>`).join('');
-      const nicsHtmlNew = nics.map(n => `<li>${escapeHtml(n)}</li>`).join('');
-      const camelHtml = camel.map(c => `<li>${escapeHtml(c)}</li>`).join('');
-      const blackjackHtml = blackjack.map(b => `<li>${escapeHtml(b)}</li>`).join('');
-      
-      const newHtml = `
-        <div class="two-col">
-          <div class="info-card">
-            <h3>⚗️ Типы жидкостей</h3>
-            <ul>${typesHtmlNew}</ul>
-          </div>
-          <div class="info-card">
-            <h3>💡 Уровни никотина</h3>
-            <ul>${nicsHtmlNew}</ul>
-          </div>
-        </div>
-        <div class="accordion">
-          <div class="acc-header"><span class="acc-title">Black Jack vs Camel — в чём разница?</span><span class="acc-arrow">▼</span></div>
-          <div class="acc-body">
-            <div class="two-col">
-              <div class="info-card"><h3>🐫 Camel</h3><ul>${camelHtml}</ul></div>
-              <div class="info-card"><h3>🃏 Black Jack</h3><ul>${blackjackHtml}</ul></div>
-            </div>
-          </div>
-        </div>
-        <div class="accordion">
-          <div class="acc-header"><span class="acc-title">Почему жидкость темнеет?</span><span class="acc-arrow">▼</span></div>
-          <div class="acc-body">
-            <p>${escapeHtml(darkening)}</p>
-            <div class="hl ok">${escapeHtml(script)}</div>
-          </div>
-        </div>
-      `;
-      
-      await saveContent('liquids', 'info', newHtml, contentDiv, closeModal);
+      try {
+        const response = await fetch(`/api/content/hookah/${section}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ content: newHtml })
+        });
+        
+        if (response.ok) {
+          contentDiv.innerHTML = newHtml;
+          alert('✅ Сохранено успешно!');
+          closeModal();
+        } else {
+          alert('❌ Ошибка сохранения');
+        }
+      } catch (error) {
+        alert('❌ Ошибка: ' + error.message);
+      }
     });
   }
   
-  function editAlternativesContent(contentDiv, currentHtml) {
+  // Функция для редактирования чаш (оставляем как было)
+  function editBowls(contentDiv) {
+    // ... код для редактирования чаш (как был ранее)
+    const currentHtml = contentDiv.innerHTML;
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = currentHtml;
     
-    // Извлекаем альтернативы
-    const alternatives = [];
-    const altUl = tempDiv.querySelector('.info-card:first-child ul');
-    if (altUl) {
-      altUl.querySelectorAll('li').forEach(li => alternatives.push(li.textContent.trim()));
-    }
+    const alertText = tempDiv.querySelector('.alert-bar.info span:last-child')?.textContent.trim() || "Разные чаши по-разному раскрывают табак — влияют на крепость и вкус.";
     
-    // Извлекаем цвета Хром
-    const chromColors = [];
-    const chromUl = tempDiv.querySelector('.info-card:last-child ul');
-    if (chromUl) {
-      chromUl.querySelectorAll('li').forEach(li => chromColors.push(li.textContent.trim()));
-    }
-    
-    let altHtml = '';
-    alternatives.forEach((item, idx) => {
-      altHtml += `
-        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <input type="text" class="alt-item" value="${escapeHtml(item)}" style="flex:1" placeholder="Альтернатива">
-          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        </div>
-      `;
-    });
-    
-    let colorsHtml = '';
-    chromColors.forEach((item, idx) => {
-      colorsHtml += `
-        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <input type="text" class="color-item" value="${escapeHtml(item)}" style="flex:1" placeholder="Цвет и описание">
-          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        </div>
-      `;
-    });
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: Альтернативы</span>
-          <button class="modal-close">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="field">
-            <label>🔄 Чем заменить (список)</label>
-            <div id="altList">${altHtml}</div>
-            <button id="addAltBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить альтернативу</button>
-          </div>
-          
-          <div class="field">
-            <label>🎨 Цвета Хром (список)</label>
-            <div id="colorList">${colorsHtml}</div>
-            <button id="addColorBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить цвет</button>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel">Отмена</button>
-          <button class="btn-save">💾 Сохранить</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    const addAltBtn = modal.querySelector('#addAltBtn');
-    if (addAltBtn) {
-      addAltBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#altList');
-        const newDiv = document.createElement('div');
-        newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-        newDiv.innerHTML = `
-          <input type="text" class="alt-item" style="flex:1" placeholder="Альтернатива">
-          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        `;
-        newDiv.querySelector('.remove-item-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
-      });
-    }
-    
-    const addColorBtn = modal.querySelector('#addColorBtn');
-    if (addColorBtn) {
-      addColorBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#colorList');
-        const newDiv = document.createElement('div');
-        newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-        newDiv.innerHTML = `
-          <input type="text" class="color-item" style="flex:1" placeholder="Цвет и описание">
-          <button class="remove-item-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
-        `;
-        newDiv.querySelector('.remove-item-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
-      });
-    }
-    
-    modal.querySelectorAll('.remove-item-btn').forEach(btn => {
-      btn.addEventListener('click', () => btn.closest('div').remove());
-    });
-    
-    const closeModal = () => {
-      modal.classList.remove('open');
-      setTimeout(() => modal.remove(), 300);
-    };
-    
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
-    modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const alternativesList = Array.from(modal.querySelectorAll('#altList input.alt-item')).map(i => i.value.trim()).filter(v => v);
-      const colorsList = Array.from(modal.querySelectorAll('#colorList input.color-item')).map(i => i.value.trim()).filter(v => v);
-      
-      const altHtmlNew = alternativesList.map(a => `<li>${escapeHtml(a)}</li>`).join('');
-      const colorsHtmlNew = colorsList.map(c => `<li>${escapeHtml(c)}</li>`).join('');
-      
-      const newHtml = `
-        <div class="info-card">
-          <h3>🔄 Чем заменить</h3>
-          <ul>${altHtmlNew}</ul>
-        </div>
-        <div class="info-card">
-          <h3>🎨 Цвета Хром</h3>
-          <ul>${colorsHtmlNew}</ul>
-        </div>
-      `;
-      
-      await saveContent('liquids', 'alternatives', newHtml, contentDiv, closeModal);
-    });
-  }
-  
-  function editCoilsContent(contentDiv, currentHtml) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
-    
-    // Извлекаем таблицу коилов
-    const coils = [];
+    const rows = [];
     const tableRows = tempDiv.querySelectorAll('.ref-table tr');
     for (let i = 1; i < tableRows.length; i++) {
       const cells = tableRows[i].querySelectorAll('td');
       if (cells.length >= 3) {
-        coils.push({
-          device: cells[0].textContent.trim(),
-          type: cells[1].textContent.trim(),
-          models: cells[2].textContent.trim()
+        rows.push({
+          name: cells[0].textContent.trim(),
+          desc: cells[1].textContent.trim(),
+          audience: cells[2].textContent.trim()
         });
       }
     }
     
-    // Извлекаем примечание
-    let note = '';
-    const noteP = tempDiv.querySelector('p');
-    if (noteP) note = noteP.textContent.trim();
-    
-    let coilsHtml = '';
-    coils.forEach((coil, idx) => {
-      coilsHtml += `
-        <div class="coil-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
-          <input type="text" class="coil-device" value="${escapeHtml(coil.device)}" placeholder="Устройство" style="width:100%; margin-bottom: 8px;">
-          <input type="text" class="coil-type" value="${escapeHtml(coil.type)}" placeholder="Тип коила" style="width:100%; margin-bottom: 8px;">
-          <input type="text" class="coil-models" value="${escapeHtml(coil.models)}" placeholder="Совместимые модели" style="width:100%; margin-bottom: 8px;">
-          <button class="remove-coil-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
+    let bowlsHtml = '';
+    rows.forEach((row, index) => {
+      bowlsHtml += `
+        <div class="bowl-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+            <input type="text" class="bowl-name" value="${escapeHtml(row.name)}" placeholder="Название чаши" style="flex:2">
+            <input type="text" class="bowl-audience" value="${escapeHtml(row.audience)}" placeholder="Для кого" style="flex:1">
+          </div>
+          <textarea class="bowl-desc" rows="2" placeholder="Описание" style="width:100%">${escapeHtml(row.desc)}</textarea>
+          <button class="remove-bowl-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
         </div>
       `;
     });
@@ -621,21 +727,20 @@
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal" style="max-width: 800px;">
         <div class="modal-header">
-          <span class="modal-title">✏️ Редактировать: Совместимость испарителей</span>
+          <span class="modal-title">✏️ Редактировать: Чаши</span>
           <button class="modal-close">✕</button>
         </div>
         <div class="modal-body">
           <div class="field">
-            <label>📋 Таблица коилов</label>
-            <div id="coilsList">${coilsHtml}</div>
-            <button id="addCoilBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить коил</button>
+            <label>💡 Заголовок-подсказка</label>
+            <input type="text" id="alertText" value="${escapeHtml(alertText)}" style="width:100%">
           </div>
-          
           <div class="field">
-            <label>📝 Примечание</label>
-            <textarea id="note" rows="2" placeholder="Дополнительная информация">${escapeHtml(note)}</textarea>
+            <label>🏺 Чаши</label>
+            <div id="bowlsList">${bowlsHtml}</div>
+            <button id="addBowlBtn" class="btn-add" style="margin-top: 10px;">➕ Добавить чашу</button>
           </div>
         </div>
         <div class="modal-footer">
@@ -648,26 +753,28 @@
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
     
-    const addCoilBtn = modal.querySelector('#addCoilBtn');
-    if (addCoilBtn) {
-      addCoilBtn.addEventListener('click', () => {
-        const container = modal.querySelector('#coilsList');
+    const addBowlBtn = modal.querySelector('#addBowlBtn');
+    if (addBowlBtn) {
+      addBowlBtn.addEventListener('click', () => {
+        const bowlsList = modal.querySelector('#bowlsList');
         const newDiv = document.createElement('div');
-        newDiv.className = 'coil-item';
+        newDiv.className = 'bowl-item';
         newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
         newDiv.innerHTML = `
-          <input type="text" class="coil-device" placeholder="Устройство" style="width:100%; margin-bottom: 8px;">
-          <input type="text" class="coil-type" placeholder="Тип коила" style="width:100%; margin-bottom: 8px;">
-          <input type="text" class="coil-models" placeholder="Совместимые модели" style="width:100%; margin-bottom: 8px;">
-          <button class="remove-coil-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+            <input type="text" class="bowl-name" placeholder="Название чаши" style="flex:2">
+            <input type="text" class="bowl-audience" placeholder="Для кого" style="flex:1">
+          </div>
+          <textarea class="bowl-desc" rows="2" placeholder="Описание" style="width:100%"></textarea>
+          <button class="remove-bowl-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить</button>
         `;
-        newDiv.querySelector('.remove-coil-btn').addEventListener('click', () => newDiv.remove());
-        container.appendChild(newDiv);
+        newDiv.querySelector('.remove-bowl-btn').addEventListener('click', () => newDiv.remove());
+        bowlsList.appendChild(newDiv);
       });
     }
     
-    modal.querySelectorAll('.remove-coil-btn').forEach(btn => {
-      btn.addEventListener('click', () => btn.closest('.coil-item').remove());
+    modal.querySelectorAll('.remove-bowl-btn').forEach(btn => {
+      btn.addEventListener('click', () => btn.closest('.bowl-item').remove());
     });
     
     const closeModal = () => {
@@ -679,65 +786,49 @@
     modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
     
     modal.querySelector('.btn-save').addEventListener('click', async () => {
-      const coilsList = [];
-      modal.querySelectorAll('.coil-item').forEach(item => {
-        const device = item.querySelector('.coil-device').value.trim();
-        const type = item.querySelector('.coil-type').value.trim();
-        const models = item.querySelector('.coil-models').value.trim();
-        if (device && type && models) {
-          coilsList.push({ device, type, models });
+      const newAlertText = modal.querySelector('#alertText').value;
+      const bowlItems = modal.querySelectorAll('.bowl-item');
+      let tableRows = '';
+      bowlItems.forEach(item => {
+        const name = item.querySelector('.bowl-name').value;
+        const audience = item.querySelector('.bowl-audience').value;
+        const desc = item.querySelector('.bowl-desc').value;
+        if (name && desc) {
+          tableRows += `<tr><td><strong>${escapeHtml(name)}</strong></td><td>${escapeHtml(desc)}</td><td>${escapeHtml(audience)}</td></tr>`;
         }
       });
       
-      const note = modal.querySelector('#note').value;
-      
-      let tableHtml = '';
-      coilsList.forEach(coil => {
-        tableHtml += `
-
-
-          <tr><td><strong>${escapeHtml(coil.device)}</strong></td><td>${escapeHtml(coil.type)}</td><td>${escapeHtml(coil.models)}</td></tr>
-        `;
-      });
-      
       const newHtml = `
-        <div class="accordion open">
-          <div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div>
-          <div class="acc-body">
-            <table class="ref-table">
-              <tr><th>Устройство / Платформа</th><th>Тип коила</th><th>Совместимые модели</th></tr>
-              ${tableHtml}
-            </table>
-            <p style="margin-top:14px; font-size:12px; color:var(--muted)">${escapeHtml(note)}</p>
-          </div>
+        <div class="alert-bar info">
+          <span>💡</span><span>${escapeHtml(newAlertText)}</span>
         </div>
+        <table class="ref-table">
+          <tr><th>Чаша</th><th>Описание</th><th>Для кого</th></tr>
+          ${tableRows}
+        </table>
       `;
       
-      await saveContent('liquids', 'coils', newHtml, contentDiv, closeModal);
+      try {
+        const response = await fetch(`/api/content/hookah/bowls`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ content: newHtml })
+        });
+        
+        if (response.ok) {
+          contentDiv.innerHTML = newHtml;
+          alert('✅ Сохранено успешно!');
+          closeModal();
+        } else {
+          alert('❌ Ошибка сохранения');
+        }
+      } catch (error) {
+        alert('❌ Ошибка: ' + error.message);
+      }
     });
   }
-  
-  async function saveContent(page, section, newHtml, contentDiv, closeModal) {
-    try {
-      const response = await fetch(`/api/content/${page}/${section}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ content: newHtml })
-      });
-      
-      if (response.ok) {
-        contentDiv.innerHTML = newHtml;
-        alert('✅ Сохранено успешно!');
-        closeModal();
-      } else {
-        alert('❌ Ошибка сохранения');
-      }
-    } catch (error) {
-      alert('❌ Ошибка: ' + error.message);
-    }
-  }
-  
+
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
@@ -890,7 +981,7 @@
     }
   };
 
-  checkPermissions().then(() => renderGrid());
+  checkPermissions();
 </script>
 </body>
 </html>
