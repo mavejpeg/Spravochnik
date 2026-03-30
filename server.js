@@ -88,6 +88,41 @@ async function initTables() {
             )
         `);
 
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS manufacturers (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL UNIQUE,
+                description TEXT,
+                logo TEXT,
+                quality_class VARCHAR(20) DEFAULT 'medium',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS lines (
+                id SERIAL PRIMARY KEY,
+                manufacturer_id INTEGER REFERENCES manufacturers(id) ON DELETE CASCADE,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(manufacturer_id, name)
+            )
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS flavors (
+                id SERIAL PRIMARY KEY,
+                line_id INTEGER REFERENCES lines(id) ON DELETE CASCADE,
+                name VARCHAR(255) NOT NULL,
+                strength INTEGER DEFAULT 5,
+                quality_class VARCHAR(20) DEFAULT 'medium',
+                description TEXT,
+                photo_url TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         // Insert default users
         await client.query(`
             INSERT INTO users (username, password, full_name, role) 
@@ -134,6 +169,10 @@ async function initTables() {
 
         await client.query(`
             ALTER TABLE products ADD COLUMN IF NOT EXISTS product_class VARCHAR(20) DEFAULT 'medium'
+        `);
+
+        await client.query(`
+            ALTER TABLE products ADD COLUMN IF NOT EXISTS quality_class VARCHAR(20) DEFAULT 'medium'
         `);
 
         console.log('✅ Database tables ready');
