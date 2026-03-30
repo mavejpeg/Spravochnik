@@ -1,4 +1,4 @@
-// server.js - упрощенная версия
+// server.js - исправленная версия
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -115,24 +115,29 @@ async function initDatabase() {
             ALTER TABLE lines ADD COLUMN IF NOT EXISTS strength_color VARCHAR(20) DEFAULT 'medium'
         `).catch(e => console.log('Column check:', e.message));
 
-        // Insert default users
-        await client.query(`
-            INSERT INTO users (username, password, full_name, role) 
-            VALUES ('user', '1111', 'Обычный пользователь', 'user')
-            ON CONFLICT (username) DO NOTHING
-        `);
-        
-        await client.query(`
-            INSERT INTO users (username, password, full_name, role) 
-            VALUES ('rop', '1234', 'Руководитель отдела продаж', 'rop')
-            ON CONFLICT (username) DO NOTHING
-        `);
-        
-        await client.query(`
-            INSERT INTO users (username, password, full_name, role) 
-            VALUES ('root', 'root123', 'Главный администратор', 'root')
-            ON CONFLICT (username) DO NOTHING
-        `);
+        // Insert default users if not exist
+        const userCheck = await client.query('SELECT COUNT(*) FROM users');
+        if (parseInt(userCheck.rows[0].count) === 0) {
+            await client.query(`
+                INSERT INTO users (username, password, full_name, role) VALUES 
+                ('user', '1111', 'Обычный пользователь', 'user'),
+                ('rop', '1234', 'Руководитель отдела продаж', 'rop'),
+                ('root', 'root123', 'Главный администратор', 'root')
+            `);
+            console.log('✅ Default users inserted');
+        }
+
+        // Insert default content for liquids if not exist
+        const contentCheck = await client.query('SELECT COUNT(*) FROM content WHERE page = $1', ['liquids']);
+        if (parseInt(contentCheck.rows[0].count) === 0) {
+            await client.query(`
+                INSERT INTO content (page, section, content) VALUES 
+                ('liquids', 'info', '<div class="two-col"><div class="info-card"><h3>⚗️ Типы жидкостей</h3><ul><li><strong>Солевые (Salt Nic)</strong> — быстро накуривают</li><li><strong>Щелочные (Freebase)</strong> — накопительный эффект</li></ul></div><div class="info-card"><h3>💡 Уровни никотина</h3><ul><li>0 мг — нулёвки</li><li>20 мг — стандарт</li><li>50 мг — крепкие</li></ul></div></div>'),
+                ('liquids', 'alternatives', '<div class="info-card"><h3>🔄 Чем заменить</h3><ul><li><strong>Брызги</strong> → Провинция, Наркоз</li><li><strong>Рик и Морти</strong> → Сайонара</li></ul></div><div class="info-card"><h3>🎨 Цвета Хром</h3><ul><li>Розовая — сладкая</li><li>Оранжевая — генетик</li></ul></div>'),
+                ('liquids', 'coils', '<div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead><tr><th>Устройство</th><th>Тип коила</th></tr></thead><tbody><tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td></tr></tbody></table></div></div>')
+            `);
+            console.log('✅ Default content inserted');
+        }
 
         client.release();
         console.log('✅ Database tables ready');
@@ -172,7 +177,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
-// ========== SESSION MIDDLEWARE (MemoryStore) ==========
+// ========== SESSION MIDDLEWARE ==========
 app.use(session({
     secret: 'spravochnik_secret_key_2024',
     resave: false,
@@ -203,14 +208,6 @@ function requireRop(req, res, next) {
     }
 }
 
-function requireRoot(req, res, next) {
-    if (req.session && req.session.user && req.session.user.role === 'root') {
-        next();
-    } else {
-        res.status(403).json({ error: 'Root only' });
-    }
-}
-
 function protectPage(req, res, next) {
     if (req.session && req.session.user) {
         next();
@@ -235,7 +232,6 @@ app.get('/main.js', (req, res) => {
 // ========== AUTH ROUTES ==========
 
 app.get('/api/check-auth', (req, res) => {
-    console.log('check-auth - session user:', req.session?.user?.username);
     if (req.session && req.session.user) {
         res.json({ authenticated: true, user: req.session.user });
     } else {
@@ -244,7 +240,6 @@ app.get('/api/check-auth', (req, res) => {
 });
 
 app.post('/api/simple-login', async (req, res) => {
-    console.log('Simple login attempt');
     const { password } = req.body;
     
     if (!password) {
@@ -270,7 +265,6 @@ app.post('/api/simple-login', async (req, res) => {
             role: user.role
         };
         
-        console.log('Simple login success:', user.username);
         res.json({ success: true, user: req.session.user });
     } catch (err) {
         console.error('Login error:', err);
@@ -279,7 +273,6 @@ app.post('/api/simple-login', async (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
-    console.log('Login attempt:', req.body.username);
     const { username, password } = req.body;
     
     try {
@@ -301,7 +294,6 @@ app.post('/api/login', async (req, res) => {
             role: user.role
         };
         
-        console.log('Login success:', user.username);
         res.json({ success: true, user: req.session.user });
     } catch (err) {
         console.error('Login error:', err);
@@ -360,23 +352,17 @@ app.post('/api/users/:id/change-password', async (req, res) => {
         const currentUser = req.session.user;
         
         let canChange = false;
-        
-        if (currentUser.role === 'root') {
-            canChange = true;
-        } else if (currentUser.role === 'rop' && target.role === 'user') {
-            canChange = true;
-        }
+        if (currentUser.role === 'root') canChange = true;
+        else if (currentUser.role === 'rop' && target.role === 'user') canChange = true;
         
         if (!canChange) {
-            return res.status(403).json({ error: 'Нет прав для смены пароля этому пользователю' });
+            return res.status(403).json({ error: 'Нет прав для смены пароля' });
         }
         
         await pool.query('UPDATE users SET password = $1 WHERE id = $2', [newPassword, id]);
-        
-        res.json({ success: true, message: 'Пароль успешно изменен' });
+        res.json({ success: true });
     } catch (error) {
-        console.error('Change password error:', error);
-        res.status(500).json({ error: 'Ошибка смены пароля' });
+        res.status(500).json({ error: 'Ошибка' });
     }
 });
 
@@ -405,42 +391,31 @@ app.post('/api/users', async (req, res) => {
             'INSERT INTO users (username, password, full_name, role) VALUES ($1, $2, $3, $4)',
             [username.toLowerCase(), password, full_name, finalRole]
         );
-        res.json({ success: true, message: 'Пользователь создан' });
+        res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: 'Пользователь уже существует' });
     }
 });
 
-app.delete('/api/users/:id', requireRoot, async (req, res) => {
-    const { id } = req.params;
+app.delete('/api/users/:id', async (req, res) => {
+    if (!req.session || !req.session.user || req.session.user.role !== 'root') {
+        return res.status(403).json({ error: 'Root only' });
+    }
     
+    const { id } = req.params;
     if (parseInt(id) === req.session.user.id) {
-        return res.status(400).json({ error: 'Нельзя удалить самого себя' });
+        return res.status(400).json({ error: 'Нельзя удалить себя' });
     }
     
     try {
         await pool.query('DELETE FROM users WHERE id = $1', [id]);
-        res.json({ success: true, message: 'Пользователь удален' });
+        res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: 'Ошибка удаления' });
+        res.status(500).json({ error: 'Ошибка' });
     }
 });
 
 // ========== PRODUCT ROUTES ==========
-
-app.get('/api/count/:category', requireAuth, async (req, res) => {
-    const { category } = req.params;
-    try {
-        const result = await pool.query(
-            'SELECT COUNT(*) FROM products WHERE category = $1',
-            [category]
-        );
-        res.json({ count: parseInt(result.rows[0].count) });
-    } catch (error) {
-        console.error('Count error:', error);
-        res.json({ count: 0 });
-    }
-});
 
 app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file' });
@@ -461,54 +436,69 @@ app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) =>
 });
 
 app.get('/api/products/:category', requireAuth, async (req, res) => {
-    const result = await pool.query(
-        'SELECT * FROM products WHERE category = $1 ORDER BY created_at DESC',
-        [req.params.category]
-    );
-    res.json(result.rows);
+    try {
+        const result = await pool.query(
+            'SELECT * FROM products WHERE category = $1 ORDER BY created_at DESC',
+            [req.params.category]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('GET products error:', error);
+        res.json([]);
+    }
 });
 
 app.post('/api/products/:category', requireRop, async (req, res) => {
     const { category } = req.params;
     const { id, name, strength, quality_class, origin, desc, photoUrl } = req.body;
     
-    const result = await pool.query(
-        `INSERT INTO products (category, product_id, name, strength, quality_class, origin, description, photo_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         ON CONFLICT (product_id) DO UPDATE SET
-           name = EXCLUDED.name, 
-           strength = EXCLUDED.strength,
-           quality_class = EXCLUDED.quality_class,
-           origin = EXCLUDED.origin, 
-           description = EXCLUDED.description,
-           photo_url = EXCLUDED.photo_url
-         RETURNING *`,
-        [category, id, name, strength || 5, quality_class || 'medium', origin, desc, photoUrl]
-    );
-    res.json(result.rows[0]);
+    try {
+        const result = await pool.query(
+            `INSERT INTO products (category, product_id, name, strength, quality_class, origin, description, photo_url)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             ON CONFLICT (product_id) DO UPDATE SET
+               name = EXCLUDED.name, 
+               strength = EXCLUDED.strength,
+               quality_class = EXCLUDED.quality_class,
+               origin = EXCLUDED.origin, 
+               description = EXCLUDED.description,
+               photo_url = EXCLUDED.photo_url
+             RETURNING *`,
+            [category, id, name, strength || 5, quality_class || 'medium', origin, desc, photoUrl]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('POST product error:', error);
+        res.status(500).json({ error: 'Failed to save: ' + error.message });
+    }
 });
 
 app.put('/api/products/:category/:id', requireRop, async (req, res) => {
     const { category, id } = req.params;
     const { name, strength, quality_class, origin, desc, photoUrl } = req.body;
     
-    const result = await pool.query(
-        `UPDATE products 
-         SET name=$1, strength=$2, quality_class=$3, origin=$4, description=$5, photo_url=$6
-         WHERE category=$7 AND product_id=$8 RETURNING *`,
-        [name, strength || 5, quality_class || 'medium', origin, desc, photoUrl, category, id]
-    );
-    res.json(result.rows[0]);
+    try {
+        const result = await pool.query(
+            `UPDATE products 
+             SET name=$1, strength=$2, quality_class=$3, origin=$4, description=$5, photo_url=$6
+             WHERE category=$7 AND product_id=$8 RETURNING *`,
+            [name, strength || 5, quality_class || 'medium', origin, desc, photoUrl, category, id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('PUT product error:', error);
+        res.status(500).json({ error: 'Failed to update: ' + error.message });
+    }
 });
 
 app.delete('/api/products/:category/:id', requireRop, async (req, res) => {
     const { category, id } = req.params;
-    await pool.query('DELETE FROM products WHERE category=$1 AND product_id=$2', [category, id]);
-    res.json({ success: true });
-});
-
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', session: !!req.session });
+    try {
+        await pool.query('DELETE FROM products WHERE category=$1 AND product_id=$2', [category, id]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete' });
+    }
 });
 
 // ========== CONTENT MANAGEMENT ==========
@@ -552,7 +542,6 @@ app.get('/api/manufacturers', requireAuth, async (req, res) => {
         const result = await pool.query('SELECT * FROM manufacturers ORDER BY name');
         res.json(result.rows);
     } catch (error) {
-        console.error('Get manufacturers error:', error);
         res.status(500).json({ error: 'Failed to get manufacturers' });
     }
 });
@@ -575,16 +564,13 @@ app.get('/api/manufacturers/:id', requireAuth, async (req, res) => {
             lines: lines.rows
         });
     } catch (error) {
-        console.error('Get manufacturer error:', error);
         res.status(500).json({ error: 'Failed to get manufacturer' });
     }
 });
 
 app.post('/api/manufacturers', requireRop, async (req, res) => {
     const { name, description, logo, quality_class } = req.body;
-    if (!name) {
-        return res.status(400).json({ error: 'Name is required' });
-    }
+    if (!name) return res.status(400).json({ error: 'Name is required' });
     try {
         const result = await pool.query(
             'INSERT INTO manufacturers (name, description, logo, quality_class) VALUES ($1, $2, $3, $4) RETURNING *',
@@ -592,7 +578,6 @@ app.post('/api/manufacturers', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
-        console.error('Create manufacturer error:', error);
         res.status(500).json({ error: 'Failed to create manufacturer' });
     }
 });
@@ -607,7 +592,6 @@ app.put('/api/manufacturers/:id', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
-        console.error('Update manufacturer error:', error);
         res.status(500).json({ error: 'Failed to update manufacturer' });
     }
 });
@@ -618,7 +602,6 @@ app.delete('/api/manufacturers/:id', requireRop, async (req, res) => {
         await pool.query('DELETE FROM manufacturers WHERE id = $1', [id]);
         res.json({ success: true });
     } catch (error) {
-        console.error('Delete manufacturer error:', error);
         res.status(500).json({ error: 'Failed to delete manufacturer' });
     }
 });
@@ -634,14 +617,12 @@ app.get('/api/lines/:id', requireAuth, async (req, res) => {
         }
         res.json(result.rows[0]);
     } catch (error) {
-        console.error('Get line error:', error);
         res.status(500).json({ error: 'Failed to get line' });
     }
 });
 
 app.post('/api/lines', requireRop, async (req, res) => {
     const { manufacturer_id, name, description, strength_color } = req.body;
-    
     if (!manufacturer_id || !name) {
         return res.status(400).json({ error: 'Manufacturer ID and name are required' });
     }
@@ -652,27 +633,21 @@ app.post('/api/lines', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
-        console.error('Create line error:', error);
-        res.status(500).json({ error: 'Failed to create line: ' + error.message });
+        res.status(500).json({ error: 'Failed to create line' });
     }
 });
 
 app.put('/api/lines/:id', requireRop, async (req, res) => {
     const { id } = req.params;
     const { name, description, strength_color } = req.body;
-    
     try {
         const result = await pool.query(
             'UPDATE lines SET name = $1, description = $2, strength_color = $3 WHERE id = $4 RETURNING *',
             [name, description || '', strength_color || 'medium', id]
         );
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Line not found' });
-        }
         res.json(result.rows[0]);
     } catch (error) {
-        console.error('Update line error:', error);
-        res.status(500).json({ error: 'Failed to update line: ' + error.message });
+        res.status(500).json({ error: 'Failed to update line' });
     }
 });
 
@@ -682,9 +657,12 @@ app.delete('/api/lines/:id', requireRop, async (req, res) => {
         await pool.query('DELETE FROM lines WHERE id = $1', [id]);
         res.json({ success: true });
     } catch (error) {
-        console.error('Delete line error:', error);
         res.status(500).json({ error: 'Failed to delete line' });
     }
+});
+
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', session: !!req.session });
 });
 
 // ========== HTML ROUTES ==========
@@ -698,10 +676,6 @@ app.get('/login.html', (req, res) => {
 });
 
 app.get('/', protectPage, (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/index.html', protectPage, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
@@ -746,7 +720,7 @@ async function startServer() {
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`🔐 Auth: Enabled (MemoryStore)`);
+        console.log(`🔐 Auth: Enabled`);
         console.log(`\n📋 Данные для входа:`);
         console.log(`   👤 Обычный пользователь: пароль 1111`);
         console.log(`   👑 РОП: rop / 1234`);
