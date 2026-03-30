@@ -2288,3 +2288,42 @@ details[open] summary span {
 .product-card.economy .card-img {
   box-shadow: inset 0 0 0 2px var(--accent3);
 }
+
+/* Стили для бейджа класса качества */
+.quality-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.quality-badge.premium {
+  background: rgba(124, 92, 252, 0.15);
+  color: var(--accent);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 6px rgba(124, 92, 252, 0.3);
+}
+
+.quality-badge.medium {
+  background: rgba(252, 184, 48, 0.15);
+  color: var(--accent4);
+  border: 2px solid var(--accent4);
+  box-shadow: 0 0 6px rgba(252, 184, 48, 0.3);
+}
+
+.quality-badge.economy {
+  background: rgba(60, 255, 160, 0.15);
+  color: var(--accent3);
+  border: 2px solid var(--accent3);
+  box-shadow: 0 0 6px rgba(60, 255, 160, 0.3);
+}
+
+/* Эффект при наведении */
+.quality-badge:hover {
+  transform: scale(1.02);
+  filter: brightness(1.05);
+}
