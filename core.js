@@ -1,4 +1,4 @@
-// core.js - только основные функции
+// core.js - полная версия
 
 // ========== API FUNCTIONS ==========
 
@@ -23,7 +23,7 @@ async function addItem(category, item) {
         id: item.id,
         name: item.name,
         strength: item.strength,
-        quality_class: item.quality_class || 'medium',  // <--- ДОБАВИТЬ
+        quality_class: item.quality_class || 'medium',
         origin: item.origin,
         desc: item.desc,
         photoUrl: item.photoUrl
@@ -66,7 +66,7 @@ async function updateItem(category, id, data) {
       body: JSON.stringify({
         name: data.name,
         strength: data.strength,
-        quality_class: data.quality_class || 'medium',  // <--- ДОБАВИТЬ
+        quality_class: data.quality_class || 'medium',
         origin: data.origin,
         desc: data.desc,
         photoUrl: data.photoUrl
@@ -122,18 +122,18 @@ const STRENGTH_LABELS = {
   10: 'Убийственный'
 };
 
-const QUALITY_CLASSES = {
-  premium: { name: 'Премиум', icon: '💎', color: 'var(--accent)' },
-  medium: { name: 'Средний класс', icon: '⭐', color: 'var(--accent4)' },
-  economy: { name: 'Эконом', icon: '📦', color: 'var(--accent3)' }
-};
-
 const STRENGTH_BADGE_CLASS = {
   1: 'badge-strength-1', 2: 'badge-strength-1',
   3: 'badge-strength-2', 4: 'badge-strength-2',
   5: 'badge-strength-3', 6: 'badge-strength-3',
   7: 'badge-strength-4', 8: 'badge-strength-4',
   9: 'badge-strength-5', 10: 'badge-strength-5'
+};
+
+const QUALITY_SETTINGS = {
+  premium: { name: 'Премиум', icon: '💎', color: 'var(--accent)' },
+  medium: { name: 'Средний класс', icon: '⭐', color: 'var(--accent4)' },
+  economy: { name: 'Эконом', icon: '📦', color: 'var(--accent3)' }
 };
 
 // ========== HELPER FUNCTIONS ==========
@@ -170,6 +170,8 @@ function renderProductCard(item, category, onDelete, onEdit) {
   const strength = item.strength || 5;
   const badgeClass = STRENGTH_BADGE_CLASS[strength] || 'badge-strength-3';
   const photoUrl = item.photo_url || item.photoUrl;
+  const qualityClass = item.quality_class || 'medium';
+  const quality = QUALITY_SETTINGS[qualityClass] || QUALITY_SETTINGS.medium;
   
   const canEdit = window.isRopGlobal === true;
   
@@ -185,6 +187,9 @@ function renderProductCard(item, category, onDelete, onEdit) {
       <div class="card-name">${escapeHtml(item.name)}</div>
       <div class="card-meta">
         <span class="badge ${badgeClass}">${STRENGTH_LABELS[strength]}</span>
+        <span class="badge quality-badge ${qualityClass}" style="background: ${quality.color}20; color: ${quality.color}; border-color: ${quality.color}40;">
+          ${quality.icon} ${quality.name}
+        </span>
         ${item.origin ? `<span class="badge badge-origin">🌍 ${escapeHtml(item.origin)}</span>` : ''}
       </div>
       <div class="strength-compact">
@@ -226,7 +231,8 @@ function renderProductCard(item, category, onDelete, onEdit) {
         ...item,
         id: productId,
         desc: item.description,
-        photoUrl: photoUrl
+        photoUrl: photoUrl,
+        quality_class: qualityClass
       };
       if (onEdit) onEdit(editItem);
     });
@@ -260,16 +266,13 @@ class ProductModal {
     const strengthVal = this.editItem?.strength || 5;
     const hasPhoto = this.photoUrl ? true : false;
     
-    // Опции для выбора класса качества
-    const qualityOptions = [
-      { value: 'premium', label: '💎 Премиум', selected: this.qualityClass === 'premium' },
-      { value: 'medium', label: '⭐ Средний класс', selected: this.qualityClass === 'medium' },
-      { value: 'economy', label: '📦 Эконом', selected: this.qualityClass === 'economy' }
-    ];
-    
-    const qualityHtml = qualityOptions.map(opt => 
-      `<option value="${opt.value}" ${opt.selected ? 'selected' : ''}>${opt.label}</option>`
-    ).join('');
+    const qualityHtml = `
+      <select id="fieldQuality" class="product-class-select" style="width:100%; padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px;">
+        <option value="premium" ${this.qualityClass === 'premium' ? 'selected' : ''}>💎 Премиум</option>
+        <option value="medium" ${this.qualityClass === 'medium' ? 'selected' : ''}>⭐ Средний класс</option>
+        <option value="economy" ${this.qualityClass === 'economy' ? 'selected' : ''}>📦 Эконом</option>
+      </select>
+    `;
     
     overlay.innerHTML = `
       <div class="modal">
@@ -278,7 +281,6 @@ class ProductModal {
           <button class="modal-close">✕</button>
         </div>
         <div class="modal-body">
-          <!-- Фото товара -->
           <div class="field">
             <label>📸 Фото товара</label>
             <div class="photo-upload-area" id="photoUploadArea">
@@ -299,14 +301,12 @@ class ProductModal {
             </div>
           </div>
           
-          <!-- Название -->
           <div class="field">
             <label>📝 Название *</label>
             <input type="text" id="fieldName" value="${escapeHtml(this.editItem?.name || '')}" placeholder="Введите название">
           </div>
           
           <div class="row" style="display: flex; gap: 16px; flex-wrap: wrap;">
-            <!-- Крепость -->
             <div class="field" style="flex: 1;">
               <label>⚡ Крепость (1-10)</label>
               <div class="strength-slider-wrap">
@@ -318,22 +318,17 @@ class ProductModal {
               </div>
             </div>
             
-            <!-- Класс качества -->
             <div class="field" style="flex: 1;">
               <label>🏷️ Класс качества</label>
-              <select id="fieldQuality" class="product-class-select" style="width:100%; padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 14px;">
-                ${qualityHtml}
-              </select>
+              ${qualityHtml}
             </div>
           </div>
           
-          <!-- Производитель -->
           <div class="field">
             <label>🏭 Производитель / Страна</label>
             <input type="text" id="fieldOrigin" value="${escapeHtml(this.editItem?.origin || '')}" placeholder="Например: Россия, Швеция">
           </div>
           
-          <!-- Описание -->
           <div class="field">
             <label>📋 Описание</label>
             <textarea id="fieldDesc" rows="4" placeholder="Особенности вкуса, формат, советы">${escapeHtml(this.editItem?.desc || this.editItem?.description || '')}</textarea>
@@ -349,7 +344,6 @@ class ProductModal {
     document.body.appendChild(overlay);
     setTimeout(() => overlay.classList.add('open'), 10);
     
-    // Strength slider
     const slider = overlay.querySelector('#fieldStrength');
     const valDisp = overlay.querySelector('#strengthValDisplay');
     const labelDisp = overlay.querySelector('#strengthLabelDisplay');
@@ -363,7 +357,6 @@ class ProductModal {
       });
     }
     
-    // Photo upload (оставляем как было)
     const photoInput = overlay.querySelector('#photoInput');
     const uploadProgress = overlay.querySelector('#uploadProgress');
     const progressBar = overlay.querySelector('#progressBar');
@@ -384,11 +377,6 @@ class ProductModal {
         
         if (file.size > 5 * 1024 * 1024) {
           alert('❌ Файл слишком большой! Максимум 5MB');
-          return;
-        }
-        
-        if (!file.type.startsWith('image/')) {
-          alert('❌ Пожалуйста, выберите изображение');
           return;
         }
         
@@ -434,7 +422,6 @@ class ProductModal {
       });
     }
     
-    // Close modal
     const closeModal = () => {
       overlay.classList.remove('open');
       setTimeout(() => overlay.remove(), 300);
@@ -449,7 +436,6 @@ class ProductModal {
       if (e.target === overlay) closeModal();
     });
     
-    // ========== СОХРАНЕНИЕ - ЗДЕСЬ ДОБАВЛЯЕМ quality_class ==========
     const saveBtn = overlay.querySelector('.btn-save');
     if (saveBtn) {
       saveBtn.addEventListener('click', async () => {
@@ -471,7 +457,7 @@ class ProductModal {
           id: this.editItem?.id || (Date.now() + Math.random()).toString(),
           name: name,
           strength: parseInt(overlay.querySelector('#fieldStrength')?.value || 5),
-          quality_class: overlay.querySelector('#fieldQuality')?.value || 'medium',  // <--- ЭТО СТРОКА, КОТОРУЮ НУЖНО ДОБАВИТЬ
+          quality_class: overlay.querySelector('#fieldQuality')?.value || 'medium',
           origin: overlay.querySelector('#fieldOrigin')?.value.trim() || '',
           desc: overlay.querySelector('#fieldDesc')?.value.trim() || '',
           photoUrl: this.photoUrl
@@ -500,5 +486,6 @@ window.ProductModal = ProductModal;
 window.uploadPhoto = uploadPhoto;
 window.STRENGTH_LABELS = STRENGTH_LABELS;
 window.STRENGTH_BADGE_CLASS = STRENGTH_BADGE_CLASS;
+window.QUALITY_SETTINGS = QUALITY_SETTINGS;
 window.escapeHtml = escapeHtml;
 window.isRopGlobal = false;
