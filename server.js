@@ -241,6 +241,7 @@ app.get('/main.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'main.js'));
 });
 
+
 app.post('/api/simple-login', async (req, res) => {
     const { password } = req.body;
     
@@ -600,6 +601,198 @@ app.get('/disposables.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'disposables.html'));
     } else {
         res.sendFile(path.join(__dirname, 'login.html'));
+    }
+});
+
+// ========== MANUFACTURERS ROUTES ==========
+
+// Получить всех производителей
+app.get('/api/manufacturers', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM manufacturers ORDER BY name'
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Get manufacturers error:', error);
+        res.status(500).json({ error: 'Failed to get manufacturers' });
+    }
+});
+
+// Получить производителя с линейками
+app.get('/api/manufacturers/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const manufacturer = await pool.query('SELECT * FROM manufacturers WHERE id = $1', [id]);
+        if (manufacturer.rows.length === 0) {
+            return res.status(404).json({ error: 'Manufacturer not found' });
+        }
+        
+        const lines = await pool.query(
+            'SELECT * FROM lines WHERE manufacturer_id = $1 ORDER BY name',
+            [id]
+        );
+        
+        // Для каждой линейки получаем вкусы
+        for (let line of lines.rows) {
+            const flavors = await pool.query(
+                'SELECT * FROM flavors WHERE line_id = $1 ORDER BY name',
+                [line.id]
+            );
+            line.flavors = flavors.rows;
+        }
+        
+        res.json({
+            ...manufacturer.rows[0],
+            lines: lines.rows
+        });
+    } catch (error) {
+        console.error('Get manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to get manufacturer' });
+    }
+});
+
+// Создать производителя (ROP only)
+app.post('/api/manufacturers', requireRop, async (req, res) => {
+    const { name, description, logo } = req.body;
+    if (!name) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO manufacturers (name, description, logo) VALUES ($1, $2, $3) RETURNING *',
+            [name, description, logo]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Create manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to create manufacturer' });
+    }
+});
+
+// Обновить производителя (ROP only)
+app.put('/api/manufacturers/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { name, description, logo } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE manufacturers SET name = $1, description = $2, logo = $3 WHERE id = $4 RETURNING *',
+            [name, description, logo, id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Update manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to update manufacturer' });
+    }
+});
+
+// Удалить производителя (ROP only)
+app.delete('/api/manufacturers/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM manufacturers WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to delete manufacturer' });
+    }
+});
+
+// ========== LINES ROUTES ==========
+
+// Создать линейку (ROP only)
+app.post('/api/lines', requireRop, async (req, res) => {
+    const { manufacturer_id, name, description } = req.body;
+    if (!manufacturer_id || !name) {
+        return res.status(400).json({ error: 'Manufacturer ID and name are required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO lines (manufacturer_id, name, description) VALUES ($1, $2, $3) RETURNING *',
+            [manufacturer_id, name, description]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Create line error:', error);
+        res.status(500).json({ error: 'Failed to create line' });
+    }
+});
+
+// Обновить линейку (ROP only)
+app.put('/api/lines/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { name, description } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE lines SET name = $1, description = $2 WHERE id = $3 RETURNING *',
+            [name, description, id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Update line error:', error);
+        res.status(500).json({ error: 'Failed to update line' });
+    }
+});
+
+// Удалить линейку (ROP only)
+app.delete('/api/lines/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM lines WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete line error:', error);
+        res.status(500).json({ error: 'Failed to delete line' });
+    }
+});
+
+// ========== FLAVORS ROUTES ==========
+
+// Создать вкус (ROP only)
+app.post('/api/flavors', requireRop, async (req, res) => {
+    const { line_id, name, strength, quality_class, description, photo_url } = req.body;
+    if (!line_id || !name) {
+        return res.status(400).json({ error: 'Line ID and name are required' });
+    }
+    try {
+        const result = await pool.query(
+            `INSERT INTO flavors (line_id, name, strength, quality_class, description, photo_url) 
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+            [line_id, name, strength || 5, quality_class || 'medium', description, photo_url]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Create flavor error:', error);
+        res.status(500).json({ error: 'Failed to create flavor' });
+    }
+});
+
+// Обновить вкус (ROP only)
+app.put('/api/flavors/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { name, strength, quality_class, description, photo_url } = req.body;
+    try {
+        const result = await pool.query(
+            `UPDATE flavors SET name = $1, strength = $2, quality_class = $3, description = $4, photo_url = $5 
+             WHERE id = $6 RETURNING *`,
+            [name, strength, quality_class, description, photo_url, id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Update flavor error:', error);
+        res.status(500).json({ error: 'Failed to update flavor' });
+    }
+});
+
+// Удалить вкус (ROP only)
+app.delete('/api/flavors/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM flavors WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete flavor error:', error);
+        res.status(500).json({ error: 'Failed to delete flavor' });
     }
 });
 
