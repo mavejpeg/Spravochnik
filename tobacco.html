@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Табак для кальяна — Справочник</title>
-<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 
@@ -34,15 +34,15 @@
 
 </main>
 
-<script src="core.js?v=12"></script>
+<script src="core.js?v=13"></script>
 <script>
   let isRop = false;
 
-  // Цветовая градация
+  // Цветовая градация с цифрами
   const strengthColors = {
-    light: { name: 'Лёгкий', color: '#3cffa0', bg: 'rgba(60,255,160,0.2)' },
-    medium: { name: 'Средний', color: '#fcb830', bg: 'rgba(252,184,48,0.2)' },
-    strong: { name: 'Крепкий', color: '#fc5c7c', bg: 'rgba(252,92,124,0.2)' }
+    light: { name: 'Лёгкий (1-3)', color: '#3cffa0', bg: 'rgba(60,255,160,0.2)' },
+    medium: { name: 'Средний (4-6)', color: '#fcb830', bg: 'rgba(252,184,48,0.2)' },
+    strong: { name: 'Крепкий (7-10)', color: '#fc5c7c', bg: 'rgba(252,92,124,0.2)' }
   };
 
   async function checkPermissions() {
@@ -205,21 +205,21 @@
           </div>
           <div class="field">
             <label>🎨 Цветовая градация (крепость)</label>
-            <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                <input type="radio" name="strengthColor" value="light" ${editData?.strength_color === 'light' || !editData ? 'checked' : ''}>
+            <div style="display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 12px; border-radius: 20px; ${editData?.strength_color === 'light' ? 'background: rgba(60,255,160,0.2);' : ''}">
+                <input type="radio" name="strengthColor" value="light" ${editData?.strength_color === 'light' || (!editData && !editData?.strength_color) ? 'checked' : ''}>
                 <span style="display: inline-block; width: 20px; height: 20px; background: #3cffa0; border-radius: 4px;"></span>
-                🟢 Лёгкий
+                🟢 Лёгкий (1-3)
               </label>
-              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 12px; border-radius: 20px; ${editData?.strength_color === 'medium' ? 'background: rgba(252,184,48,0.2);' : ''}">
                 <input type="radio" name="strengthColor" value="medium" ${editData?.strength_color === 'medium' ? 'checked' : ''}>
                 <span style="display: inline-block; width: 20px; height: 20px; background: #fcb830; border-radius: 4px;"></span>
-                🟡 Средний
+                🟡 Средний (4-6)
               </label>
-              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 12px; border-radius: 20px; ${editData?.strength_color === 'strong' ? 'background: rgba(252,92,124,0.2);' : ''}">
                 <input type="radio" name="strengthColor" value="strong" ${editData?.strength_color === 'strong' ? 'checked' : ''}>
                 <span style="display: inline-block; width: 20px; height: 20px; background: #fc5c7c; border-radius: 4px;"></span>
-                🔴 Крепкий
+                🔴 Крепкий (7-10)
               </label>
             </div>
           </div>
@@ -227,12 +227,12 @@
             <label>📋 Описание</label>
             <div class="rich-editor-container">
               <div class="format-toolbar">
-                <button class="format-btn" data-format="bold"><b>B</b></button>
-                <button class="format-btn" data-format="italic"><i>I</i></button>
-                <button class="format-btn" data-format="underline"><u>U</u></button>
-                <button class="format-btn" data-format="h3">H3</button>
-                <button class="format-btn" data-format="insertUnorderedList">• Список</button>
-                <button class="format-btn" data-format="insertOrderedList">1. Нумер.</button>
+                <button class="format-btn" data-format="bold" title="Жирный"><b>B</b></button>
+                <button class="format-btn" data-format="italic" title="Курсив"><i>I</i></button>
+                <button class="format-btn" data-format="underline" title="Подчеркнутый"><u>U</u></button>
+                <button class="format-btn" data-format="h3" title="Заголовок">H3</button>
+                <button class="format-btn" data-format="insertUnorderedList" title="Маркированный список">• Список</button>
+                <button class="format-btn" data-format="insertOrderedList" title="Нумерованный список">1. Нумер.</button>
               </div>
               <div class="rich-editor" contenteditable="true" style="min-height: 120px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px;">${editData?.description || ''}</div>
             </div>
@@ -248,15 +248,54 @@
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
     
-    // Настройка форматирования
     const richEditor = modal.querySelector('.rich-editor');
     const formatBtns = modal.querySelectorAll('.format-btn');
+    
+    // Функция для обновления подсветки активных кнопок
+    function updateActiveButtons() {
+      formatBtns.forEach(btn => {
+        const format = btn.dataset.format;
+        let isActive = false;
+        
+        if (format === 'bold') isActive = document.queryCommandState('bold');
+        else if (format === 'italic') isActive = document.queryCommandState('italic');
+        else if (format === 'underline') isActive = document.queryCommandState('underline');
+        else if (format === 'insertUnorderedList') isActive = document.queryCommandState('insertUnorderedList');
+        else if (format === 'insertOrderedList') isActive = document.queryCommandState('insertOrderedList');
+        else if (format === 'h3') {
+          const block = document.queryCommandValue('formatBlock');
+          isActive = block === 'h3' || block === '<h3>';
+        }
+        
+        if (isActive) {
+          btn.style.background = 'var(--accent-glow)';
+          btn.style.borderColor = 'var(--accent)';
+        } else {
+          btn.style.background = 'var(--surface2)';
+          btn.style.borderColor = 'var(--border)';
+        }
+      });
+    }
+    
+    // Обновляем подсветку при изменениях
+    richEditor.addEventListener('keyup', updateActiveButtons);
+    richEditor.addEventListener('mouseup', updateActiveButtons);
+    richEditor.addEventListener('click', updateActiveButtons);
+    
+    // Обработчики кнопок
     formatBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         const format = btn.dataset.format;
-        document.execCommand(format, false, null);
+        
+        if (format === 'h3') {
+          document.execCommand('formatBlock', false, '<h3>');
+        } else {
+          document.execCommand(format, false, null);
+        }
+        
         richEditor.focus();
+        updateActiveButtons();
       });
     });
     
@@ -285,6 +324,8 @@
         strength_color: strengthColor
       };
       
+      console.log('Saving line:', data);
+      
       let url = '/api/lines';
       let method = 'POST';
       if (isEdit) {
@@ -292,28 +333,38 @@
         method = 'PUT';
       }
       
-      const response = await fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data)
-      });
-      
-      if (response.ok) {
-        alert(isEdit ? 'Сохранено' : 'Линейка добавлена');
-        closeModal();
-        // Обновляем отображение
-        const container = document.getElementById(`lines-${manufacturerId}`);
-        if (container && container.style.display === 'block') {
-          container.style.display = 'none';
-          toggleManufacturer(manufacturerId);
+      try {
+        const response = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(isEdit ? 'Сохранено' : 'Линейка добавлена');
+          closeModal();
+          // Обновляем отображение
+          const container = document.getElementById(`lines-${manufacturerId}`);
+          if (container && container.style.display === 'block') {
+            container.style.display = 'none';
+            toggleManufacturer(manufacturerId);
+          } else {
+            loadManufacturers();
+          }
         } else {
-          loadManufacturers();
+          alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
         }
-      } else {
-        alert('Ошибка');
+      } catch (error) {
+        console.error('Save error:', error);
+        alert('Ошибка: ' + error.message);
       }
     });
+    
+    // Обновляем подсветку при загрузке
+    setTimeout(updateActiveButtons, 100);
   }
 
   async function loadManufacturers() {
@@ -401,8 +452,12 @@
   
   async function deleteLine(id) {
     if (confirm('Удалить линейку?')) {
-      await fetch(`/api/lines/${id}`, { method: 'DELETE', credentials: 'include' });
-      loadManufacturers();
+      const response = await fetch(`/api/lines/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (response.ok) {
+        loadManufacturers();
+      } else {
+        alert('Ошибка удаления');
+      }
     }
   }
   
@@ -414,8 +469,12 @@
   
   async function deleteManufacturer(id) {
     if (confirm('Удалить производителя и все его линейки?')) {
-      await fetch(`/api/manufacturers/${id}`, { method: 'DELETE', credentials: 'include' });
-      loadManufacturers();
+      const response = await fetch(`/api/manufacturers/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (response.ok) {
+        loadManufacturers();
+      } else {
+        alert('Ошибка удаления');
+      }
     }
   }
 
@@ -574,15 +633,18 @@
 .lines-container { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 .lines-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: 600; color: var(--accent3); }
 .line-card { background: var(--surface2); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
-.line-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.line-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
 .line-name { font-weight: 600; color: var(--accent4); }
 .line-desc { font-size: 12px; color: var(--text2); line-height: 1.4; }
 .btn-add-line { background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; font-size: 11px; color: var(--accent); cursor: pointer; }
 .format-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; padding: 8px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border); }
-.format-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; color: var(--text); font-size: 12px; cursor: pointer; }
+.format-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; color: var(--text); font-size: 12px; cursor: pointer; transition: all 0.2s; }
 .format-btn:hover { background: var(--accent-glow); border-color: var(--accent); }
 .rich-editor { min-height: 120px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px; overflow-y: auto; }
 .rich-editor:focus { outline: none; border-color: var(--accent); }
+.btn-edit-small, .btn-delete-small { background: transparent; border: none; padding: 4px 8px; cursor: pointer; font-size: 12px; border-radius: 6px; }
+.btn-edit-small { color: var(--accent); }
+.btn-delete-small { color: var(--accent2); }
 </style>
 </body>
 </html>
