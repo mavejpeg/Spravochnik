@@ -3,14 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Проверки — Справочник</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
 <header class="site-header">
-  <a class="logo" href="index.html">☁ СПРАВОЧНИК</a>
+  <a class="logo" href="/">☁ СПРАВОЧНИК</a>
   <div style="flex:1"></div>
+  <a href="/" class="home-btn" style="margin-right: 12px;">🏠 На главную</a>
   <div id="userInfo" style="display: flex; align-items: center; gap: 12px;">
     <span id="userName" style="font-size: 12px; color: var(--text);"></span>
     <button id="ropBtn" class="rop-btn" style="display: none;">👑 Управление</button>
@@ -28,329 +30,729 @@
 
   <!-- OFFICIAL -->
   <div class="section active" id="tab-official">
-    <div class="sec-header"><span class="sec-title">Роспотребнадзор — порядок действий</span></div>
-    <div class="alert-bar danger">
-      <span>🚨</span>
-      <span><strong>НИЧЕГО НЕ ПОДПИСЫВАТЬ</strong>, пока не прочитали все документы полностью. Фотографировать — вы имеете на это право.</span>
+    <div class="sec-header">
+      <span class="sec-title">Роспотребнадзор — порядок действий</span>
+      <button class="btn-edit-content" data-page="checks" data-section="official" style="display: none;">✏️ Редактировать</button>
     </div>
-
-    <div class="steps" data-searchable>
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-body">
-          <strong>Сообщить руководителю</strong>
-          <span>Немедленно уведомить о прибытии проверяющих из Роспотребнадзора.</span>
-        </div>
+    <div id="official-content">
+      <div class="alert-bar danger">
+        <span>🚨</span>
+        <span><strong>НИЧЕГО НЕ ПОДПИСЫВАТЬ</strong>, пока не прочитали все документы полностью. Фотографировать — вы имеете на это право.</span>
       </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-body">
-          <strong>Проверить документы инспектора</strong>
-          <span>Служебное удостоверение + приказ (распоряжение) о проверке. Документ должен быть подписан руководителем Роспотребнадзора и заверен печатью.</span>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-body">
-          <strong>Проверить содержание приказа</strong>
-          <span>Должны быть: название организации, адрес регистрации, цели и задачи, дата начала, сроки, мероприятия проверки, привлечённые организации (если есть).</span>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <div class="step-body">
-          <strong>Проверить сроки</strong>
-          <span>При нарушении сроков проведения проверки или их отсутствии — отразить в протоколе.</span>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">5</div>
-        <div class="step-body">
-          <strong>Аудио / видео / фото</strong>
-          <span>С согласия должностного лица вести запись всей проверки.</span>
-        </div>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Сообщить руководителю</strong><span>Немедленно уведомить о прибытии проверяющих из Роспотребнадзора.</span></div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Проверить документы инспектора</strong><span>Служебное удостоверение + приказ (распоряжение) о проверке. Документ должен быть подписан руководителем Роспотребнадзора и заверен печатью.</span></div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Проверить содержание приказа</strong><span>Должны быть: название организации, адрес регистрации, цели и задачи, дата начала, сроки, мероприятия проверки, привлечённые организации (если есть).</span></div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Проверить сроки</strong><span>При нарушении сроков проведения проверки или их отсутствии — отразить в протоколе.</span></div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-body"><strong>Аудио / видео / фото</strong><span>С согласия должностного лица вести запись всей проверки.</span></div></div>
       </div>
     </div>
   </div>
 
   <!-- PRACTICAL -->
   <div class="section" id="tab-practical">
-    <div class="sec-header"><span class="sec-title">Практические советы</span></div>
-
-    <div class="hl warn" data-searchable style="margin-bottom:12px">Всегда выходя на точку смотрите, какое там ИП. Помните, как зовут вашего директора — должно быть в рабочем телефоне.</div>
-
-    <div class="accordion open" data-searchable>
-      <div class="acc-header"><span class="acc-title">Ключевые правила поведения</span><span class="acc-arrow">▼</span></div>
-      <div class="acc-body">
-        <div class="hl">1. Изучить документы удостоверения — ФИО и орган, какой пришёл (прочее).</div>
-        <div class="hl">2. Изучить приказ о проверке именно вас — там должна быть дата проверки.</div>
-        <div class="hl warn">3. Если изымают — должна быть опись с НАЗВАНИЯМИ, ценами и количеством. Если хотят изъять телефон — говорите пароли. Они должны быть в описи, вы НЕ обязаны давать.</div>
-        <div class="hl">4. Молчите и косите под дурачка. Чем меньше говорите — тем меньше проблем. Не помогать и не знать, где что лежит. Если нужны сертификаты — просто дайте их.</div>
-        <div class="hl">5. Вы работаете официально — кто устроен уже на работу называет дату, кто по договору — первые числа месяца текущего.</div>
-        <div class="hl warn">7. Косите больше под дурака — ваше дело товар продавать, вы простой продавец. Не знаете ответ — не торопитесь и не бойтесь — они не преступники.</div>
+    <div class="sec-header">
+      <span class="sec-title">Практические советы</span>
+      <button class="btn-edit-content" data-page="checks" data-section="practical" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="practical-content">
+      <div class="hl warn" style="margin-bottom:12px">Всегда выходя на точку смотрите, какое там ИП. Помните, как зовут вашего директора — должно быть в рабочем телефоне.</div>
+      <div class="accordion open">
+        <div class="acc-header"><span class="acc-title">Ключевые правила поведения</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <div class="hl">1. Изучить документы удостоверения — ФИО и орган, какой пришёл (прочее).</div>
+          <div class="hl">2. Изучить приказ о проверке именно вас — там должна быть дата проверки.</div>
+          <div class="hl warn">3. Если изымают — должна быть опись с НАЗВАНИЯМИ, ценами и количеством. Если хотят изъять телефон — говорите пароли. Они должны быть в описи, вы НЕ обязаны давать.</div>
+          <div class="hl">4. Молчите и косите под дурачка. Чем меньше говорите — тем меньше проблем. Не помогать и не знать, где что лежит. Если нужны сертификаты — просто дайте их.</div>
+          <div class="hl">5. Вы работаете официально — кто устроен уже на работу называет дату, кто по договору — первые числа месяца текущего.</div>
+          <div class="hl warn">7. Косите больше под дурака — ваше дело товар продавать, вы простой продавец. Не знаете ответ — не торопитесь и не бойтесь — они не преступники.</div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- AFTER -->
   <div class="section" id="tab-after">
-    <div class="sec-header"><span class="sec-title">По окончании проверки</span></div>
-    <div class="steps" data-searchable>
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-body">
-          <strong>Подписать протокол</strong>
-          <span>Сделать копию протокола для себя.</span>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-body">
-          <strong>Приложения к акту</strong>
-          <span>Протоколы, объяснения сотрудников и руководителя, документы.</span>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-body">
-          <strong>Два экземпляра акта</strong>
-          <span>Один вручают руководителю. Если руководитель отсутствует — ревизоры отправляют акт по юридическому адресу или в форме электронного документа.</span>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <div class="step-body">
-          <strong>Изъятие документов</strong>
-          <span>Сделать копии изъятых документов. Получить расписку о перечне изъятых материалов.</span>
-        </div>
-      </div>
+    <div class="sec-header">
+      <span class="sec-title">По окончании проверки</span>
+      <button class="btn-edit-content" data-page="checks" data-section="after" style="display: none;">✏️ Редактировать</button>
     </div>
-    <div class="hl info" style="margin-top:12px" data-searchable>Все нарушения, выявленные Роспотребнадзором, должны быть со ссылками на соответствующие нормативные пункты.</div>
+    <div id="after-content">
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Подписать протокол</strong><span>Сделать копию протокола для себя.</span></div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Приложения к акту</strong><span>Протоколы, объяснения сотрудников и руководителя, документы.</span></div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Два экземпляра акта</strong><span>Один вручают руководителю. Если руководитель отсутствует — ревизоры отправляют акт по юридическому адресу или в форме электронного документа.</span></div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Изъятие документов</strong><span>Сделать копии изъятых документов. Получить расписку о перечне изъятых материалов.</span></div></div>
+      </div>
+      <div class="hl info" style="margin-top:12px">Все нарушения, выявленные Роспотребнадзором, должны быть со ссылками на соответствующие нормативные пункты.</div>
+    </div>
   </div>
 
 </main>
 
-<script src="core.js"></script>
+<script src="core.js?v=4"></script>
 <script>
+  let isRop = false;
+
   initTabs();
   initAccordions();
   initSearch();
-</script>
-<script>
-// Информация о пользователе
-async function loadUserInfo() {
+  
+  async function checkPermissions() {
     try {
-        const response = await fetch('/api/check-auth');
-        const data = await response.json();
+      const response = await fetch('/api/check-auth', { credentials: 'include' });
+      const data = await response.json();
+      
+      if (data.authenticated) {
+        isRop = (data.user.role === 'rop' || data.user.role === 'root');
+        window.isRopGlobal = isRop;
         
-        if (data.authenticated) {
-            document.getElementById('userName').textContent = data.user.full_name;
-            if (data.user.role === 'rop') {
-                document.getElementById('ropBtn').style.display = 'block';
-            }
-        }
+        document.getElementById('userName').textContent = data.user.full_name;
+        
+        const ropBtn = document.getElementById('ropBtn');
+        if (ropBtn && isRop) ropBtn.style.display = 'block';
+        
+        const editBtns = document.querySelectorAll('.btn-edit-content');
+        editBtns.forEach(btn => {
+          btn.style.display = isRop ? 'inline-flex' : 'none';
+          btn.addEventListener('click', () => editContent(btn.dataset.page, btn.dataset.section));
+        });
+      } else {
+        window.location.href = '/login.html';
+      }
     } catch (error) {
-        console.error('Error loading user info:', error);
+      console.error('Permission check error:', error);
+      window.location.href = '/login.html';
     }
-}
+  }
 
-// Выход
-document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/login.html';
-});
-
-// Кнопка управления РОП
-document.getElementById('ropBtn')?.addEventListener('click', () => {
-    openRopPanel();
-});
-
-function openRopPanel() {
+  function editContent(page, section) {
+    const contentDiv = document.getElementById(`${section}-content`);
+    const currentHtml = contentDiv.innerHTML;
+    
+    if (section === 'official') {
+      editOfficialContent(contentDiv, currentHtml);
+    } else if (section === 'practical') {
+      editPracticalContent(contentDiv, currentHtml);
+    } else if (section === 'after') {
+      editAfterContent(contentDiv, currentHtml);
+    }
+  }
+  
+  function editOfficialContent(contentDiv, currentHtml) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = currentHtml;
+    
+    // Извлекаем предупреждение
+    let warning = '';
+    const alertDiv = tempDiv.querySelector('.alert-bar.danger');
+    if (alertDiv) warning = alertDiv.textContent.trim();
+    
+    // Извлекаем шаги
+    const steps = [];
+    const stepDivs = tempDiv.querySelectorAll('.steps .step');
+    stepDivs.forEach(step => {
+      const num = step.querySelector('.step-num')?.textContent.trim() || '';
+      const strong = step.querySelector('.step-body strong')?.textContent.trim() || '';
+      const span = step.querySelector('.step-body span')?.textContent.trim() || '';
+      steps.push({ num, strong, span });
+    });
+    
+    let stepsHtml = '';
+    steps.forEach((step, idx) => {
+      stepsHtml += `
+        <div class="step-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+          <div class="field">
+            <label>Шаг ${step.num}</label>
+            <input type="text" class="step-title" value="${escapeHtml(step.strong)}" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
+            <textarea class="step-desc" rows="3" placeholder="Описание" style="width:100%">${escapeHtml(step.span)}</textarea>
+          </div>
+          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
+        </div>
+      `;
+    });
+    
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
-    modal.id = 'ropModal';
     modal.innerHTML = `
-        <div class="modal" style="max-width: 600px;">
-            <div class="modal-header">
-                <span class="modal-title">👑 Панель управления</span>
-                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="field">
-                    <label>➕ Добавить пользователя</label>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
-                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
-                        <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
-                        <button id="addUserBtn" class="btn-add">Добавить</button>
-                    </div>
-                </div>
-                
-                <div class="field">
-                    <label>📋 Список пользователей</label>
-                    <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
-                </div>
-            </div>
+      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <span class="modal-title">✏️ Редактировать: Официальная инструкция</span>
+          <button class="modal-close">✕</button>
         </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>⚠️ Главное предупреждение</label>
+            <textarea id="warning" rows="2">${escapeHtml(warning.replace('🚨', '').trim())}</textarea>
+          </div>
+          <div class="field">
+            <label>📋 Порядок действий (шаги)</label>
+            <div id="stepsList">${stepsHtml}</div>
+            <button id="addStepBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить шаг</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Отмена</button>
+          <button class="btn-save">💾 Сохранить</button>
+        </div>
+      </div>
     `;
     
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
     
-    loadUsers();
+    const addStepBtn = modal.querySelector('#addStepBtn');
+    if (addStepBtn) {
+      addStepBtn.addEventListener('click', () => {
+        const container = modal.querySelector('#stepsList');
+        const newStepNum = container.querySelectorAll('.step-item').length + 1;
+        const newDiv = document.createElement('div');
+        newDiv.className = 'step-item';
+        newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
+        newDiv.innerHTML = `
+          <div class="field">
+            <label>Шаг ${newStepNum}</label>
+            <input type="text" class="step-title" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
+            <textarea class="step-desc" rows="3" placeholder="Описание" style="width:100%"></textarea>
+          </div>
+          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
+        `;
+        newDiv.querySelector('.remove-step-btn').addEventListener('click', () => newDiv.remove());
+        container.appendChild(newDiv);
+        const steps = modal.querySelectorAll('.step-item');
+        steps.forEach((step, idx) => {
+          const label = step.querySelector('.field label');
+          if (label) label.textContent = `Шаг ${idx + 1}`;
+        });
+      });
+    }
+    
+    modal.querySelectorAll('.remove-step-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.target.closest('.step-item').remove();
+        const steps = modal.querySelectorAll('.step-item');
+        steps.forEach((step, idx) => {
+          const label = step.querySelector('.field label');
+          if (label) label.textContent = `Шаг ${idx + 1}`;
+        });
+      });
+    });
+    
+    const closeModal = () => {
+      modal.classList.remove('open');
+      setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    modal.querySelector('.btn-save').addEventListener('click', async () => {
+      const warning = modal.querySelector('#warning').value;
+      
+      const stepsList = [];
+      modal.querySelectorAll('.step-item').forEach((item, idx) => {
+        const title = item.querySelector('.step-title').value.trim();
+        const desc = item.querySelector('.step-desc').value.trim();
+        if (title && desc) {
+          stepsList.push({ num: idx + 1, title, desc });
+        }
+      });
+      
+      let stepsHtmlNew = '';
+      stepsList.forEach(step => {
+        stepsHtmlNew += `
+          <div class="step">
+            <div class="step-num">${step.num}</div>
+            <div class="step-body">
+              <strong>${escapeHtml(step.title)}</strong>
+              <span>${escapeHtml(step.desc)}</span>
+            </div>
+          </div>
+        `;
+      });
+      
+      const newHtml = `
+        <div class="alert-bar danger">
+          <span>🚨</span>
+          <span>${escapeHtml(warning)}</span>
+        </div>
+        <div class="steps">
+          ${stepsHtmlNew}
+        </div>
+      `;
+      
+      await saveContent('checks', 'official', newHtml, contentDiv, closeModal);
+    });
+  }
+  
+  function editPracticalContent(contentDiv, currentHtml) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = currentHtml;
+    
+    // Извлекаем предупреждение
+    let topWarning = '';
+    const warnDiv = tempDiv.querySelector('.hl.warn:first-child');
+    if (warnDiv) topWarning = warnDiv.textContent.trim();
+    
+    // Извлекаем правила поведения
+    const rules = [];
+    const ruleDivs = tempDiv.querySelectorAll('.accordion .acc-body .hl');
+    ruleDivs.forEach(rule => {
+      let text = rule.textContent.trim();
+      let type = 'normal';
+      if (rule.classList.contains('warn')) type = 'warn';
+      rules.push({ text, type });
+    });
+    
+    let rulesHtml = '';
+    rules.forEach((rule, idx) => {
+      rulesHtml += `
+        <div class="rule-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+          <div class="field">
+            <label>Правило ${idx + 1}</label>
+            <textarea class="rule-text" rows="2" style="width:100%">${escapeHtml(rule.text)}</textarea>
+          </div>
+          <div class="field">
+            <label>Тип</label>
+            <select class="rule-type" style="width:100%; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
+              <option value="normal" ${rule.type === 'normal' ? 'selected' : ''}>Обычный</option>
+              <option value="warn" ${rule.type === 'warn' ? 'selected' : ''}>Важный (красный)</option>
+            </select>
+          </div>
+          <button class="remove-rule-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить правило</button>
+        </div>
+      `;
+    });
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <span class="modal-title">✏️ Редактировать: Практические советы</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>⚠️ Важное замечание</label>
+            <textarea id="topWarning" rows="2">${escapeHtml(topWarning)}</textarea>
+          </div>
+          <div class="field">
+            <label>📋 Ключевые правила поведения</label>
+            <div id="rulesList">${rulesHtml}</div>
+            <button id="addRuleBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить правило</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Отмена</button>
+          <button class="btn-save">💾 Сохранить</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    const addRuleBtn = modal.querySelector('#addRuleBtn');
+    if (addRuleBtn) {
+      addRuleBtn.addEventListener('click', () => {
+        const container = modal.querySelector('#rulesList');
+        const newNum = container.querySelectorAll('.rule-item').length + 1;
+        const newDiv = document.createElement('div');
+        newDiv.className = 'rule-item';
+        newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
+        newDiv.innerHTML = `
+          <div class="field">
+            <label>Правило ${newNum}</label>
+            <textarea class="rule-text" rows="2" style="width:100%" placeholder="Текст правила"></textarea>
+          </div>
+          <div class="field">
+            <label>Тип</label>
+            <select class="rule-type" style="width:100%; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
+              <option value="normal">Обычный</option>
+              <option value="warn">Важный (красный)</option>
+            </select>
+          </div>
+          <button class="remove-rule-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить правило</button>
+        `;
+        newDiv.querySelector('.remove-rule-btn').addEventListener('click', () => newDiv.remove());
+        container.appendChild(newDiv);
+        const rules = modal.querySelectorAll('.rule-item');
+        rules.forEach((rule, idx) => {
+          const label = rule.querySelector('.field label');
+          if (label) label.textContent = `Правило ${idx + 1}`;
+        });
+      });
+    }
+    
+    modal.querySelectorAll('.remove-rule-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.target.closest('.rule-item').remove();
+        const rules = modal.querySelectorAll('.rule-item');
+        rules.forEach((rule, idx) => {
+          const label = rule.querySelector('.field label');
+          if (label) label.textContent = `Правило ${idx + 1}`;
+        });
+      });
+    });
+    
+    const closeModal = () => {
+      modal.classList.remove('open');
+      setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    modal.querySelector('.btn-save').addEventListener('click', async () => {
+      const topWarning = modal.querySelector('#topWarning').value;
+      
+      const rulesList = [];
+      modal.querySelectorAll('.rule-item').forEach((item, idx) => {
+        const text = item.querySelector('.rule-text').value.trim();
+        const type = item.querySelector('.rule-type').value;
+        if (text) {
+          rulesList.push({ text, type });
+        }
+      });
+      
+      let rulesHtmlNew = '';
+      rulesList.forEach(rule => {
+        const className = rule.type === 'warn' ? 'hl warn' : 'hl';
+        rulesHtmlNew += `<div class="${className}">${escapeHtml(rule.text)}</div>`;
+      });
+      
+      const newHtml = `
+        <div class="hl warn" style="margin-bottom:12px">${escapeHtml(topWarning)}</div>
+        <div class="accordion open">
+          <div class="acc-header"><span class="acc-title">Ключевые правила поведения</span><span class="acc-arrow">▼</span></div>
+          <div class="acc-body">
+            ${rulesHtmlNew}
+          </div>
+        </div>
+      `;
+      
+      await saveContent('checks', 'practical', newHtml, contentDiv, closeModal);
+    });
+  }
+  
+  function editAfterContent(contentDiv, currentHtml) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = currentHtml;
+    
+    // Извлекаем шаги
+    const steps = [];
+    const stepDivs = tempDiv.querySelectorAll('.steps .step');
+    stepDivs.forEach(step => {
+      const num = step.querySelector('.step-num')?.textContent.trim() || '';
+      const strong = step.querySelector('.step-body strong')?.textContent.trim() || '';
+      const span = step.querySelector('.step-body span')?.textContent.trim() || '';
+      steps.push({ num, strong, span });
+    });
+    
+    // Извлекаем примечание
+    let note = '';
+    const noteDiv = tempDiv.querySelector('.hl.info');
+    if (noteDiv) note = noteDiv.textContent.trim();
+    
+    let stepsHtml = '';
+    steps.forEach((step, idx) => {
+      stepsHtml += `
+        <div class="step-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+          <div class="field">
+            <label>Шаг ${step.num}</label>
+            <input type="text" class="step-title" value="${escapeHtml(step.strong)}" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
+            <textarea class="step-desc" rows="3" placeholder="Описание" style="width:100%">${escapeHtml(step.span)}</textarea>
+          </div>
+          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
+        </div>
+      `;
+    });
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <span class="modal-title">✏️ Редактировать: По окончании проверки</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>📋 Порядок действий (шаги)</label>
+            <div id="stepsList">${stepsHtml}</div>
+            <button id="addStepBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить шаг</button>
+          </div>
+          <div class="field">
+            <label>💡 Примечание</label>
+            <textarea id="note" rows="2">${escapeHtml(note)}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Отмена</button>
+          <button class="btn-save">💾 Сохранить</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    const addStepBtn = modal.querySelector('#addStepBtn');
+    if (addStepBtn) {
+      addStepBtn.addEventListener('click', () => {
+        const container = modal.querySelector('#stepsList');
+        const newStepNum = container.querySelectorAll('.step-item').length + 1;
+        const newDiv = document.createElement('div');
+        newDiv.className = 'step-item';
+        newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
+        newDiv.innerHTML = `
+          <div class="field">
+            <label>Шаг ${newStepNum}</label>
+            <input type="text" class="step-title" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
+            <textarea class="step-desc" rows="3" placeholder="Описание" style="width:100%"></textarea>
+          </div>
+          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
+        `;
+        newDiv.querySelector('.remove-step-btn').addEventListener('click', () => newDiv.remove());
+        container.appendChild(newDiv);
+        const steps = modal.querySelectorAll('.step-item');
+        steps.forEach((step, idx) => {
+          const label = step.querySelector('.field label');
+          if (label) label.textContent = `Шаг ${idx + 1}`;
+        });
+      });
+    }
+    
+    modal.querySelectorAll('.remove-step-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.target.closest('.step-item').remove();
+        const steps = modal.querySelectorAll('.step-item');
+        steps.forEach((step, idx) => {
+          const label = step.querySelector('.field label');
+          if (label) label.textContent = `Шаг ${idx + 1}`;
+        });
+      });
+    });
+    
+    const closeModal = () => {
+      modal.classList.remove('open');
+      setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    modal.querySelector('.btn-save').addEventListener('click', async () => {
+      const stepsList = [];
+      modal.querySelectorAll('.step-item').forEach((item, idx) => {
+        const title = item.querySelector('.step-title').value.trim();
+        const desc = item.querySelector('.step-desc').value.trim();
+        if (title && desc) {
+          stepsList.push({ num: idx + 1, title, desc });
+        }
+      });
+      const note = modal.querySelector('#note').value;
+      
+      let stepsHtmlNew = '';
+      stepsList.forEach(step => {
+        stepsHtmlNew += `
+          <div class="step">
+            <div class="step-num">${step.num}</div>
+            <div class="step-body">
+              <strong>${escapeHtml(step.title)}</strong>
+              <span>${escapeHtml(step.desc)}</span>
+            </div>
+          </div>
+        `;
+      });
+      
+      const newHtml = `
+        <div class="steps">
+          ${stepsHtmlNew}
+        </div>
+        <div class="hl info" style="margin-top:12px">${escapeHtml(note)}</div>
+      `;
+      
+      await saveContent('checks', 'after', newHtml, contentDiv, closeModal);
+    });
+  }
+  
+  async function saveContent(page, section, newHtml, contentDiv, closeModal) {
+    try {
+      const response = await fetch(`/api/content/${page}/${section}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: newHtml })
+      });
+      
+      if (response.ok) {
+        contentDiv.innerHTML = newHtml;
+        alert('✅ Сохранено успешно!');
+        closeModal();
+        initAccordions();
+      } else {
+        alert('❌ Ошибка сохранения');
+      }
+    } catch (error) {
+      alert('❌ Ошибка: ' + error.message);
+    }
+  }
+  
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+    window.location.href = '/login.html';
+  });
+
+  document.getElementById('ropBtn')?.addEventListener('click', () => {
+    openRopPanel();
+  });
+
+  async function openRopPanel() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+          <span class="modal-title">👑 Панель управления</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>➕ Добавить пользователя</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
+              <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
+              <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
+              <button id="addUserBtn" class="btn-add">Добавить</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>📋 Список пользователей</label>
+            <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Закрыть</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    const closeModal = () => {
+      modal.classList.remove('open');
+      setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    await loadUsers(modal);
     
     document.getElementById('addUserBtn').addEventListener('click', async () => {
-        const username = document.getElementById('newUsername').value.trim();
-        const password = document.getElementById('newPassword').value;
-        const full_name = document.getElementById('newFullName').value.trim();
-        
-        if (!username || !password || !full_name) {
-            alert('Заполните все поля');
-            return;
-        }
-        
-        if (!/^\d{4}$/.test(password)) {
-            alert('Пароль должен состоять из 4 цифр');
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, full_name, role: 'user' })
-            });
-            
-            if (response.ok) {
-                alert('Пользователь добавлен');
-                document.getElementById('newUsername').value = '';
-                document.getElementById('newPassword').value = '';
-                document.getElementById('newFullName').value = '';
-                loadUsers();
-            } else {
-                const error = await response.json();
-                alert(error.error);
-            }
-        } catch (error) {
-            alert('Ошибка: ' + error.message);
-        }
-    });
-}
-
-async function loadUsers() {
-    try {
-        const response = await fetch('/api/users', { credentials: 'include' });
-        const users = await response.json();
-        
-        const container = document.getElementById('usersList');
-        if (!container) return;
-        
-        // Получаем текущего пользователя
-        const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
-        const me = await meResponse.json();
-        
-        container.innerHTML = users.map(user => {
-            // Определяем, можно ли менять пароль
-            let canChangePassword = false;
-            
-            if (me.user.role === 'root') {
-                // Root может менять пароль всем
-                canChangePassword = true;
-            } else if (me.user.role === 'rop') {
-                // ROP может менять пароль только обычным пользователям
-                if (user.role === 'user') {
-                    canChangePassword = true;
-                }
-            }
-            
-            // Определяем, можно ли удалять
-            let canDelete = false;
-            if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) {
-                canDelete = true;
-            }
-            
-            return `
-                <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                        <div>
-                            <strong>${escapeHtml(user.full_name)}</strong><br>
-                            <span style="font-size: 11px; color: var(--muted);">
-                                Логин: ${user.username} | Роль: ${user.role === 'root' ? '👑 ROOT' : (user.role === 'rop' ? '👑 РОП' : '👤 Пользователь')}
-                            </span>
-                        </div>
-                        <div style="display: flex; gap: 6px;">
-                            ${canChangePassword ? `<button onclick="changePassword(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
-                            ${canDelete ? `<button onclick="deleteUser(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('Load users error:', error);
-    }
-}
-async function changePassword(userId, userName) {
-    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
-    
-    if (!newPassword) return;
-    
-    if (!/^\d{4}$/.test(newPassword)) {
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newPassword').value;
+      const full_name = document.getElementById('newFullName').value.trim();
+      
+      if (!username || !password || !full_name) {
+        alert('Заполните все поля');
+        return;
+      }
+      if (!/^\d{4}$/.test(password)) {
         alert('Пароль должен состоять из 4 цифр');
         return;
-    }
-    
-    try {
-        const response = await fetch(`/api/users/${userId}/change-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ newPassword })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            alert('Пароль успешно изменен');
-        } else {
-            alert(data.error || 'Ошибка смены пароля');
-        }
-    } catch (error) {
-        alert('Ошибка: ' + error.message);
-    }
-}
-
-async function deleteUser(userId) {
-    if (confirm('Удалить пользователя?')) {
-        try {
-            const response = await fetch(`/api/users/${userId}`, {
-                method: 'DELETE'
-            });
-            
-            if (response.ok) {
-                alert('Пользователь удален');
-                loadUsers();
-            } else {
-                const error = await response.json();
-                alert(error.error);
-            }
-        } catch (error) {
-            alert('Ошибка: ' + error.message);
-        }
-    }
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
+      }
+      
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, password, full_name, role: 'user' })
+      });
+      
+      if (response.ok) {
+        alert('Пользователь добавлен');
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('newFullName').value = '';
+        await loadUsers(modal);
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
     });
-}
+  }
 
-loadUserInfo();
+  async function loadUsers(modal) {
+    const response = await fetch('/api/users', { credentials: 'include' });
+    const users = await response.json();
+    const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
+    const me = await meResponse.json();
+    
+    const container = modal.querySelector('#usersList');
+    if (!container) return;
+    
+    container.innerHTML = users.map(user => {
+      let canChange = false;
+      if (me.user.role === 'root') canChange = true;
+      else if (me.user.role === 'rop' && user.role === 'user') canChange = true;
+      
+      let canDelete = false;
+      if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) canDelete = true;
+      
+      return `
+        <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div>
+              <strong>${escapeHtml(user.full_name)}</strong><br>
+              <span style="font-size: 11px;">Логин: ${user.username} | Роль: ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              ${canChange ? `<button onclick="window.changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
+              ${canDelete ? `<button onclick="window.deleteUserById(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.changePasswordUser = async (userId, userName) => {
+    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
+    if (!newPassword) return;
+    if (!/^\d{4}$/.test(newPassword)) {
+      alert('Пароль должен состоять из 4 цифр');
+      return;
+    }
+    const response = await fetch(`/api/users/${userId}/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ newPassword })
+    });
+    if (response.ok) alert('Пароль успешно изменен');
+    else alert('Ошибка смены пароля');
+  };
+
+  window.deleteUserById = async (userId) => {
+    if (confirm('Удалить пользователя?')) {
+      const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
+      if (response.ok) {
+        alert('Пользователь удален');
+        location.reload();
+      } else alert('Ошибка удаления');
+    }
+  };
+
+  checkPermissions();
 </script>
 </body>
 </html>
