@@ -4,10 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <title>Жевательный табак — Справочник</title>
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -40,70 +38,88 @@
         Добавить позицию
       </button>
     </div>
-
     <div class="alert-bar success">
       <span>✅</span>
-      <span>Жевательный табак (шайба) — бездымный способ потребления никотина.</span>
+      <span>Жевательный табак (шайба) — бездымный способ потребления никотина. Подходит для спортсменов, аллергиков и тех, кто бросает курить.</span>
     </div>
-
     <div class="cards-grid" id="snusGrid"></div>
   </div>
 
   <!-- HOW TO -->
   <div class="section" id="tab-howto">
-    <div class="sec-header"><span class="sec-title">Как применять</span></div>
-    <div class="info-card">
-      <h3>📋 Инструкция для клиента</h3>
-      <div class="steps">
-        <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Подготовить область</strong><span>Промокнуть область между верхней губой и десной.</span></div></div>
-        <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Вложить пауч</strong><span>Пауч кладётся между верхней губой и верхней десной.</span></div></div>
-        <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Держать 1–15 минут</strong><span>Никотин поступает через слизистую постепенно.</span></div></div>
-        <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Утилизировать</strong><span>Выбросить в мусор.</span></div></div>
+    <div class="sec-header">
+      <span class="sec-title">Как применять</span>
+      <button class="btn-edit-content" data-page="snus" data-section="howto" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="howto-content">
+      <div class="info-card">
+        <h3>📋 Инструкция для клиента</h3>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Подготовить область</strong><span>Промокнуть область между верхней губой и десной сухой салфеткой для лучшего всасывания.</span></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Вложить пауч</strong><span>Пауч кладётся между верхней губой и верхней десной. Левая/правая сторона — чередовать.</span></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Держать 1–15 минут</strong><span>Никотин поступает через слизистую постепенно. Не жевать — не жуётся!</span></div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Утилизировать</strong><span>Выбросить в мусор. Некоторые банки имеют отсек для использованных паучей (крышка).</span></div></div>
+        </div>
       </div>
+      <div class="hl warn">Несмотря на название «жевательный» — пауч НЕ жуётся. Некоторые производители (FAVE) пишут «мягко покусывать» — для отвода глаз в легислативе.</div>
     </div>
   </div>
 
   <!-- FORMATS -->
   <div class="section" id="tab-formats">
-    <div class="sec-header"><span class="sec-title">Форматы паучей</span></div>
-    <div class="two-col">
-      <div class="info-card">
-        <h3>📦 Размеры</h3>
-        <ul><li><strong>Large</strong> — стандарт, 0.8–1 г</li><li><strong>Slim</strong> — тонкий и широкий, ~1 г</li><li><strong>Mini</strong> — маленький, ~0.4 г</li></ul>
+    <div class="sec-header">
+      <span class="sec-title">Форматы паучей</span>
+      <button class="btn-edit-content" data-page="snus" data-section="formats" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="formats-content">
+      <div class="two-col">
+        <div class="info-card">
+          <h3>📦 Размеры</h3>
+          <ul><li><strong>Large</strong> — стандарт, 0.8–1 г, наполненный</li><li><strong>Slim</strong> — тонкий и широкий, ~1 г, менее заметен</li><li><strong>Mini</strong> — маленький, ~0.4 г, максимально незаметен</li></ul>
+        </div>
+        <div class="info-card">
+          <h3>🌿 Типы сырья</h3>
+          <ul><li><strong>White</strong> — промытый табак, мягкие аромки (малина, черника)</li><li><strong>Классический тёмный</strong> — менее промытый, агрессивные аромки (ментол, бергамот)</li></ul>
+        </div>
       </div>
       <div class="info-card">
-        <h3>🌿 Типы сырья</h3>
-        <ul><li><strong>White</strong> — промытый табак</li><li><strong>Классический тёмный</strong> — менее промытый</li></ul>
+        <h3>🧮 Как считается крепость пауча</h3>
+        <ul><li>Крепость сырья ÷ вес одного пауча = крепость пауча</li><li>Mini ~0.4 г → крепость ≈ –23 мг / пауч (при той же заявленной крепости сырья)</li><li>За крепость сырья принимаем заявленную производителем — не паучей</li><li>Slim и Large у большинства производителей одинаковы по весу → одинаковая крепость</li></ul>
       </div>
     </div>
   </div>
 
   <!-- STRENGTH -->
   <div class="section" id="tab-strength">
-    <div class="sec-header"><span class="sec-title">Классификация по крепости</span></div>
-    <div class="accordion open">
-      <div class="acc-header"><span class="acc-title">🔥 Крепкие</span><span class="acc-arrow">▼</span></div>
-      <div class="acc-body">
-        <ul><li><strong>Corvus Crash</strong> — 68 мг</li><li><strong>Адекс</strong> — мощный удар</li><li><strong>Iceberg Strong</strong> — 60 мг</li><li><strong>Angry Chew</strong> — 70 мг</li></ul>
-      </div>
+    <div class="sec-header">
+      <span class="sec-title">Классификация по крепости</span>
+      <button class="btn-edit-content" data-page="snus" data-section="strength" style="display: none;">✏️ Редактировать</button>
     </div>
-    <div class="accordion">
-      <div class="acc-header"><span class="acc-title">🟡 Средние</span><span class="acc-arrow">▼</span></div>
-      <div class="acc-body">
-        <ul><li><strong>Siberia</strong> — 43 мг</li><li><strong>Dzen Strong</strong> — 50 мг</li><li><strong>Zверь</strong> — 40 мг</li><li><strong>Drymost</strong> — 50 мг</li></ul>
+    <div id="strength-content">
+      <div class="accordion open">
+        <div class="acc-header"><span class="acc-title">🔥 Крепкие</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <ul><li><strong>Corvus Crash</strong> — 68 мг — самый крепкий</li><li><strong>Адекс</strong> — мощный удар</li><li><strong>ЕРОК Стронг (серые)</strong> — прямой аналог Siberia</li><li><strong>HAQMAN</strong> — премиальный табак</li><li><strong>СТ (Siberia Town)</strong> — аналог HAQMAN по крепости</li><li><strong>Iceberg Strong</strong> — 60 мг</li><li><strong>Husky Strong</strong> — 20 мг (ощущается как 50)</li><li><strong>Ayax Strong Strong</strong> — ~55 мг</li><li><strong>Angry Chew</strong> — 70 мг</li></ul>
+        </div>
       </div>
-    </div>
-    <div class="accordion">
-      <div class="acc-header"><span class="acc-title">💨 Лёгкие</span><span class="acc-arrow">▼</span></div>
-      <div class="acc-body">
-        <ul><li><strong>Husky Soft</strong> — 10 мг</li><li><strong>FAVE</strong> — 25–28 мг</li><li><strong>Hismoke Classic</strong> — 22 мг</li></ul>
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">🟡 Средние</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <ul><li><strong>Корвус Жёлтый</strong> — золотая середина</li><li><strong>Siberia вся</strong> — 43 мг, классика рынка</li><li><strong>Angry Birds Chew</strong> — с дыней — крепче</li><li><strong>Monster Chewer</strong> — спрессованные листья</li><li><strong>Dzen Strong</strong> — 50 мг</li><li><strong>Zверь</strong> — 40 мг</li><li><strong>Swag Strong</strong> — ★★★★★</li><li><strong>Drymost</strong> — 50 мг</li><li><strong>Corvus Toss</strong> — ~40 мг</li><li><strong>Iceberg Medium</strong> — 40 мг</li><li><strong>Hismoke Strong</strong> — 30 мг</li><li><strong>ЕРОК Medium (синие)</strong> — полегче по ощущениям</li></ul>
+        </div>
+      </div>
+      <div class="accordion">
+        <div class="acc-header"><span class="acc-title">💨 Лёгкие</span><span class="acc-arrow">▼</span></div>
+        <div class="acc-body">
+          <ul><li><strong>Husky Soft</strong> — 10 мг (ощущается как 30)</li><li><strong>Swag Medium</strong> — ★★★★</li><li><strong>FAVE</strong> — 25–28 мг, сухой</li><li><strong>Hismoke Classic</strong> — 22 мг</li><li><strong>Dzen Medium</strong> — 35–40 мг</li><li><strong>Корвус Зелёный</strong> — ниже среднего</li><li><strong>IceBurn</strong> — ниже среднего</li><li><strong>Одинс / ЕРОК Light</strong> — Одинс = ЕРОК. Некоторые вкусы крепче.</li></ul>
+        </div>
       </div>
     </div>
   </div>
 
 </main>
 
-<script src="core.js?v=2"></script>
+<script src="core.js?v=4"></script>
 <script>
   const CATEGORY = 'snus';
   let currentUser = null;
@@ -123,16 +139,19 @@
         isRop = (data.user.role === 'rop' || data.user.role === 'root');
         window.isRopGlobal = isRop;
         
-        const userNameSpan = document.getElementById('userName');
-        if (userNameSpan) userNameSpan.textContent = data.user.full_name;
+        document.getElementById('userName').textContent = data.user.full_name;
         
         const ropBtn = document.getElementById('ropBtn');
         if (ropBtn && isRop) ropBtn.style.display = 'block';
         
         const addButton = document.getElementById('btnAddSnus');
-        if (addButton) {
-          addButton.style.display = isRop ? 'flex' : 'none';
-        }
+        if (addButton) addButton.style.display = isRop ? 'flex' : 'none';
+        
+        const editBtns = document.querySelectorAll('.btn-edit-content');
+        editBtns.forEach(btn => {
+          btn.style.display = isRop ? 'inline-flex' : 'none';
+          btn.addEventListener('click', () => editContent(btn.dataset.page, btn.dataset.section));
+        });
       } else {
         window.location.href = '/login.html';
       }
@@ -147,7 +166,7 @@
     const items = await getCategory(CATEGORY);
     grid.innerHTML = '';
 
-    if (!items.length) {
+    if (!items || items.length === 0) {
       renderEmpty(grid, '🫙', 'Каталог пуст', isRop ? 'Нажмите «Добавить позицию» чтобы внести первую позицию' : 'Нет доступных позиций');
       return;
     }
@@ -168,7 +187,6 @@
           });
         }
       );
-      
       grid.appendChild(card);
     }
   }
@@ -191,6 +209,571 @@
     });
   }
 
+  // ========== ФУНКЦИИ РЕДАКТИРОВАНИЯ КОНТЕНТА ==========
+  
+  function editContent(page, section) {
+    const contentDiv = document.getElementById(`${section}-content`);
+    const currentHtml = contentDiv.innerHTML;
+    
+    if (section === 'howto') {
+      editHowtoContent(contentDiv, currentHtml);
+    } else if (section === 'formats') {
+      editFormatsContent(contentDiv, currentHtml);
+    } else if (section === 'strength') {
+      editStrengthContent(contentDiv, currentHtml);
+    }
+  }
+  
+  function editHowtoContent(contentDiv, currentHtml) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = currentHtml;
+    
+    // Извлекаем шаги инструкции
+    const steps = [];
+    const stepDivs = tempDiv.querySelectorAll('.steps .step');
+    stepDivs.forEach(step => {
+      const num = step.querySelector('.step-num')?.textContent.trim() || '';
+      const strong = step.querySelector('.step-body strong')?.textContent.trim() || '';
+      const span = step.querySelector('.step-body span')?.textContent.trim() || '';
+      steps.push({ num, strong, span });
+    });
+    
+    // Извлекаем предупреждение
+    let warning = '';
+    const warnDiv = tempDiv.querySelector('.hl.warn');
+    if (warnDiv) warning = warnDiv.textContent.trim();
+    
+    let stepsHtml = '';
+    steps.forEach((step, idx) => {
+      stepsHtml += `
+        <div class="step-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+          <div class="field">
+            <label>Шаг ${step.num}</label>
+            <input type="text" class="step-title" value="${escapeHtml(step.strong)}" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
+            <textarea class="step-desc" rows="2" placeholder="Описание" style="width:100%">${escapeHtml(step.span)}</textarea>
+          </div>
+          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
+        </div>
+      `;
+    });
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <span class="modal-title">✏️ Редактировать: Как применять</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>📋 Инструкция (шаги)</label>
+            <div id="stepsList">${stepsHtml}</div>
+            <button id="addStepBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить шаг</button>
+          </div>
+          <div class="field">
+            <label>⚠️ Важное предупреждение</label>
+            <textarea id="warning" rows="3">${escapeHtml(warning)}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Отмена</button>
+          <button class="btn-save">💾 Сохранить</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    const addStepBtn = modal.querySelector('#addStepBtn');
+    if (addStepBtn) {
+      addStepBtn.addEventListener('click', () => {
+        const container = modal.querySelector('#stepsList');
+        const newStepNum = container.querySelectorAll('.step-item').length + 1;
+        const newDiv = document.createElement('div');
+        newDiv.className = 'step-item';
+        newDiv.style.cssText = 'background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 10px;';
+        newDiv.innerHTML = `
+          <div class="field">
+            <label>Шаг ${newStepNum}</label>
+            <input type="text" class="step-title" placeholder="Заголовок" style="width:100%; margin-bottom: 8px;">
+            <textarea class="step-desc" rows="2" placeholder="Описание" style="width:100%"></textarea>
+          </div>
+          <button class="remove-step-btn" style="margin-top: 8px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить шаг</button>
+        `;
+        newDiv.querySelector('.remove-step-btn').addEventListener('click', () => newDiv.remove());
+        container.appendChild(newDiv);
+        // Обновляем номера шагов
+        const steps = modal.querySelectorAll('.step-item');
+        steps.forEach((step, idx) => {
+          const label = step.querySelector('.field label');
+          if (label) label.textContent = `Шаг ${idx + 1}`;
+        });
+      });
+    }
+    
+    modal.querySelectorAll('.remove-step-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.target.closest('.step-item').remove();
+        // Обновляем номера шагов
+        const steps = modal.querySelectorAll('.step-item');
+        steps.forEach((step, idx) => {
+          const label = step.querySelector('.field label');
+          if (label) label.textContent = `Шаг ${idx + 1}`;
+        });
+      });
+    });
+    
+    const closeModal = () => {
+      modal.classList.remove('open');
+      setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    modal.querySelector('.btn-save').addEventListener('click', async () => {
+      const stepsList = [];
+      modal.querySelectorAll('.step-item').forEach((item, idx) => {
+        const title = item.querySelector('.step-title').value.trim();
+        const desc = item.querySelector('.step-desc').value.trim();
+        if (title && desc) {
+          stepsList.push({ num: idx + 1, title, desc });
+        }
+      });
+      const warningText = modal.querySelector('#warning').value;
+      
+      let stepsHtmlNew = '';
+      stepsList.forEach(step => {
+        stepsHtmlNew += `
+          <div class="step">
+            <div class="step-num">${step.num}</div>
+            <div class="step-body">
+              <strong>${escapeHtml(step.title)}</strong>
+              <span>${escapeHtml(step.desc)}</span>
+            </div>
+          </div>
+        `;
+      });
+      
+      const newHtml = `
+        <div class="info-card">
+          <h3>📋 Инструкция для клиента</h3>
+          <div class="steps">
+            ${stepsHtmlNew}
+          </div>
+        </div>
+        <div class="hl warn">${escapeHtml(warningText)}</div>
+      `;
+      
+      await saveContent('snus', 'howto', newHtml, contentDiv, closeModal);
+    });
+  }
+  
+  function editFormatsContent(contentDiv, currentHtml) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = currentHtml;
+    
+    // Извлекаем размеры
+    const sizes = [];
+    const sizesUl = tempDiv.querySelector('.two-col .info-card:first-child ul');
+    if (sizesUl) {
+      sizesUl.querySelectorAll('li').forEach(li => sizes.push(li.textContent.trim()));
+    }
+    
+    // Извлекаем типы сырья
+    const types = [];
+    const typesUl = tempDiv.querySelector('.two-col .info-card:last-child ul');
+    if (typesUl) {
+      typesUl.querySelectorAll('li').forEach(li => types.push(li.textContent.trim()));
+    }
+    
+    // Извлекаем информацию о крепости
+    const strengthInfo = [];
+    const infoUl = tempDiv.querySelector('.info-card:last-child ul');
+    if (infoUl && infoUl !== typesUl) {
+      infoUl.querySelectorAll('li').forEach(li => strengthInfo.push(li.textContent.trim()));
+    }
+    
+    let sizesHtml = '';
+    sizes.forEach((size, idx) => {
+      sizesHtml += `
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <input type="text" class="size-item" value="${escapeHtml(size)}" style="flex:1" placeholder="Размер и описание">
+          <button class="remove-size-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+        </div>
+      `;
+    });
+    
+    let typesHtml = '';
+    types.forEach((type, idx) => {
+      typesHtml += `
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <input type="text" class="type-item" value="${escapeHtml(type)}" style="flex:1" placeholder="Тип сырья">
+          <button class="remove-type-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+        </div>
+      `;
+    });
+    
+    let infoHtml = '';
+    strengthInfo.forEach((info, idx) => {
+      infoHtml += `
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <input type="text" class="info-item" value="${escapeHtml(info)}" style="flex:1" placeholder="Информация о крепости">
+          <button class="remove-info-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+        </div>
+      `;
+    });
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <span class="modal-title">✏️ Редактировать: Форматы паучей</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>📦 Размеры паучей</label>
+            <div id="sizesList">${sizesHtml}</div>
+            <button id="addSizeBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить размер</button>
+          </div>
+          
+          <div class="field">
+            <label>🌿 Типы сырья</label>
+            <div id="typesList">${typesHtml}</div>
+            <button id="addTypeBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить тип</button>
+          </div>
+          
+          <div class="field">
+            <label>🧮 Как считается крепость пауча</label>
+            <div id="infoList">${infoHtml}</div>
+            <button id="addInfoBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить пункт</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Отмена</button>
+          <button class="btn-save">💾 Сохранить</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    // Обработчики добавления
+    const addSizeBtn = modal.querySelector('#addSizeBtn');
+    if (addSizeBtn) {
+      addSizeBtn.addEventListener('click', () => {
+        const container = modal.querySelector('#sizesList');
+        const newDiv = document.createElement('div');
+        newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+        newDiv.innerHTML = `
+          <input type="text" class="size-item" style="flex:1" placeholder="Размер и описание">
+          <button class="remove-size-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+        `;
+        newDiv.querySelector('.remove-size-btn').addEventListener('click', () => newDiv.remove());
+        container.appendChild(newDiv);
+      });
+    }
+    
+    const addTypeBtn = modal.querySelector('#addTypeBtn');
+    if (addTypeBtn) {
+      addTypeBtn.addEventListener('click', () => {
+        const container = modal.querySelector('#typesList');
+        const newDiv = document.createElement('div');
+        newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+        newDiv.innerHTML = `
+          <input type="text" class="type-item" style="flex:1" placeholder="Тип сырья">
+          <button class="remove-type-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+        `;
+        newDiv.querySelector('.remove-type-btn').addEventListener('click', () => newDiv.remove());
+        container.appendChild(newDiv);
+      });
+    }
+    
+    const addInfoBtn = modal.querySelector('#addInfoBtn');
+    if (addInfoBtn) {
+      addInfoBtn.addEventListener('click', () => {
+        const container = modal.querySelector('#infoList');
+        const newDiv = document.createElement('div');
+        newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+        newDiv.innerHTML = `
+          <input type="text" class="info-item" style="flex:1" placeholder="Информация о крепости">
+          <button class="remove-info-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+        `;
+        newDiv.querySelector('.remove-info-btn').addEventListener('click', () => newDiv.remove());
+        container.appendChild(newDiv);
+      });
+    }
+    
+    modal.querySelectorAll('.remove-size-btn, .remove-type-btn, .remove-info-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.target.closest('div').remove();
+      });
+    });
+    
+    const closeModal = () => {
+      modal.classList.remove('open');
+      setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    modal.querySelector('.btn-save').addEventListener('click', async () => {
+      const sizesList = Array.from(modal.querySelectorAll('#sizesList input.size-item')).map(i => i.value.trim()).filter(v => v);
+      const typesList = Array.from(modal.querySelectorAll('#typesList input.type-item')).map(i => i.value.trim()).filter(v => v);
+      const infoList = Array.from(modal.querySelectorAll('#infoList input.info-item')).map(i => i.value.trim()).filter(v => v);
+      
+      const sizesHtmlNew = sizesList.map(s => `<li>${escapeHtml(s)}</li>`).join('');
+      const typesHtmlNew = typesList.map(t => `<li>${escapeHtml(t)}</li>`).join('');
+      const infoHtmlNew = infoList.map(i => `<li>${escapeHtml(i)}</li>`).join('');
+      
+      const newHtml = `
+        <div class="two-col">
+          <div class="info-card">
+            <h3>📦 Размеры</h3>
+            <ul>${sizesHtmlNew}</ul>
+          </div>
+          <div class="info-card">
+            <h3>🌿 Типы сырья</h3>
+            <ul>${typesHtmlNew}</ul>
+          </div>
+        </div>
+        <div class="info-card">
+          <h3>🧮 Как считается крепость пауча</h3>
+          <ul>${infoHtmlNew}</ul>
+        </div>
+      `;
+      
+      await saveContent('snus', 'formats', newHtml, contentDiv, closeModal);
+    });
+  }
+  
+  function editStrengthContent(contentDiv, currentHtml) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = currentHtml;
+    
+    // Извлекаем категории крепости
+    const categories = [];
+    const accordions = tempDiv.querySelectorAll('.accordion');
+    accordions.forEach(acc => {
+      const title = acc.querySelector('.acc-header .acc-title')?.textContent.trim() || '';
+      const items = [];
+      const lis = acc.querySelectorAll('.acc-body ul li');
+      lis.forEach(li => items.push(li.textContent.trim()));
+      categories.push({ title, items });
+    });
+    
+    let categoriesHtml = '';
+    categories.forEach((cat, idx) => {
+      let itemsHtml = '';
+      cat.items.forEach((item, itemIdx) => {
+        itemsHtml += `
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <input type="text" class="strength-item-${idx}" value="${escapeHtml(item)}" style="flex:1" placeholder="Бренд и описание">
+            <button class="remove-item-btn" data-cat="${idx}" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+          </div>
+        `;
+      });
+      
+      categoriesHtml += `
+        <div class="strength-group" style="background: var(--surface2); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+          <div class="field">
+            <label>📁 Название категории</label>
+            <input type="text" class="category-title" value="${escapeHtml(cat.title)}" style="width:100%; margin-bottom: 12px;">
+          </div>
+          <div class="field">
+            <label>📋 Список брендов</label>
+            <div id="items-list-${idx}" class="items-list">${itemsHtml}</div>
+            <button class="add-item-btn btn-add" data-cat="${idx}" style="margin-top: 8px;">➕ Добавить бренд</button>
+          </div>
+          <button class="remove-category-btn" style="margin-top: 12px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить категорию</button>
+        </div>
+      `;
+    });
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <span class="modal-title">✏️ Редактировать: Классификация по крепости</span>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div id="categoriesContainer">${categoriesHtml}</div>
+          <button id="addCategoryBtn" class="btn-add" style="margin-top: 16px; width: 100%;">➕ Добавить категорию</button>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Отмена</button>
+          <button class="btn-save">💾 Сохранить</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    function updateCategoryIndices() {
+      const categories = modal.querySelectorAll('.strength-group');
+      categories.forEach((cat, catIdx) => {
+        const itemsContainer = cat.querySelector('.items-list');
+        const items = itemsContainer.querySelectorAll('div');
+        items.forEach((item, itemIdx) => {
+          const input = item.querySelector('input');
+          if (input) input.className = `strength-item-${catIdx}`;
+          const removeBtn = item.querySelector('.remove-item-btn');
+          if (removeBtn) removeBtn.setAttribute('data-cat', catIdx);
+        });
+        const addBtn = cat.querySelector('.add-item-btn');
+        if (addBtn) addBtn.setAttribute('data-cat', catIdx);
+      });
+    }
+    
+    const addCategoryBtn = modal.querySelector('#addCategoryBtn');
+    if (addCategoryBtn) {
+      addCategoryBtn.addEventListener('click', () => {
+        const container = modal.querySelector('#categoriesContainer');
+        const newCatIndex = modal.querySelectorAll('.strength-group').length;
+        const newDiv = document.createElement('div');
+        newDiv.className = 'strength-group';
+        newDiv.style.cssText = 'background: var(--surface2); border-radius: 12px; padding: 16px; margin-bottom: 16px;';
+        newDiv.innerHTML = `
+          <div class="field">
+            <label>📁 Название категории</label>
+            <input type="text" class="category-title" placeholder="Например: 🔥 Крепкие" style="width:100%; margin-bottom: 12px;">
+          </div>
+          <div class="field">
+            <label>📋 Список брендов</label>
+            <div id="items-list-${newCatIndex}" class="items-list"></div>
+            <button class="add-item-btn btn-add" data-cat="${newCatIndex}" style="margin-top: 8px;">➕ Добавить бренд</button>
+          </div>
+          <button class="remove-category-btn" style="margin-top: 12px; background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; color: var(--accent2); cursor: pointer;">🗑 Удалить категорию</button>
+        `;
+        
+        const addItemBtn = newDiv.querySelector('.add-item-btn');
+        addItemBtn.addEventListener('click', (e) => {
+          const catIdx = e.target.getAttribute('data-cat');
+          const itemsContainer = newDiv.querySelector(`#items-list-${catIdx}`);
+          const newItemDiv = document.createElement('div');
+          newItemDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+          newItemDiv.innerHTML = `
+            <input type="text" class="strength-item-${catIdx}" style="flex:1" placeholder="Бренд и описание">
+            <button class="remove-item-btn" data-cat="${catIdx}" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+          `;
+          newItemDiv.querySelector('.remove-item-btn').addEventListener('click', () => newItemDiv.remove());
+          itemsContainer.appendChild(newItemDiv);
+        });
+        
+        const removeCatBtn = newDiv.querySelector('.remove-category-btn');
+        removeCatBtn.addEventListener('click', () => newDiv.remove());
+        
+        container.appendChild(newDiv);
+        updateCategoryIndices();
+      });
+    }
+    
+    modal.querySelectorAll('.add-item-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const catIdx = e.target.getAttribute('data-cat');
+        const catGroup = e.target.closest('.strength-group');
+        const itemsContainer = catGroup.querySelector(`#items-list-${catIdx}`);
+        const newItemDiv = document.createElement('div');
+        newItemDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+        newItemDiv.innerHTML = `
+          <input type="text" class="strength-item-${catIdx}" style="flex:1" placeholder="Бренд и описание">
+          <button class="remove-item-btn" data-cat="${catIdx}" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 12px; color: var(--accent2); cursor: pointer;">🗑</button>
+        `;
+        newItemDiv.querySelector('.remove-item-btn').addEventListener('click', () => newItemDiv.remove());
+        itemsContainer.appendChild(newItemDiv);
+      });
+    });
+    
+    modal.querySelectorAll('.remove-item-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.target.closest('div').remove();
+      });
+    });
+    
+    modal.querySelectorAll('.remove-category-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.target.closest('.strength-group').remove();
+      });
+    });
+    
+    const closeModal = () => {
+      modal.classList.remove('open');
+      setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    modal.querySelector('.btn-save').addEventListener('click', async () => {
+      const categoriesList = [];
+      modal.querySelectorAll('.strength-group').forEach(catGroup => {
+        const title = catGroup.querySelector('.category-title').value.trim();
+        const items = [];
+        catGroup.querySelectorAll('.items-list input').forEach(input => {
+          const val = input.value.trim();
+          if (val) items.push(val);
+        });
+        if (title && items.length > 0) {
+          categoriesList.push({ title, items });
+        }
+      });
+      
+      let accordionsHtml = '';
+      categoriesList.forEach((cat, idx) => {
+        let itemsHtml = '';
+        cat.items.forEach(item => {
+          itemsHtml += `<li>${escapeHtml(item)}</li>`;
+        });
+        accordionsHtml += `
+          <div class="accordion ${idx === 0 ? 'open' : ''}">
+            <div class="acc-header"><span class="acc-title">${escapeHtml(cat.title)}</span><span class="acc-arrow">▼</span></div>
+            <div class="acc-body">
+              <ul>${itemsHtml}</ul>
+            </div>
+          </div>
+        `;
+      });
+      
+      await saveContent('snus', 'strength', accordionsHtml, contentDiv, closeModal);
+    });
+  }
+  
+  async function saveContent(page, section, newHtml, contentDiv, closeModal) {
+    try {
+      const response = await fetch(`/api/content/${page}/${section}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: newHtml })
+      });
+      
+      if (response.ok) {
+        contentDiv.innerHTML = newHtml;
+        alert('✅ Сохранено успешно!');
+        closeModal();
+        initAccordions();
+      } else {
+        alert('❌ Ошибка сохранения');
+      }
+    } catch (error) {
+      alert('❌ Ошибка: ' + error.message);
+    }
+  }
+  
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+
   document.getElementById('logoutBtn')?.addEventListener('click', async () => {
     await fetch('/api/logout', { method: 'POST', credentials: 'include' });
     window.location.href = '/login.html';
@@ -203,12 +786,11 @@
   async function openRopPanel() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
-    modal.id = 'ropModal';
     modal.innerHTML = `
       <div class="modal" style="max-width: 600px;">
         <div class="modal-header">
           <span class="modal-title">👑 Панель управления</span>
-          <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">✕</button>
+          <button class="modal-close">✕</button>
         </div>
         <div class="modal-body">
           <div class="field">
@@ -225,12 +807,24 @@
             <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
           </div>
         </div>
+        <div class="modal-footer">
+          <button class="btn-cancel">Закрыть</button>
+        </div>
       </div>
     `;
     
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
-    await loadUsers();
+    
+    const closeModal = () => {
+      modal.classList.remove('open');
+      setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    await loadUsers(modal);
     
     document.getElementById('addUserBtn').addEventListener('click', async () => {
       const username = document.getElementById('newUsername').value.trim();
@@ -258,7 +852,7 @@
         document.getElementById('newUsername').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('newFullName').value = '';
-        await loadUsers();
+        await loadUsers(modal);
       } else {
         const error = await response.json();
         alert(error.error);
@@ -266,13 +860,13 @@
     });
   }
 
-  async function loadUsers() {
+  async function loadUsers(modal) {
     const response = await fetch('/api/users', { credentials: 'include' });
     const users = await response.json();
     const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
     const me = await meResponse.json();
     
-    const container = document.getElementById('usersList');
+    const container = modal.querySelector('#usersList');
     if (!container) return;
     
     container.innerHTML = users.map(user => {
@@ -322,15 +916,10 @@
       const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
       if (response.ok) {
         alert('Пользователь удален');
-        await loadUsers();
+        location.reload();
       } else alert('Ошибка удаления');
     }
   };
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
-  }
 
   checkPermissions().then(() => renderGrid());
 </script>
