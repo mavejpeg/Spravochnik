@@ -1,8 +1,7 @@
-// main.js - полная версия с визуальным редактором и таблицами
+// main.js - полная версия с визуальным редактором
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Main.js loaded');
-    
     initTabs();
     initAccordions();
     initSearch();
@@ -36,8 +35,9 @@ function initAccordions() {
                 const title = header.querySelector('.acc-title')?.innerHTML || '';
                 const details = document.createElement('details');
                 const summary = document.createElement('summary');
-                summary.innerHTML = title + '<span style="float: right;">▼</span>';
-                summary.style.cssText = 'cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none;';
+                summary.innerHTML = title;
+                summary.style.cssText = 'cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none; display: flex; justify-content: space-between; align-items: center;';
+                summary.innerHTML = title + '<span style="font-size: 12px;">▼</span>';
                 details.appendChild(summary);
                 details.appendChild(body.cloneNode(true));
                 details.style.cssText = 'background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px;';
@@ -75,19 +75,9 @@ async function loadUserInfo() {
         
         if (data.authenticated) {
             if (userNameSpan) userNameSpan.textContent = data.user.full_name;
-            
             const isRop = (data.user.role === 'rop' || data.user.role === 'root');
             window.isRopGlobal = isRop;
-            
             if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
-            
-            const editBtns = document.querySelectorAll('.btn-edit-content');
-            editBtns.forEach(btn => {
-                btn.style.display = isRop ? 'inline-flex' : 'none';
-                btn.addEventListener('click', function() {
-                    editContent(this.dataset.page, this.dataset.section);
-                });
-            });
         } else {
             window.location.href = '/login.html';
         }
@@ -118,48 +108,41 @@ function setupEditButtons() {
     const editBtns = document.querySelectorAll('.btn-edit-content');
     editBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            const page = this.dataset.page;
-            const section = this.dataset.section;
-            editContent(page, section);
+            openVisualEditor(this.dataset.page, this.dataset.section);
         });
     });
 }
 
-// ========== РЕДАКТИРОВАНИЕ КОНТЕНТА ==========
+// ========== ВИЗУАЛЬНЫЙ РЕДАКТОР ==========
 
-function editContent(page, section) {
+function openVisualEditor(page, section) {
     const contentDiv = document.getElementById(`${section}-content`);
     if (!contentDiv) return;
     
     const currentHtml = contentDiv.innerHTML;
     
-    // Проверяем, есть ли в секции таблица
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
-    const hasTable = tempDiv.querySelector('table');
-    
-    if (hasTable && (section === 'bowls' || section === 'coal' || section === 'clean')) {
-        editTableContent(contentDiv, section, page);
-        return;
-    }
-    
-    // Обычное редактирование HTML
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
+    modal.style.zIndex = '2000';
     modal.innerHTML = `
-        <div class="modal" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
             <div class="modal-header">
                 <span class="modal-title">✏️ Редактировать: ${getSectionTitle(section)}</span>
                 <button class="modal-close">✕</button>
             </div>
             <div class="modal-body">
-                <div class="field">
-                    <label>📝 Содержимое (HTML)</label>
-                    <textarea id="contentEditor" style="width:100%; min-height:400px; font-family:monospace; font-size:13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: var(--text);">${escapeHtml(currentHtml)}</textarea>
+                <div class="editor-toolbar">
+                    <button class="tool-btn" data-action="add-text">📝 Добавить текст</button>
+                    <button class="tool-btn" data-action="add-list">📋 Добавить список</button>
+                    <button class="tool-btn" data-action="add-numbered-list">🔢 Нумерованный список</button>
+                    <button class="tool-btn" data-action="add-table">📊 Добавить таблицу</button>
+                    <button class="tool-btn" data-action="add-alert">⚠️ Предупреждение</button>
+                    <button class="tool-btn" data-action="add-note">💡 Примечание</button>
+                    <button class="tool-btn" data-action="add-dropdown">📁 Выпадающий список</button>
+                    <button class="tool-btn" data-action="add-card">🃏 Карточка</button>
                 </div>
-                <div class="alert-bar info">
-                    <span>💡</span>
-                    <span>Вы можете использовать HTML теги: &lt;div&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;table&gt;, &lt;h3&gt; и т.д.</span>
+                <div class="editor-area" id="editorArea">
+                    ${parseContentToEditor(currentHtml)}
                 </div>
             </div>
             <div class="modal-footer">
@@ -172,6 +155,20 @@ function editContent(page, section) {
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
     
+    const editorArea = modal.querySelector('#editorArea');
+    
+    const toolBtns = modal.querySelectorAll('.tool-btn');
+    toolBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            addElementToEditor(editorArea, btn.dataset.action);
+        });
+    });
+    
+    setupRemoveButtons(editorArea);
+    setupRichEditors(editorArea);
+    setupListEditors(editorArea);
+    setupStepsEditors(editorArea);
+    
     const closeModal = () => {
         modal.classList.remove('open');
         setTimeout(() => modal.remove(), 300);
@@ -181,7 +178,7 @@ function editContent(page, section) {
     modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
     
     modal.querySelector('.btn-save').addEventListener('click', async () => {
-        const newContent = modal.querySelector('#contentEditor').value;
+        const newContent = convertEditorToHtml(editorArea);
         
         try {
             const response = await fetch(`/api/content/${page}/${section}`, {
@@ -207,362 +204,597 @@ function editContent(page, section) {
 
 function getSectionTitle(section) {
     const titles = {
-        'parts': 'Комплектация кальяна',
-        'bowls': 'Чаши',
-        'coal': 'Уголь и управление',
-        'clean': 'Обслуживание и чистка',
-        'info': 'Общая информация',
-        'alternatives': 'Альтернативы',
-        'coils': 'Совместимость испарителей',
-        'howto': 'Как применять',
-        'formats': 'Форматы паучей',
-        'strength': 'Классификация по крепости',
-        'returns': 'Возврат картриджа',
-        'price': 'Отработка возражения по цене',
-        'color': 'Цвет жидкости',
-        'upsell': 'Добивание комбо',
-        'official': 'Официальная инструкция',
-        'practical': 'Практические советы',
-        'after': 'По окончании проверки',
-        'types': 'Типы товаров',
-        'qr': 'Работа с QR-кодами',
-        'register': 'Кассовый аппарат',
-        'syrye': 'Типы сырья',
-        'tips': 'Советы продавцу',
-        'guide': 'Гид по брендам'
+        'parts': 'Комплектация кальяна', 'bowls': 'Чаши', 'coal': 'Уголь и управление', 'clean': 'Обслуживание и чистка',
+        'info': 'Общая информация', 'alternatives': 'Альтернативы', 'coils': 'Совместимость испарителей',
+        'howto': 'Как применять', 'formats': 'Форматы паучей', 'strength': 'Классификация по крепости',
+        'returns': 'Возврат картриджа', 'price': 'Отработка возражения по цене', 'color': 'Цвет жидкости',
+        'upsell': 'Добивание комбо', 'official': 'Официальная инструкция', 'practical': 'Практические советы',
+        'after': 'По окончании проверки', 'types': 'Типы товаров', 'qr': 'Работа с QR-кодами',
+        'register': 'Кассовый аппарат', 'syrye': 'Типы сырья', 'tips': 'Советы продавцу', 'guide': 'Гид по брендам'
     };
     return titles[section] || section;
 }
 
-// ========== РЕДАКТИРОВАНИЕ ТАБЛИЦ ==========
-
-function editTableContent(contentDiv, section, page) {
-    const currentHtml = contentDiv.innerHTML;
+function parseContentToEditor(html) {
     const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = currentHtml;
+    tempDiv.innerHTML = html;
+    let result = '';
     
-    // Извлекаем таблицу
-    const table = tempDiv.querySelector('table');
-    if (!table) return;
-    
-    const headers = [];
-    const headerCells = table.querySelectorAll('thead th');
-    headerCells.forEach(th => headers.push(th.textContent.trim()));
-    
-    const rows = [];
-    const bodyRows = table.querySelectorAll('tbody tr');
-    bodyRows.forEach(tr => {
-        const cells = tr.querySelectorAll('td');
-        const rowData = [];
-        cells.forEach(td => rowData.push(td.innerHTML));
-        rows.push(rowData);
-    });
-    
-    let additionalHtml = '';
-    let alertText = '';
-    
-    if (section === 'bowls') {
-        const alertDiv = tempDiv.querySelector('.alert-bar.info');
-        if (alertDiv) {
-            alertText = alertDiv.querySelector('span:last-child')?.textContent.trim() || '';
-        }
-        additionalHtml = `
-            <div class="field">
-                <label>💡 Заголовок-подсказка</label>
-                <input type="text" id="alertText" value="${escapeHtml(alertText)}" style="width:100%; padding: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text);">
-            </div>
-        `;
-    } else if (section === 'coal') {
-        const sizesCard = tempDiv.querySelector('.info-card');
-        if (sizesCard) {
-            const sizes = [];
-            const sizesList = sizesCard.querySelectorAll('ul li');
-            sizesList.forEach(li => sizes.push(li.textContent.trim()));
-            let sizesHtml = '';
-            sizes.forEach((size, idx) => {
-                sizesHtml += `
-                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                        <input type="text" class="size-item" value="${escapeHtml(size)}" style="flex:1; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px;">
-                        <button class="remove-size-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 10px; color: var(--accent2); cursor: pointer;">🗑</button>
-                    </div>
-                `;
-            });
-            additionalHtml = `
-                <div class="field" style="margin-top: 20px;">
-                    <label>⚫ Размеры углей</label>
-                    <div id="sizesList">${sizesHtml}</div>
-                    <button id="addSizeBtn" class="btn-add" style="margin-top: 8px;">➕ Добавить размер</button>
-                </div>
-            `;
-        }
+    const elements = tempDiv.children;
+    for (let i = 0; i < elements.length; i++) {
+        result += convertElementToEditorItem(elements[i]);
     }
+    return result || '<div class="editor-empty">Нажмите кнопку выше, чтобы добавить элемент</div>';
+}
+
+function convertElementToEditorItem(el) {
+    const className = el.className;
+    const tagName = el.tagName.toLowerCase();
     
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
-            <div class="modal-header">
-                <span class="modal-title">✏️ Редактировать: ${getSectionTitle(section)}</span>
-                <button class="modal-close">✕</button>
-            </div>
-            <div class="modal-body">
-                ${additionalHtml}
-                <div class="field">
-                    <label>📊 Редактирование таблицы</label>
-                    <div class="table-editor-container">
+    if (tagName === 'details') {
+        const title = el.querySelector('summary')?.innerHTML.replace(/<span.*<\/span>/, '').trim() || '';
+        const content = Array.from(el.querySelectorAll(':scope > :not(summary)')).map(c => c.outerHTML).join('');
+        return `
+            <div class="editor-item dropdown-item" data-type="dropdown">
+                <div class="editor-item-header"><span>📁 Выпадающий список</span><button class="remove-editor-item">🗑</button></div>
+                <div class="editor-item-content">
+                    <input type="text" class="dropdown-title" placeholder="Заголовок" value="${escapeHtml(title)}">
+                    <div class="rich-editor-container">
                         <div class="format-toolbar">
                             <button class="format-btn" data-format="bold"><b>B</b></button>
                             <button class="format-btn" data-format="italic"><i>I</i></button>
                             <button class="format-btn" data-format="underline"><u>U</u></button>
+                            <button class="format-btn" data-format="h3">H3</button>
+                            <button class="format-btn" data-format="insertUnorderedList">• Список</button>
+                            <button class="format-btn" data-format="insertOrderedList">1. Нумер.</button>
                         </div>
-                        <div class="table-editor" data-headers='${JSON.stringify(headers)}' data-rows='${JSON.stringify(rows)}'></div>
+                        <div class="rich-editor" contenteditable="true">${content}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    else if (className.includes('info-card')) {
+        const title = el.querySelector('h3')?.innerHTML || '';
+        const items = Array.from(el.querySelectorAll('ul li')).map(li => li.innerHTML).join('\n');
+        return `
+            <div class="editor-item card-item" data-type="card">
+                <div class="editor-item-header"><span>🃏 Карточка</span><button class="remove-editor-item">🗑</button></div>
+                <div class="editor-item-content">
+                    <input type="text" class="card-title" placeholder="Заголовок" value="${escapeHtml(title)}">
+                    <div class="list-editor" data-type="unordered">
+                        <div class="list-items">${items.split('\n').filter(i => i.trim()).map(item => `<div class="list-item"><input type="text" value="${escapeHtml(item)}" placeholder="Пункт списка"><button class="remove-list-item">✕</button></div>`).join('')}</div>
+                        <button class="add-list-item">➕ Добавить пункт</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    else if (tagName === 'table') {
+        const rows = [];
+        const trs = el.querySelectorAll('tr');
+        trs.forEach(tr => {
+            const cells = Array.from(tr.querySelectorAll('th, td')).map(cell => cell.innerHTML);
+            rows.push(cells);
+        });
+        return `
+            <div class="editor-item table-item" data-type="table">
+                <div class="editor-item-header"><span>📊 Таблица</span><button class="remove-editor-item">🗑</button></div>
+                <div class="editor-item-content">
+                    <div class="table-editor" data-rows='${JSON.stringify(rows)}'></div>
+                    <div class="table-buttons">
+                        <button class="add-table-row">➕ Добавить строку</button>
+                        <button class="add-table-col">➕ Добавить столбец</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    else if (className.includes('alert-bar')) {
+        const text = el.querySelector('span:last-child')?.innerHTML || el.innerHTML;
+        const type = className.includes('danger') ? 'danger' : (className.includes('success') ? 'success' : 'info');
+        return `
+            <div class="editor-item alert-item" data-type="alert">
+                <div class="editor-item-header"><span>⚠️ Предупреждение</span><button class="remove-editor-item">🗑</button></div>
+                <div class="editor-item-content">
+                    <select class="alert-type">
+                        <option value="danger" ${type === 'danger' ? 'selected' : ''}>🔴 Важное</option>
+                        <option value="success" ${type === 'success' ? 'selected' : ''}>🟢 Успех</option>
+                        <option value="info" ${type === 'info' ? 'selected' : ''}>🔵 Информация</option>
+                    </select>
+                    <textarea class="alert-text" rows="2" placeholder="Текст">${escapeHtml(text)}</textarea>
+                </div>
+            </div>
+        `;
+    }
+    else if (className.includes('hl')) {
+        const text = el.innerHTML;
+        const type = className.includes('warn') ? 'warn' : (className.includes('ok') ? 'ok' : 'info');
+        return `
+            <div class="editor-item note-item" data-type="note">
+                <div class="editor-item-header"><span>💡 Примечание</span><button class="remove-editor-item">🗑</button></div>
+                <div class="editor-item-content">
+                    <select class="note-type">
+                        <option value="info" ${type === 'info' ? 'selected' : ''}>📘 Обычное</option>
+                        <option value="ok" ${type === 'ok' ? 'selected' : ''}>✅ Успех</option>
+                        <option value="warn" ${type === 'warn' ? 'selected' : ''}>⚠️ Важное</option>
+                    </select>
+                    <textarea class="note-text" rows="2" placeholder="Текст">${escapeHtml(text)}</textarea>
+                </div>
+            </div>
+        `;
+    }
+    else if (className.includes('steps') || (el.querySelector('.step') && el.querySelector('.step-num'))) {
+        const steps = [];
+        const stepDivs = el.querySelectorAll('.step');
+        stepDivs.forEach(step => {
+            const num = step.querySelector('.step-num')?.textContent.trim() || '';
+            const title = step.querySelector('.step-body strong')?.innerHTML || '';
+            const desc = step.querySelector('.step-body span')?.innerHTML || '';
+            steps.push({ num, title, desc });
+        });
+        let stepsHtml = '';
+        steps.forEach((step, idx) => {
+            stepsHtml += `
+                <div class="step-item">
+                    <div class="step-header"><span class="step-num-display">${step.num || idx+1}</span><input type="text" class="step-title" value="${escapeHtml(step.title)}" placeholder="Заголовок"></div>
+                    <textarea class="step-desc" rows="2" placeholder="Описание">${escapeHtml(step.desc)}</textarea>
+                    <button class="remove-step-btn">🗑 Удалить шаг</button>
+                </div>
+            `;
+        });
+        return `
+            <div class="editor-item steps-item" data-type="steps">
+                <div class="editor-item-header"><span>🔢 Нумерованный список</span><button class="remove-editor-item">🗑</button></div>
+                <div class="editor-item-content">
+                    <div class="steps-editor">${stepsHtml}</div>
+                    <button class="add-step-btn">➕ Добавить шаг</button>
+                </div>
+            </div>
+        `;
+    }
+    else if (el.querySelector('ul') && !className.includes('info-card')) {
+        const items = Array.from(el.querySelectorAll('li')).map(li => li.innerHTML);
+        return `
+            <div class="editor-item list-item" data-type="list">
+                <div class="editor-item-header"><span>📋 Маркированный список</span><button class="remove-editor-item">🗑</button></div>
+                <div class="editor-item-content">
+                    <div class="list-editor" data-type="unordered">
+                        <div class="list-items">${items.map(item => `<div class="list-item"><input type="text" value="${escapeHtml(item)}" placeholder="Пункт списка"><button class="remove-list-item">✕</button></div>`).join('')}</div>
+                        <button class="add-list-item">➕ Добавить пункт</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    else {
+        return `
+            <div class="editor-item text-item" data-type="text">
+                <div class="editor-item-header"><span>📝 Текст</span><button class="remove-editor-item">🗑</button></div>
+                <div class="editor-item-content">
+                    <div class="rich-editor-container">
+                        <div class="format-toolbar">
+                            <button class="format-btn" data-format="bold"><b>B</b></button>
+                            <button class="format-btn" data-format="italic"><i>I</i></button>
+                            <button class="format-btn" data-format="underline"><u>U</u></button>
+                            <button class="format-btn" data-format="h3">H3</button>
+                            <button class="format-btn" data-format="insertUnorderedList">• Список</button>
+                            <button class="format-btn" data-format="insertOrderedList">1. Нумер.</button>
+                        </div>
+                        <div class="rich-editor" contenteditable="true">${el.innerHTML}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function addElementToEditor(editorArea, type) {
+    let html = '';
+    
+    switch(type) {
+        case 'add-text':
+            html = `
+                <div class="editor-item text-item" data-type="text">
+                    <div class="editor-item-header"><span>📝 Текст</span><button class="remove-editor-item">🗑</button></div>
+                    <div class="editor-item-content">
+                        <div class="rich-editor-container">
+                            <div class="format-toolbar">
+                                <button class="format-btn" data-format="bold"><b>B</b></button>
+                                <button class="format-btn" data-format="italic"><i>I</i></button>
+                                <button class="format-btn" data-format="underline"><u>U</u></button>
+                                <button class="format-btn" data-format="h3">H3</button>
+                                <button class="format-btn" data-format="insertUnorderedList">• Список</button>
+                                <button class="format-btn" data-format="insertOrderedList">1. Нумер.</button>
+                            </div>
+                            <div class="rich-editor" contenteditable="true"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'add-list':
+            html = `
+                <div class="editor-item list-item" data-type="list">
+                    <div class="editor-item-header"><span>📋 Маркированный список</span><button class="remove-editor-item">🗑</button></div>
+                    <div class="editor-item-content">
+                        <div class="list-editor" data-type="unordered">
+                            <div class="list-items"><div class="list-item"><input type="text" placeholder="Пункт списка"><button class="remove-list-item">✕</button></div></div>
+                            <button class="add-list-item">➕ Добавить пункт</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'add-numbered-list':
+            html = `
+                <div class="editor-item steps-item" data-type="steps">
+                    <div class="editor-item-header"><span>🔢 Нумерованный список</span><button class="remove-editor-item">🗑</button></div>
+                    <div class="editor-item-content">
+                        <div class="steps-editor">
+                            <div class="step-item">
+                                <div class="step-header"><span class="step-num-display">1</span><input type="text" class="step-title" placeholder="Заголовок"></div>
+                                <textarea class="step-desc" rows="2" placeholder="Описание"></textarea>
+                                <button class="remove-step-btn">🗑 Удалить шаг</button>
+                            </div>
+                        </div>
+                        <button class="add-step-btn">➕ Добавить шаг</button>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'add-table':
+            html = `
+                <div class="editor-item table-item" data-type="table">
+                    <div class="editor-item-header"><span>📊 Таблица</span><button class="remove-editor-item">🗑</button></div>
+                    <div class="editor-item-content">
+                        <div class="table-editor" data-rows='[["Заголовок 1", "Заголовок 2"], ["Данные 1", "Данные 2"]]'></div>
                         <div class="table-buttons">
                             <button class="add-table-row">➕ Добавить строку</button>
                             <button class="add-table-col">➕ Добавить столбец</button>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-cancel">Отмена</button>
-                <button class="btn-save">💾 Сохранить</button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    initTableEditorWithFormat(modal);
-    
-    // Обработчики для размеров углей
-    if (section === 'coal') {
-        const addSizeBtn = modal.querySelector('#addSizeBtn');
-        if (addSizeBtn) {
-            addSizeBtn.addEventListener('click', () => {
-                const container = modal.querySelector('#sizesList');
-                const newDiv = document.createElement('div');
-                newDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
-                newDiv.innerHTML = `
-                    <input type="text" class="size-item" style="flex:1; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px;" placeholder="Размер угля">
-                    <button class="remove-size-btn" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 10px; color: var(--accent2); cursor: pointer;">🗑</button>
-                `;
-                newDiv.querySelector('.remove-size-btn').addEventListener('click', () => newDiv.remove());
-                container.appendChild(newDiv);
-            });
-        }
-        
-        modal.querySelectorAll('.remove-size-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.target.closest('div').remove();
-            });
-        });
+            `;
+            break;
+        case 'add-alert':
+            html = `
+                <div class="editor-item alert-item" data-type="alert">
+                    <div class="editor-item-header"><span>⚠️ Предупреждение</span><button class="remove-editor-item">🗑</button></div>
+                    <div class="editor-item-content">
+                        <select class="alert-type">
+                            <option value="danger">🔴 Важное</option>
+                            <option value="success">🟢 Успех</option>
+                            <option value="info">🔵 Информация</option>
+                        </select>
+                        <textarea class="alert-text" rows="2" placeholder="Текст"></textarea>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'add-note':
+            html = `
+                <div class="editor-item note-item" data-type="note">
+                    <div class="editor-item-header"><span>💡 Примечание</span><button class="remove-editor-item">🗑</button></div>
+                    <div class="editor-item-content">
+                        <select class="note-type">
+                            <option value="info">📘 Обычное</option>
+                            <option value="ok">✅ Успех</option>
+                            <option value="warn">⚠️ Важное</option>
+                        </select>
+                        <textarea class="note-text" rows="2" placeholder="Текст"></textarea>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'add-dropdown':
+            html = `
+                <div class="editor-item dropdown-item" data-type="dropdown">
+                    <div class="editor-item-header"><span>📁 Выпадающий список</span><button class="remove-editor-item">🗑</button></div>
+                    <div class="editor-item-content">
+                        <input type="text" class="dropdown-title" placeholder="Заголовок">
+                        <div class="rich-editor-container">
+                            <div class="format-toolbar">
+                                <button class="format-btn" data-format="bold"><b>B</b></button>
+                                <button class="format-btn" data-format="italic"><i>I</i></button>
+                                <button class="format-btn" data-format="underline"><u>U</u></button>
+                                <button class="format-btn" data-format="h3">H3</button>
+                                <button class="format-btn" data-format="insertUnorderedList">• Список</button>
+                                <button class="format-btn" data-format="insertOrderedList">1. Нумер.</button>
+                            </div>
+                            <div class="rich-editor" contenteditable="true"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'add-card':
+            html = `
+                <div class="editor-item card-item" data-type="card">
+                    <div class="editor-item-header"><span>🃏 Карточка</span><button class="remove-editor-item">🗑</button></div>
+                    <div class="editor-item-content">
+                        <input type="text" class="card-title" placeholder="Заголовок">
+                        <div class="list-editor" data-type="unordered">
+                            <div class="list-items"><div class="list-item"><input type="text" placeholder="Пункт списка"><button class="remove-list-item">✕</button></div></div>
+                            <button class="add-list-item">➕ Добавить пункт</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
     }
     
-    const closeModal = () => {
-        modal.classList.remove('open');
-        setTimeout(() => modal.remove(), 300);
-    };
+    const emptyMsg = editorArea.querySelector('.editor-empty');
+    if (emptyMsg) emptyMsg.remove();
     
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    editorArea.insertAdjacentHTML('beforeend', html);
+    setupRemoveButtons(editorArea);
+    setupRichEditors(editorArea);
+    setupListEditors(editorArea);
+    setupStepsEditors(editorArea);
     
-    modal.querySelector('.btn-save').addEventListener('click', async () => {
-        const newTableHtml = getTableHtmlFromEditor(modal);
-        
-        let newContent = '';
-        if (section === 'bowls') {
-            const alertTextValue = modal.querySelector('#alertText')?.value || '';
-            newContent = `
-                <div class="alert-bar info"><span>💡</span><span>${escapeHtml(alertTextValue)}</span></div>
-                ${newTableHtml}
-            `;
-        } else if (section === 'coal') {
-            const sizes = [];
-            modal.querySelectorAll('.size-item').forEach(input => {
-                const val = input.value.trim();
-                if (val) sizes.push(val);
+    const newTable = editorArea.querySelector('.table-item:last-child .table-editor');
+    if (newTable) initTableEditor(newTable);
+}
+
+function setupRichEditors(container) {
+    const richEditors = container.querySelectorAll('.rich-editor');
+    richEditors.forEach(editor => {
+        const toolbar = editor.closest('.rich-editor-container')?.querySelector('.format-toolbar');
+        if (toolbar) {
+            toolbar.querySelectorAll('.format-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const format = btn.dataset.format;
+                    document.execCommand(format, false, null);
+                    editor.focus();
+                });
             });
-            let sizesHtml = '';
-            if (sizes.length > 0) {
-                sizesHtml = `<div class="info-card"><h3>⚫ Размеры углей</h3><ul>${sizes.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul></div>`;
-            }
-            newContent = `${newTableHtml}${sizesHtml}`;
-        } else {
-            newContent = newTableHtml;
-        }
-        
-        try {
-            const response = await fetch(`/api/content/${page}/${section}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ content: newContent })
-            });
-            
-            if (response.ok) {
-                contentDiv.innerHTML = newContent;
-                alert('✅ Сохранено успешно!');
-                closeModal();
-            } else {
-                alert('❌ Ошибка сохранения');
-            }
-        } catch (error) {
-            alert('❌ Ошибка: ' + error.message);
         }
     });
 }
 
-function initTableEditorWithFormat(modal) {
-    const container = modal.querySelector('.table-editor');
-    if (!container) return;
-    
-    const headers = JSON.parse(container.dataset.headers || '[]');
-    const rows = JSON.parse(container.dataset.rows || '[]');
-    
-    let html = '<table class="editor-table" style="width:100%; border-collapse: collapse;">';
-    html += '<thead> <tr>';
-    headers.forEach((header, idx) => {
-        html += `<th style="border: 1px solid var(--border); padding: 8px;">
-                    <div class="cell-editor" contenteditable="true" data-row="-1" data-col="${idx}">${escapeHtml(header)}</div>
-                 </th>`;
-    });
-    html += '<th style="width:40px; border: 1px solid var(--border);">✕</th> </tr> </thead><tbody>';
-    
-    rows.forEach((row, rowIdx) => {
-        html += ' <tr>';
-        row.forEach((cell, colIdx) => {
-            html += `<td style="border: 1px solid var(--border); padding: 8px;">
-                        <div class="cell-editor" contenteditable="true" data-row="${rowIdx}" data-col="${colIdx}">${cell}</div>
-                      </td>`;
+function setupListEditors(container) {
+    const listEditors = container.querySelectorAll('.list-editor');
+    listEditors.forEach(editor => {
+        const addBtn = editor.querySelector('.add-list-item');
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                const itemsContainer = editor.querySelector('.list-items');
+                const newItem = document.createElement('div');
+                newItem.className = 'list-item';
+                newItem.innerHTML = `<input type="text" placeholder="Пункт списка"><button class="remove-list-item">✕</button>`;
+                newItem.querySelector('.remove-list-item').addEventListener('click', () => newItem.remove());
+                itemsContainer.appendChild(newItem);
+            });
+        }
+        
+        editor.querySelectorAll('.remove-list-item').forEach(btn => {
+            btn.addEventListener('click', () => btn.closest('.list-item').remove());
         });
-        html += `<td style="border: 1px solid var(--border); text-align: center;">
-                    <button class="remove-table-row-btn" data-row="${rowIdx}">🗑</button>
-                  </td>`;
-        html += ' </tr>';
     });
-    html += '</tbody> </table>';
+}
+
+function setupStepsEditors(container) {
+    const stepsEditors = container.querySelectorAll('.steps-editor');
+    stepsEditors.forEach(editor => {
+        const addBtn = editor.closest('.editor-item-content')?.querySelector('.add-step-btn');
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                const stepNum = editor.querySelectorAll('.step-item').length + 1;
+                const newStep = document.createElement('div');
+                newStep.className = 'step-item';
+                newStep.innerHTML = `
+                    <div class="step-header"><span class="step-num-display">${stepNum}</span><input type="text" class="step-title" placeholder="Заголовок"></div>
+                    <textarea class="step-desc" rows="2" placeholder="Описание"></textarea>
+                    <button class="remove-step-btn">🗑 Удалить шаг</button>
+                `;
+                newStep.querySelector('.remove-step-btn').addEventListener('click', () => newStep.remove());
+                editor.appendChild(newStep);
+                updateStepNumbers(editor);
+            });
+        }
+        
+        editor.querySelectorAll('.remove-step-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.closest('.step-item').remove();
+                updateStepNumbers(editor);
+            });
+        });
+    });
+}
+
+function updateStepNumbers(editor) {
+    const steps = editor.querySelectorAll('.step-item');
+    steps.forEach((step, idx) => {
+        const numSpan = step.querySelector('.step-num-display');
+        if (numSpan) numSpan.textContent = idx + 1;
+    });
+}
+
+function setupRemoveButtons(container) {
+    const removeBtns = container.querySelectorAll('.remove-editor-item');
+    removeBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.target.closest('.editor-item').remove();
+            const editorArea = e.target.closest('#editorArea');
+            if (editorArea && editorArea.children.length === 0) {
+                editorArea.innerHTML = '<div class="editor-empty">Нажмите кнопку выше, чтобы добавить элемент</div>';
+            }
+        });
+    });
+    
+    const addRowBtns = container.querySelectorAll('.add-table-row');
+    addRowBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tableItem = e.target.closest('.table-item');
+            const tableEditor = tableItem.querySelector('.table-editor');
+            const rows = JSON.parse(tableEditor.dataset.rows || '[]');
+            const cols = rows[0]?.length || 2;
+            rows.push(Array(cols).fill(''));
+            tableEditor.dataset.rows = JSON.stringify(rows);
+            initTableEditor(tableEditor);
+        });
+    });
+    
+    const addColBtns = container.querySelectorAll('.add-table-col');
+    addColBtns.forEach(btn => {
+        const tableItem = btn.closest('.table-item');
+        const tableEditor = tableItem.querySelector('.table-editor');
+        let rows = JSON.parse(tableEditor.dataset.rows || '[]');
+        rows = rows.map(row => [...row, '']);
+        tableEditor.dataset.rows = JSON.stringify(rows);
+        initTableEditor(tableEditor);
+    });
+}
+
+function initTableEditor(container) {
+    const rows = JSON.parse(container.dataset.rows || '[]');
+    if (rows.length === 0) rows.push(['', '']);
+    
+    let html = '<table class="editor-table"><thead> <tr>';
+    for (let i = 0; i < rows[0].length; i++) {
+        html += `<th><input type="text" class="table-header" value="${escapeHtml(rows[0][i] || '')}" placeholder="Заголовок ${i+1}"></th>`;
+    }
+    html += '<th style="width:40px;"></th>  </thead><tbody>';
+    for (let i = 1; i < rows.length; i++) {
+        html += '  <tr>';
+        for (let j = 0; j < rows[i].length; j++) {
+            html += `<td><input type="text" class="table-cell" value="${escapeHtml(rows[i][j] || '')}" placeholder="Значение"></td>`;
+        }
+        html += `<td><button class="remove-table-row">🗑</button></td>`;
+        html += '  </tr>';
+    }
+    html += '</tbody>  </table>';
     container.innerHTML = html;
     
-    // Обработчики форматирования
-    const formatBtns = modal.querySelectorAll('.format-btn');
-    let activeCell = null;
-    
-    container.querySelectorAll('.cell-editor').forEach(cell => {
-        cell.addEventListener('focus', () => { activeCell = cell; });
-        cell.addEventListener('blur', () => { activeCell = null; });
-    });
-    
-    formatBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (activeCell) {
-                const format = btn.dataset.format;
-                document.execCommand(format, false, null);
-                activeCell.focus();
-            } else {
-                alert('Нажмите на ячейку, которую хотите отформатировать');
-            }
-        });
-    });
-    
-    // Добавление строки
-    const addRowBtn = modal.querySelector('.add-table-row');
-    if (addRowBtn) {
-        addRowBtn.addEventListener('click', () => {
-            const colCount = headers.length;
-            const tbody = container.querySelector('tbody');
-            const newRow = document.createElement('tr');
-            for (let i = 0; i < colCount; i++) {
-                const td = document.createElement('td');
-                td.style.cssText = 'border: 1px solid var(--border); padding: 8px;';
-                td.innerHTML = '<div class="cell-editor" contenteditable="true"></div>';
-                td.querySelector('.cell-editor').addEventListener('focus', () => { activeCell = td.querySelector('.cell-editor'); });
-                newRow.appendChild(td);
-            }
-            const deleteTd = document.createElement('td');
-            deleteTd.style.cssText = 'border: 1px solid var(--border); text-align: center;';
-            deleteTd.innerHTML = '<button class="remove-table-row-btn">🗑</button>';
-            newRow.appendChild(deleteTd);
-            tbody.appendChild(newRow);
-            updateRowIndices(container);
-        });
-    }
-    
-    // Добавление столбца
-    const addColBtn = modal.querySelector('.add-table-col');
-    if (addColBtn) {
-        addColBtn.addEventListener('click', () => {
-            const allRows = container.querySelectorAll('tr');
-            allRows.forEach(row => {
-                const isHeader = row.parentElement?.tagName === 'THEAD';
-                const newCell = document.createElement(isHeader ? 'th' : 'td');
-                newCell.style.cssText = 'border: 1px solid var(--border); padding: 8px;';
-                if (!isHeader) {
-                    newCell.innerHTML = '<div class="cell-editor" contenteditable="true"></div>';
-                    newCell.querySelector('.cell-editor').addEventListener('focus', () => { activeCell = newCell.querySelector('.cell-editor'); });
-                } else {
-                    newCell.innerHTML = '<div class="cell-editor" contenteditable="true"></div>';
-                }
-                const deleteCell = row.querySelector('td:last-child, th:last-child');
-                row.insertBefore(newCell, deleteCell);
-            });
-            // Обновляем headers
-            const newHeaders = [];
-            container.querySelectorAll('thead .cell-editor').forEach(cell => newHeaders.push(cell.innerHTML));
-            container.dataset.headers = JSON.stringify(newHeaders);
-        });
-    }
-    
-    // Удаление строк
-    container.querySelectorAll('.remove-table-row-btn').forEach(btn => {
+    container.querySelectorAll('.remove-table-row').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.target.closest('tr').remove();
-            updateRowIndices(container);
+            updateTableData(container);
         });
     });
-}
-
-function updateRowIndices(container) {
-    const rows = container.querySelectorAll('tbody tr');
-    rows.forEach((row, idx) => {
-        const deleteBtn = row.querySelector('.remove-table-row-btn');
-        if (deleteBtn) deleteBtn.setAttribute('data-row', idx);
+    
+    container.querySelectorAll('input').forEach(input => {
+        input.addEventListener('change', () => updateTableData(container));
     });
 }
 
-function getTableHtmlFromEditor(modal) {
-    const container = modal.querySelector('.table-editor');
-    if (!container) return '';
-    
-    const headers = [];
-    const headerCells = container.querySelectorAll('thead .cell-editor');
-    headerCells.forEach(cell => headers.push(cell.innerHTML));
-    
+function updateTableData(container) {
     const rows = [];
+    const headers = container.querySelectorAll('thead input');
+    const headerRow = Array.from(headers).map(h => h.value);
+    rows.push(headerRow);
+    
     const bodyRows = container.querySelectorAll('tbody tr');
-    bodyRows.forEach(tr => {
-        const cells = tr.querySelectorAll('td .cell-editor');
-        const rowData = [];
-        cells.forEach(cell => rowData.push(cell.innerHTML));
-        if (rowData.length > 0) rows.push(rowData);
+    bodyRows.forEach(row => {
+        const cells = row.querySelectorAll('td input');
+        const rowData = Array.from(cells).map(c => c.value);
+        rows.push(rowData);
     });
     
-    let tableHtml = '<table class="ref-table"><thead><tr>';
-    headers.forEach(header => {
-        tableHtml += `<th>${header}</th>`;
-    });
-    tableHtml += '</tr></thead><tbody>';
-    rows.forEach(row => {
-        tableHtml += '<tr>';
-        row.forEach(cell => {
-            tableHtml += `<td>${cell}</td>`;
-        });
-        tableHtml += '</tr>';
-    });
-    tableHtml += '</tbody></table>';
+    container.dataset.rows = JSON.stringify(rows);
+}
+
+function convertEditorToHtml(editorArea) {
+    const items = editorArea.querySelectorAll('.editor-item');
+    let html = '';
     
-    return tableHtml;
+    items.forEach(item => {
+        const type = item.dataset.type;
+        
+        switch(type) {
+            case 'text':
+                const textEditor = item.querySelector('.rich-editor');
+                const textContent = textEditor ? textEditor.innerHTML : '';
+                if (textContent) html += `<div>${textContent}</div>`;
+                break;
+            case 'list':
+                const listItems = Array.from(item.querySelectorAll('.list-item input')).map(i => i.value.trim()).filter(v => v);
+                if (listItems.length) html += `<ul>${listItems.map(li => `<li>${escapeHtml(li)}</li>`).join('')}</ul>`;
+                break;
+            case 'steps':
+                const steps = [];
+                item.querySelectorAll('.step-item').forEach(step => {
+                    const title = step.querySelector('.step-title')?.value.trim() || '';
+                    const desc = step.querySelector('.step-desc')?.value.trim() || '';
+                    if (title || desc) steps.push({ title, desc });
+                });
+                if (steps.length) {
+                    let stepsHtml = '<div class="steps">';
+                    steps.forEach((step, idx) => {
+                        stepsHtml += `
+                            <div class="step">
+                                <div class="step-num">${idx + 1}</div>
+                                <div class="step-body">
+                                    <strong>${escapeHtml(step.title)}</strong>
+                                    <span>${escapeHtml(step.desc)}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    stepsHtml += '</div>';
+                    html += stepsHtml;
+                }
+                break;
+            case 'table':
+                const tableData = JSON.parse(item.querySelector('.table-editor')?.dataset.rows || '[]');
+                if (tableData.length > 1) {
+                    let tableHtml = '<table class="ref-table"><thead>  <tr>';
+                    tableData[0].forEach(cell => tableHtml += `<th>${escapeHtml(cell)}</th>`);
+                    tableHtml += '  </tr></thead><tbody>';
+                    for (let i = 1; i < tableData.length; i++) {
+                        tableHtml += '  <tr>';
+                        tableData[i].forEach(cell => tableHtml += `  <td>${escapeHtml(cell)}</td>`);
+                        tableHtml += '  </tr>';
+                    }
+                    tableHtml += '</tbody>  </table>';
+                    html += tableHtml;
+                }
+                break;
+            case 'alert':
+                const alertType = item.querySelector('.alert-type')?.value || 'info';
+                const alertText = item.querySelector('.alert-text')?.value || '';
+                if (alertText) {
+                    const icon = alertType === 'danger' ? '🚨' : (alertType === 'success' ? '✅' : 'ℹ️');
+                    html += `<div class="alert-bar ${alertType}"><span>${icon}</span><span>${escapeHtml(alertText)}</span></div>`;
+                }
+                break;
+            case 'note':
+                const noteType = item.querySelector('.note-type')?.value || 'info';
+                const noteText = item.querySelector('.note-text')?.value || '';
+                if (noteText) {
+                    const className = noteType === 'warn' ? 'hl warn' : (noteType === 'ok' ? 'hl ok' : 'hl info');
+                    html += `<div class="${className}">${escapeHtml(noteText)}</div>`;
+                }
+                break;
+            case 'dropdown':
+                const dropdownTitle = item.querySelector('.dropdown-title')?.value || '';
+                const dropdownContent = item.querySelector('.rich-editor')?.innerHTML || '';
+                if (dropdownTitle && dropdownContent) {
+                    html += `
+                        <details style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px;">
+                            <summary style="cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none;">${escapeHtml(dropdownTitle)}<span style="float: right;">▼</span></summary>
+                            ${dropdownContent}
+                        </details>
+                    `;
+                }
+                break;
+            case 'card':
+                const cardTitle = item.querySelector('.card-title')?.value || '';
+                const cardItems = Array.from(item.querySelectorAll('.list-item input')).map(i => i.value.trim()).filter(v => v);
+                if (cardTitle || cardItems.length) {
+                    let cardHtml = '<div class="info-card">';
+                    if (cardTitle) cardHtml += `<h3>${escapeHtml(cardTitle)}</h3>`;
+                    if (cardItems.length) cardHtml += `<ul>${cardItems.map(li => `<li>${escapeHtml(li)}</li>`).join('')}</ul>`;
+                    cardHtml += '</div>';
+                    html += cardHtml;
+                }
+                break;
+        }
+    });
+    
+    return html;
 }
 
 // ========== ПАНЕЛЬ УПРАВЛЕНИЯ РОП ==========
