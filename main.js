@@ -4,7 +4,7 @@ let isRop = false;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Main.js loaded');
     initTabs();
-    initAccordions();
+    initAccordionsToDetails();
     initSearch();
     loadUserInfo();
     setupLogout();
@@ -26,7 +26,7 @@ function initTabs() {
     });
 }
 
-function initAccordions() {
+function initAccordionsToDetails() {
     const accordions = document.querySelectorAll('.accordion');
     accordions.forEach(acc => {
         if (!acc.classList.contains('converted')) {
@@ -36,8 +36,9 @@ function initAccordions() {
                 const title = header.querySelector('.acc-title')?.innerHTML || '';
                 const details = document.createElement('details');
                 const summary = document.createElement('summary');
-                summary.innerHTML = title + '<span style="float: right;">▼</span>';
-                summary.style.cssText = 'cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none;';
+                summary.innerHTML = title;
+                summary.style.cssText = 'cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none; display: flex; justify-content: space-between; align-items: center;';
+                summary.innerHTML = title + '<span style="font-size: 12px;">▼</span>';
                 details.appendChild(summary);
                 details.appendChild(body.cloneNode(true));
                 details.style.cssText = 'background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px;';
@@ -45,6 +46,18 @@ function initAccordions() {
                 acc.parentNode.replaceChild(details, acc);
                 details.classList.add('converted');
             }
+        }
+    });
+    
+    const details = document.querySelectorAll('details');
+    details.forEach(detail => {
+        const summary = detail.querySelector('summary');
+        if (summary && !detail.hasAttribute('data-initialized')) {
+            summary.addEventListener('click', (e) => {
+                e.preventDefault();
+                detail.open = !detail.open;
+            });
+            detail.setAttribute('data-initialized', 'true');
         }
     });
 }
@@ -75,29 +88,20 @@ async function loadUserInfo() {
         
         if (data.authenticated) {
             if (userNameSpan) userNameSpan.textContent = data.user.full_name;
-            const isRop = (data.user.role === 'rop' || data.user.role === 'root');
-            
-            // ЭТО САМОЕ ВАЖНОЕ - устанавливаем глобальную переменную
+            isRop = (data.user.role === 'rop' || data.user.role === 'root');
             window.isRopGlobal = isRop;
-            
             if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
             
-            // Показываем кнопки редактирования контента
             const editBtns = document.querySelectorAll('.btn-edit-content');
             editBtns.forEach(btn => {
                 btn.style.display = isRop ? 'inline-flex' : 'none';
+                btn.addEventListener('click', function() {
+                    openVisualEditor(this.dataset.page, this.dataset.section);
+                });
             });
             
-            // Показываем кнопку добавления если она есть
             const addBtn = document.querySelector('.btn-add');
             if (addBtn) addBtn.style.display = isRop ? 'flex' : 'none';
-            
-            // Добавляем класс для body
-            if (isRop) {
-                document.body.classList.add('rop-mode');
-            } else {
-                document.body.classList.add('user-mode');
-            }
         } else {
             window.location.href = '/login.html';
         }
@@ -128,17 +132,22 @@ function setupEditButtons() {
     const editBtns = document.querySelectorAll('.btn-edit-content');
     editBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            openEditModal(this.dataset.page, this.dataset.section);
+            openVisualEditor(this.dataset.page, this.dataset.section);
         });
     });
 }
 
-function openEditModal(page, section) {
+// ========== ВИЗУАЛЬНЫЙ РЕДАКТОР ==========
+
+function openVisualEditor(page, section) {
     const contentDiv = document.getElementById(`${section}-content`);
     if (!contentDiv) return;
     
+    const currentHtml = contentDiv.innerHTML;
+    
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
+    modal.style.zIndex = '2000';
     modal.innerHTML = `
         <div class="modal" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
             <div class="modal-header">
@@ -155,9 +164,10 @@ function openEditModal(page, section) {
                     <button class="tool-btn" data-action="add-note">💡 Примечание</button>
                     <button class="tool-btn" data-action="add-dropdown">📁 Выпадающий список</button>
                     <button class="tool-btn" data-action="add-card">🃏 Карточка</button>
+                    <button class="tool-btn" data-action="add-quiz">📋 Опросник</button>
                 </div>
                 <div class="editor-area" id="editorArea">
-                    ${parseContentToEditor(contentDiv.innerHTML)}
+                    ${parseContentToEditor(currentHtml)}
                 </div>
             </div>
             <div class="modal-footer">
@@ -207,7 +217,7 @@ function openEditModal(page, section) {
                 contentDiv.innerHTML = newContent;
                 alert('✅ Сохранено успешно!');
                 closeModal();
-                initAccordions();
+                initAccordionsToDetails();
             } else {
                 alert('❌ Ошибка сохранения');
             }
@@ -225,7 +235,9 @@ function getSectionTitle(section) {
         'returns': 'Возврат картриджа', 'price': 'Отработка возражения по цене', 'color': 'Цвет жидкости',
         'upsell': 'Добивание комбо', 'official': 'Официальная инструкция', 'practical': 'Практические советы',
         'after': 'По окончании проверки', 'types': 'Типы товаров', 'qr': 'Работа с QR-кодами',
-        'register': 'Кассовый аппарат', 'syrye': 'Типы сырья', 'tips': 'Советы продавцу', 'guide': 'Гид по брендам'
+        'register': 'Кассовый аппарат', 'syrye': 'Типы сырья', 'tips': 'Советы продавцу', 'guide': 'Гид по брендам',
+        'day1': 'День 1: Основы', 'day2': 'День 2: Кальянная тематика', 'day3': 'День 3: Касса и маркировка',
+        'day4': 'День 4: Закрепление', 'scripts': 'Скрипты продаж', 'security': 'Безопасность'
     };
     return titles[section] || section;
 }
@@ -364,6 +376,27 @@ function convertElementToEditorItem(el) {
                 <div class="editor-item-content">
                     <div class="steps-editor">${stepsHtml}</div>
                     <button class="add-step-btn">➕ Добавить шаг</button>
+                </div>
+            </div>
+        `;
+    }
+    else if (className.includes('quiz-block')) {
+        const questions = [];
+        const questionDivs = el.querySelectorAll('.quiz-question');
+        questionDivs.forEach(q => {
+            const text = q.querySelector('.quiz-question-text')?.textContent.trim() || '';
+            const options = [];
+            const optionSpans = q.querySelectorAll('.quiz-option span');
+            optionSpans.forEach(opt => options.push(opt.textContent.trim()));
+            const correct = q.querySelector('input[type="radio"]:checked')?.value || 0;
+            questions.push({ text, options, correct: parseInt(correct) });
+        });
+        return `
+            <div class="editor-item quiz-item" data-type="quiz">
+                <div class="editor-item-header"><span>📋 Опросник</span><button class="remove-editor-item">🗑</button></div>
+                <div class="editor-item-content">
+                    <div class="quiz-editor" data-questions='${JSON.stringify(questions)}'></div>
+                    <button class="add-quiz-question">➕ Добавить вопрос</button>
                 </div>
             </div>
         `;
@@ -537,6 +570,17 @@ function addElementToEditor(editorArea, type) {
                 </div>
             `;
             break;
+        case 'add-quiz':
+            html = `
+                <div class="editor-item quiz-item" data-type="quiz">
+                    <div class="editor-item-header"><span>📋 Опросник</span><button class="remove-editor-item">🗑</button></div>
+                    <div class="editor-item-content">
+                        <div class="quiz-editor" data-questions='[]'></div>
+                        <button class="add-quiz-question">➕ Добавить вопрос</button>
+                    </div>
+                </div>
+            `;
+            break;
     }
     
     const emptyMsg = editorArea.querySelector('.editor-empty');
@@ -547,6 +591,7 @@ function addElementToEditor(editorArea, type) {
     setupRichEditors(editorArea);
     setupListEditors(editorArea);
     setupStepsEditors(editorArea);
+    setupQuizEditors(editorArea);
     
     const newTable = editorArea.querySelector('.table-item:last-child .table-editor');
     if (newTable) initTableEditor(newTable);
@@ -619,6 +664,61 @@ function setupStepsEditors(container) {
     });
 }
 
+function setupQuizEditors(container) {
+    const quizEditors = container.querySelectorAll('.quiz-editor');
+    quizEditors.forEach(editor => {
+        const addBtn = editor.closest('.editor-item-content')?.querySelector('.add-quiz-question');
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                initQuizEditor(editor);
+                const newQuestion = document.createElement('div');
+                newQuestion.className = 'quiz-question-editor';
+                newQuestion.innerHTML = `
+                    <input type="text" class="quiz-question-text" placeholder="Вопрос">
+                    <div class="quiz-options-editor">
+                        <div class="quiz-option-editor">
+                            <input type="text" placeholder="Вариант ответа">
+                            <input type="radio" name="correct" value="0">
+                        </div>
+                    </div>
+                    <button class="add-option-btn">➕ Добавить вариант</button>
+                    <button class="remove-question-btn">🗑 Удалить вопрос</button>
+                `;
+                editor.appendChild(newQuestion);
+            });
+        }
+        
+        initQuizEditor(editor);
+    });
+}
+
+function initQuizEditor(container) {
+    const questions = JSON.parse(container.dataset.questions || '[]');
+    if (questions.length === 0) {
+        container.innerHTML = '<div class="quiz-placeholder">Нажмите "Добавить вопрос" чтобы создать опросник</div>';
+    } else {
+        let html = '';
+        questions.forEach((q, idx) => {
+            html += `
+                <div class="quiz-question-editor">
+                    <input type="text" class="quiz-question-text" value="${escapeHtml(q.text)}" placeholder="Вопрос">
+                    <div class="quiz-options-editor">
+                        ${q.options.map((opt, optIdx) => `
+                            <div class="quiz-option-editor">
+                                <input type="text" value="${escapeHtml(opt)}" placeholder="Вариант ответа">
+                                <input type="radio" name="correct_${idx}" value="${optIdx}" ${q.correct === optIdx ? 'checked' : ''}>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="add-option-btn">➕ Добавить вариант</button>
+                    <button class="remove-question-btn">🗑 Удалить вопрос</button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+}
+
 function updateStepNumbers(editor) {
     const steps = editor.querySelectorAll('.step-item');
     steps.forEach((step, idx) => {
@@ -667,20 +767,20 @@ function initTableEditor(container) {
     const rows = JSON.parse(container.dataset.rows || '[]');
     if (rows.length === 0) rows.push(['', '']);
     
-    let html = '<table class="editor-table"><thead> <tr>';
+    let html = '<table class="editor-table"><thead>  <tr>';
     for (let i = 0; i < rows[0].length; i++) {
         html += `<th><input type="text" class="table-header" value="${escapeHtml(rows[0][i] || '')}" placeholder="Заголовок ${i+1}"></th>`;
     }
-    html += '<th style="width:40px;"></th>  </thead><tbody>';
+    html += '<th style="width:40px;"></th>  </tr></thead><tbody>';
     for (let i = 1; i < rows.length; i++) {
         html += '  <tr>';
         for (let j = 0; j < rows[i].length; j++) {
-            html += `。<input type="text" class="table-cell" value="${escapeHtml(rows[i][j] || '')}" placeholder="Значение">。`;
+            html += `<td><input type="text" class="table-cell" value="${escapeHtml(rows[i][j] || '')}" placeholder="Значение"></td>`;
         }
-        html += `。<button class="remove-table-row">🗑</button>。`;
-        html += '   </tr>';
+        html += `<td><button class="remove-table-row">🗑</button></td>`;
+        html += '  </tr>';
     }
-    html += '</tbody>    </table>';
+    html += '</tbody></table>';
     container.innerHTML = html;
     
     container.querySelectorAll('.remove-table-row').forEach(btn => {
@@ -755,15 +855,15 @@ function convertEditorToHtml(editorArea) {
             case 'table':
                 const tableData = JSON.parse(item.querySelector('.table-editor')?.dataset.rows || '[]');
                 if (tableData.length > 1) {
-                    let tableHtml = '<table class="ref-table"><thead>    <tr>';
+                    let tableHtml = '<table class="ref-table"><thead><tr>';
                     tableData[0].forEach(cell => tableHtml += `<th>${escapeHtml(cell)}</th>`);
-                    tableHtml += '    </tr></thead><tbody>';
+                    tableHtml += '</tr></thead><tbody>';
                     for (let i = 1; i < tableData.length; i++) {
-                        tableHtml += '    <tr>';
-                        tableData[i].forEach(cell => tableHtml += `    <td>${escapeHtml(cell)}</td>`);
-                        tableHtml += '    </tr>';
+                        tableHtml += '<tr>';
+                        tableData[i].forEach(cell => tableHtml += `<td>${escapeHtml(cell)}</td>`);
+                        tableHtml += '</tr>';
                     }
-                    tableHtml += '</tbody>    </table>';
+                    tableHtml += '</tbody></table>';
                     html += tableHtml;
                 }
                 break;
@@ -806,11 +906,51 @@ function convertEditorToHtml(editorArea) {
                     html += cardHtml;
                 }
                 break;
+            case 'quiz':
+                const questions = [];
+                const questionEditors = item.querySelectorAll('.quiz-question-editor');
+                questionEditors.forEach(q => {
+                    const text = q.querySelector('.quiz-question-text')?.value.trim() || '';
+                    const options = [];
+                    const optionInputs = q.querySelectorAll('.quiz-option-editor input[type="text"]');
+                    optionInputs.forEach(opt => options.push(opt.value.trim()));
+                    const correctRadio = q.querySelector('input[type="radio"]:checked');
+                    const correct = correctRadio ? parseInt(correctRadio.value) : 0;
+                    if (text && options.length) {
+                        questions.push({ text, options, correct });
+                    }
+                });
+                if (questions.length) {
+                    let quizHtml = '<div class="quiz-block"><div class="quiz-title">📋 Опросник</div>';
+                    questions.forEach((q, idx) => {
+                        quizHtml += `
+                            <div class="quiz-question">
+                                <div class="quiz-question-text">${idx + 1}. ${escapeHtml(q.text)}</div>
+                                <div class="quiz-options">
+                                    ${q.options.map((opt, optIdx) => `
+                                        <label class="quiz-option">
+                                            <input type="radio" name="quiz_q${Date.now()}_${idx}" value="${optIdx}">
+                                            <span>${escapeHtml(opt)}</span>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                                <div class="quiz-answer" id="quiz-answer-${Date.now()}-${idx}"></div>
+                            </div>
+                        `;
+                    });
+                    quizHtml += `<button class="quiz-btn" onclick="checkQuiz(this)">✅ Проверить ответы</button>
+                                 <button class="quiz-btn quiz-reset" onclick="resetQuiz(this)">🔄 Сбросить</button>
+                                 <div class="quiz-result"></div></div>`;
+                    html += quizHtml;
+                }
+                break;
         }
     });
     
     return html;
 }
+
+// ========== ПАНЕЛЬ УПРАВЛЕНИЯ РОП ==========
 
 async function openRopPanel() {
     const modal = document.createElement('div');
@@ -954,267 +1094,3 @@ function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
 }
-
-// Защита от копирования
-function setupCopyProtection() {
-    // Запрет на копирование
-    document.addEventListener('copy', function(e) {
-        e.preventDefault();
-        showCopyWarning('📋 Копирование запрещено!');
-        
-        // Можно подменить текст в буфере обмена
-        e.clipboardData.setData('text/plain', '🚫 КОПИРОВАНИЕ ЗАПРЕЩЕНО 🚫\nДанные защищены авторским правом');
-        return false;
-    });
-    
-    // Запрет на вырезание
-    document.addEventListener('cut', function(e) {
-        e.preventDefault();
-        showCopyWarning('✂️ Вырезание запрещено!');
-        return false;
-    });
-    
-    // Запрет на контекстное меню (правая кнопка мыши)
-    document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        showCopyWarning('🔒 Контекстное меню отключено');
-        return false;
-    });
-    
-    // Запрет на Ctrl+C, Ctrl+X, Ctrl+V
-    document.addEventListener('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'x' || e.key === 'v')) {
-            e.preventDefault();
-            const action = e.key === 'c' ? 'Копирование' : (e.key === 'x' ? 'Вырезание' : 'Вставка');
-            showCopyWarning(`🔒 ${action} запрещено!`);
-            return false;
-        }
-        
-        // Запрет на F12 (DevTools)
-        if (e.key === 'F12') {
-            e.preventDefault();
-            showCopyWarning('🛠️ Инструменты разработчика отключены');
-            return false;
-        }
-    });
-    
-    // Запрет на drag and drop
-    document.addEventListener('dragstart', function(e) {
-        e.preventDefault();
-        showCopyWarning('📎 Перетаскивание запрещено');
-        return false;
-    });
-}
-
-function showCopyWarning(message) {
-    // Удаляем предыдущее предупреждение если есть
-    const oldWarning = document.querySelector('.copy-warning');
-    if (oldWarning) oldWarning.remove();
-    
-    const warning = document.createElement('div');
-    warning.className = 'copy-warning';
-    warning.innerHTML = message;
-    document.body.appendChild(warning);
-    
-    setTimeout(() => {
-        if (warning) warning.remove();
-    }, 2000);
-}
-
-// Запускаем защиту
-setupCopyProtection();
-
-// Добавление водяного знака с данными пользователя
-async function addWatermark() {
-    try {
-        const response = await fetch('/api/check-auth', { credentials: 'include' });
-        const data = await response.json();
-        
-        if (data.authenticated) {
-            const userInfo = data.user;
-            const timestamp = new Date().toLocaleString();
-            const watermarkText = `${userInfo.full_name} | ${userInfo.username} | ${timestamp}`;
-            
-            // Создаем невидимый водяной знак
-            const watermark = document.createElement('div');
-            watermark.style.cssText = `
-                position: fixed;
-                bottom: 5px;
-                left: 5px;
-                font-size: 8px;
-                color: rgba(100, 100, 100, 0.2);
-                z-index: 9999;
-                pointer-events: none;
-                font-family: monospace;
-            `;
-            watermark.textContent = watermarkText;
-            document.body.appendChild(watermark);
-            
-            // Добавляем метаданные в DOM
-            const meta = document.createElement('meta');
-            meta.name = 'user-data';
-            meta.content = watermarkText;
-            document.head.appendChild(meta);
-        }
-    } catch (error) {
-        console.error('Watermark error:', error);
-    }
-}
-
-// Запускаем добавление водяного знака
-addWatermark();
-
-// Обнаружение открытых инструментов разработчика
-function detectDevTools() {
-    let devToolsOpen = false;
-    const element = new Image();
-    
-    Object.defineProperty(element, 'id', {
-        get: function() {
-            devToolsOpen = true;
-            showCopyWarning('⚠️ Обнаружены инструменты разработчика!\nВсе действия логируются');
-            return '';
-        }
-    });
-    
-    setInterval(() => {
-        console.log(element);
-        console.clear();
-        
-        if (devToolsOpen) {
-            // Можно отправить уведомление на сервер
-            fetch('/api/devtools-detected', {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ timestamp: new Date().toISOString() })
-            }).catch(e => console.log);
-        }
-        devToolsOpen = false;
-    }, 1000);
-}
-
-detectDevTools();
-
-// ========== ЗАЩИТА ОТ КОПИРОВАНИЯ ==========
-
-function showWarning(message, isError = true) {
-    const oldWarning = document.querySelector('.copy-warning');
-    if (oldWarning) oldWarning.remove();
-    
-    const warning = document.createElement('div');
-    warning.className = 'copy-warning';
-    warning.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: ${isError ? 'rgba(252, 92, 124, 0.95)' : 'rgba(60, 255, 160, 0.95)'};
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-size: 13px;
-        z-index: 10000;
-        animation: fadeOut 2s forwards;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        font-family: monospace;
-    `;
-    warning.innerHTML = `🔒 ${message}`;
-    document.body.appendChild(warning);
-    
-    setTimeout(() => {
-        if (warning) warning.remove();
-    }, 2000);
-}
-
-// Защита от копирования
-document.addEventListener('copy', function(e) {
-    e.preventDefault();
-    showWarning('📋 КОПИРОВАНИЕ ЗАПРЕЩЕНО!');
-    e.clipboardData.setData('text/plain', '🚫 ДОСТУП ЗАПРЕЩЕН 🚫\nИнформация является конфиденциальной');
-    return false;
-});
-
-document.addEventListener('cut', function(e) {
-    e.preventDefault();
-    showWarning('✂️ ВЫРЕЗАНИЕ ЗАПРЕЩЕНО!');
-    return false;
-});
-
-document.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-    showWarning('🔒 КОНТЕКСТНОЕ МЕНЮ ОТКЛЮЧЕНО');
-    return false;
-});
-
-document.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'x' || e.key === 'v')) {
-        e.preventDefault();
-        const action = e.key === 'c' ? 'Копирование' : (e.key === 'x' ? 'Вырезание' : 'Вставка');
-        showWarning(`${action} ЗАПРЕЩЕНО!`);
-        return false;
-    }
-    
-    if (e.key === 'F12') {
-        e.preventDefault();
-        showWarning('🛠️ ИНСТРУМЕНТЫ РАЗРАБОТЧИКА ОТКЛЮЧЕНЫ');
-        return false;
-    }
-    
-    // Запрет на Print Screen
-    if (e.key === 'PrintScreen') {
-        e.preventDefault();
-        showWarning('📸 СКРИНШОТ ЗАПРЕЩЕН!');
-        return false;
-    }
-});
-
-document.addEventListener('dragstart', function(e) {
-    e.preventDefault();
-    showWarning('📎 ПЕРЕТАСКИВАНИЕ ЗАПРЕЩЕНО');
-    return false;
-});
-
-// Добавление водяного знака с данными пользователя
-async function addWatermark() {
-    try {
-        const response = await fetch('/api/check-auth', { credentials: 'include' });
-        const data = await response.json();
-        
-        if (data.authenticated) {
-            const userInfo = data.user;
-            const timestamp = new Date().toLocaleString();
-            const watermarkText = `${userInfo.full_name} | ${userInfo.username} | ${timestamp}`;
-            
-            const watermark = document.createElement('div');
-            watermark.style.cssText = `
-                position: fixed;
-                bottom: 3px;
-                left: 3px;
-                font-size: 7px;
-                color: rgba(150, 150, 150, 0.15);
-                z-index: 9999;
-                pointer-events: none;
-                font-family: monospace;
-                white-space: nowrap;
-            `;
-            watermark.textContent = watermarkText;
-            document.body.appendChild(watermark);
-        }
-    } catch (error) {
-        console.error('Watermark error:', error);
-    }
-}
-
-addWatermark();
-
-// Добавляем CSS анимацию для предупреждения
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeOut {
-        0% { opacity: 1; transform: translateY(0); }
-        70% { opacity: 1; }
-        100% { opacity: 0; transform: translateY(-20px); visibility: hidden; }
-    }
-`;
-document.head.appendChild(style);
