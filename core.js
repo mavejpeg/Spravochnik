@@ -1,4 +1,4 @@
-// core.js - исправленная версия
+// core.js - исправленная версия без ошибки style
 
 // ========== CONSTANTS ==========
 const QUALITY_SETTINGS = {
@@ -199,11 +199,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
   
   const strengthLabel = getStrengthLabel(category, strength);
   const badgeClass = getStrengthBadgeClass(category, strength);
-  
-  // ВАЖНО: проверяем глобальную переменную
   const canEdit = window.isRopGlobal === true;
-  
-  console.log('Rendering card:', item.name, 'canEdit:', canEdit, 'isRopGlobal:', window.isRopGlobal);
   
   let strengthDisplay = '';
   if (category === 'liquids' || category === 'disposables') {
@@ -243,7 +239,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
   `;
   
   const deleteBtn = div.querySelector('.btn-delete');
-  if (deleteBtn) {
+  if (deleteBtn && canEdit) {
     deleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       if (confirm(`❌ Удалить "${item.name}"?`)) {
@@ -259,7 +255,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
   }
   
   const editBtn = div.querySelector('.btn-edit');
-  if (editBtn) {
+  if (editBtn && canEdit) {
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       const editItem = {
@@ -275,6 +271,7 @@ function renderProductCard(item, category, onDelete, onEdit) {
   
   return div;
 }
+
 // ========== PRODUCT MODAL ==========
 class ProductModal {
   constructor({ category, title, onSave, editItem = null }) {
@@ -467,20 +464,6 @@ class ProductModal {
     });
   }
 }
-
-// ========== CSS для описания ==========
-style.textContent = `
-  .card-desc {
-    font-size: 12px;
-    color: var(--text2);
-    line-height: 1.5;
-    margin-top: 8px;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    white-space: normal;
-  }
-`;
-document.head.appendChild(style);
 
 // ========== EXPORTS ==========
 window.getCategory = getCategory;
