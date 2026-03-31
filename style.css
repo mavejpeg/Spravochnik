@@ -2557,3 +2557,77 @@ details .acc-body {
     background: rgba(252, 92, 124, 0.3);
     transform: scale(1.02);
 }
+
+/* Добавьте в style.css */
+
+.movable-block {
+    position: relative;
+    margin-bottom: 16px;
+    border-left: 3px solid var(--accent);
+    padding-left: 12px;
+    background: var(--surface);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.movable-block:hover {
+    background: var(--surface2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.movable-block pre {
+    white-space: pre-wrap;
+    margin: 0;
+    padding-right: 70px;
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--text2);
+}
+
+.move-up-btn, .move-down-btn {
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 2px 8px;
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.move-up-btn:hover, .move-down-btn:hover {
+    background: var(--accent);
+    color: white;
+    transform: scale(1.05);
+}
+
+.drag-handle-info {
+    margin-top: 12px;
+    padding: 8px;
+    background: var(--surface2);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+}
+
+/* Сортировка в карточках */
+.manufacturer-card {
+    transition: all 0.2s;
+}
+
+.manufacturer-card[data-class="premium"] {
+    border-left: 4px solid var(--accent);
+}
+
+.manufacturer-card[data-class="medium"] {
+    border-left: 4px solid var(--accent4);
+}
+
+.manufacturer-card[data-class="economy"] {
+    border-left: 4px solid var(--accent3);
+}
+
+.line-card {
+    transition: all 0.2s;
+}
