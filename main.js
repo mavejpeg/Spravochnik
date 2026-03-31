@@ -102,6 +102,7 @@ async function loadUserInfo() {
             window.isRopGlobal = isRop;
             if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
             
+            // НАСТРАИВАЕМ КНОПКИ РЕДАКТИРОВАНИЯ ДЛЯ ВСЕХ СТРАНИЦ
             setupEditButtons();
             
             const addBtn = document.querySelector('.btn-add');
@@ -141,11 +142,18 @@ async function handleRopPanel() {
 }
 
 function setupEditButtons() {
+    // Находим все кнопки редактирования на странице
     const editBtns = document.querySelectorAll('.btn-edit-content');
+    console.log('Found edit buttons:', editBtns.length);
+    
     editBtns.forEach(btn => {
+        // Удаляем старые обработчики
         btn.removeEventListener('click', handleEditClick);
+        // Добавляем новый
         btn.addEventListener('click', handleEditClick);
+        // Показываем кнопку если РОП
         btn.style.display = isRop ? 'inline-flex' : 'none';
+        console.log('Edit button for:', btn.dataset.page, btn.dataset.section, 'display:', btn.style.display);
     });
 }
 
@@ -153,14 +161,17 @@ function handleEditClick(e) {
     const btn = e.currentTarget;
     const page = btn.dataset.page;
     const section = btn.dataset.section;
+    console.log('Edit clicked:', page, section);
     openVisualEditor(page, section);
 }
 
-// ========== ВИЗУАЛЬНЫЙ РЕДАКТОР ==========
-
+// Обновляем openVisualEditor для работы с любыми страницами
 function openVisualEditor(page, section) {
     const contentDiv = document.getElementById(`${section}-content`);
-    if (!contentDiv) return;
+    if (!contentDiv) {
+        console.error('Content div not found:', `${section}-content`);
+        return;
+    }
     
     const existingModal = document.getElementById('visualEditorModal');
     if (existingModal) existingModal.remove();
@@ -190,7 +201,10 @@ function openVisualEditor(page, section) {
                     <button class="tool-btn" data-action="add-quiz">📋 Опросник</button>
                 </div>
                 <div class="editor-area" id="editorArea">
-                    ${parseContentToEditor(currentHtml)}
+                    <textarea id="contentEditor" style="width:100%; min-height:400px; font-family:monospace; font-size:13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: var(--text);">${escapeHtml(currentHtml)}</textarea>
+                </div>
+                <div class="drag-handle-info" style="margin-top: 12px; padding: 8px; background: var(--surface2); border-radius: 8px; font-size: 12px; color: var(--muted);">
+                    💡 Для перетаскивания блоков используйте кнопки ↑ и ↓ рядом с каждым блоком
                 </div>
             </div>
             <div class="modal-footer">
@@ -203,24 +217,20 @@ function openVisualEditor(page, section) {
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
     
+    const textarea = modal.querySelector('#contentEditor');
     const editorArea = modal.querySelector('#editorArea');
+    
+    // Добавляем кнопки для перемещения блоков
+    addMoveButtonsToEditor(textarea);
     
     const toolBtns = modal.querySelectorAll('.tool-btn');
     toolBtns.forEach(btn => {
-        btn.removeEventListener('click', handleToolBtnClick);
-        btn.addEventListener('click', handleToolBtnClick);
+        btn.addEventListener('click', (e) => {
+            const action = btn.dataset.action;
+            addHtmlToEditor(textarea, action);
+            addMoveButtonsToEditor(textarea);
+        });
     });
-    
-    function handleToolBtnClick(e) {
-        const action = e.currentTarget.dataset.action;
-        addElementToEditor(editorArea, action);
-    }
-    
-    setupRemoveButtons(editorArea);
-    setupRichEditors(editorArea);
-    setupListEditors(editorArea);
-    setupStepsEditors(editorArea);
-    setupQuizEditors(editorArea);
     
     const closeModal = () => {
         modal.classList.remove('open');
@@ -234,12 +244,9 @@ function openVisualEditor(page, section) {
     });
     
     modal.querySelector('.btn-save').addEventListener('click', async () => {
-        const newContent = convertEditorToHtml(editorArea);
+        const newContent = textarea.value;
         
         let url = `/api/content/${page}/${section}`;
-        if (page === 'training') {
-            url = `/api/content/training/${section}`;
-        }
         
         try {
             const response = await fetch(url, {
@@ -261,6 +268,127 @@ function openVisualEditor(page, section) {
             alert('❌ Ошибка: ' + error.message);
         }
     });
+}
+
+function addMoveButtonsToEditor(textarea) {
+    // Разбиваем текст на блоки (по пустым строкам или по HTML тегам)
+    let html = textarea.value;
+    
+    // Простой способ: разбиваем по закрывающим тегам
+    const blocks = [];
+    let currentBlock = '';
+    let depth = 0;
+    
+    for (let i = 0; i < html.length; i++) {
+        currentBlock += html[i];
+        if (html[i] === '<') {
+            depth++;
+        } else if (html[i] === '>') {
+            depth--;
+            if (depth === 0 && (html[i+1] === '\n' || html[i+1] === '\r' || i === html.length-1)) {
+                blocks.push(currentBlock);
+                currentBlock = '';
+                i++;
+            }
+        }
+    }
+    if (currentBlock) blocks.push(currentBlock);
+    
+    if (blocks.length <= 1) return;
+    
+    // Создаем визуальное представление с кнопками перемещения
+    let blocksHtml = '';
+    blocks.forEach((block, index) => {
+        const isFirst = index === 0;
+        const isLast = index === blocks.length - 1;
+        
+        blocksHtml += `
+            <div class="movable-block" data-index="${index}" style="position: relative; margin-bottom: 16px; border-left: 3px solid var(--accent); padding-left: 12px;">
+                <div style="position: absolute; right: 0; top: 0; display: flex; gap: 4px; background: var(--surface2); border-radius: 6px; padding: 2px;">
+                    ${!isFirst ? '<button class="move-up-btn" data-index="' + index + '" style="background: var(--accent-glow); border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer;">↑</button>' : '<span style="width: 24px;"></span>'}
+                    ${!isLast ? '<button class="move-down-btn" data-index="' + index + '" style="background: var(--accent-glow); border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer;">↓</button>' : '<span style="width: 24px;"></span>'}
+                </div>
+                <pre style="white-space: pre-wrap; margin: 0; padding-right: 50px;">${escapeHtml(block)}</pre>
+            </div>
+        `;
+    });
+    
+    // Заменяем textarea на визуальное представление
+    const editorArea = document.querySelector('#editorArea');
+    if (editorArea) {
+        editorArea.innerHTML = blocksHtml;
+        
+        // Добавляем обработчики для кнопок перемещения
+        document.querySelectorAll('.move-up-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const index = parseInt(btn.dataset.index);
+                if (index > 0) {
+                    [blocks[index], blocks[index-1]] = [blocks[index-1], blocks[index]];
+                    updateTextareaFromBlocks(textarea, blocks);
+                    addMoveButtonsToEditor(textarea);
+                }
+            });
+        });
+        
+        document.querySelectorAll('.move-down-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const index = parseInt(btn.dataset.index);
+                if (index < blocks.length - 1) {
+                    [blocks[index], blocks[index+1]] = [blocks[index+1], blocks[index]];
+                    updateTextareaFromBlocks(textarea, blocks);
+                    addMoveButtonsToEditor(textarea);
+                }
+            });
+        });
+    }
+}
+
+function updateTextareaFromBlocks(textarea, blocks) {
+    textarea.value = blocks.join('\n');
+}
+
+function updateTextareaFromBlocks(textarea, blocks) {
+    textarea.value = blocks.join('\n');
+}
+
+function addHtmlToEditor(textarea, action) {
+    let html = '';
+    const cursorPos = textarea.selectionStart;
+    const text = textarea.value;
+    
+    switch(action) {
+        case 'add-text':
+            html = '<div>Новый текст</div>\n';
+            break;
+        case 'add-list':
+            html = '<ul>\n  <li>Пункт списка</li>\n  <li>Пункт списка</li>\n</ul>\n';
+            break;
+        case 'add-numbered-list':
+            html = '<div class="steps">\n  <div class="step">\n    <div class="step-num">1</div>\n    <div class="step-body">\n      <strong>Заголовок</strong>\n      <span>Описание</span>\n    </div>\n  </div>\n</div>\n';
+            break;
+        case 'add-table':
+            html = '<table class="ref-table">\n  <thead>\n    <tr><th>Заголовок 1</th><th>Заголовок 2</th></tr>\n  </thead>\n  <tbody>\n    <tr><td>Данные 1</td><td>Данные 2</td></tr>\n  </tbody>\n</table>\n';
+            break;
+        case 'add-alert':
+            html = '<div class="alert-bar info">\n  <span>ℹ️</span>\n  <span>Текст предупреждения</span>\n</div>\n';
+            break;
+        case 'add-note':
+            html = '<div class="hl info">Текст примечания</div>\n';
+            break;
+        case 'add-dropdown':
+            html = '<details>\n  <summary>Заголовок</summary>\n  <div class="acc-body">Содержимое</div>\n</details>\n';
+            break;
+        case 'add-card':
+            html = '<div class="info-card">\n  <h3>Заголовок</h3>\n  <ul>\n    <li>Пункт 1</li>\n    <li>Пункт 2</li>\n  </ul>\n</div>\n';
+            break;
+        case 'add-quiz':
+            html = '<div class="quiz-block">\n  <div class="quiz-title">📋 Опросник</div>\n  <div class="quiz-question">\n    <div class="quiz-question-text">Вопрос?</div>\n    <div class="quiz-options">\n      <label class="quiz-option"><input type="radio" name="q1"><span>Ответ 1</span></label>\n      <label class="quiz-option"><input type="radio" name="q1"><span>Ответ 2</span></label>\n    </div>\n    <div class="quiz-answer"></div>\n  </div>\n  <button class="quiz-btn" onclick="checkQuiz(this)">✅ Проверить</button>\n  <div class="quiz-result"></div>\n</div>\n';
+            break;
+    }
+    
+    textarea.value = text.slice(0, cursorPos) + html + text.slice(cursorPos);
+    textarea.focus();
+    textarea.setSelectionRange(cursorPos + html.length, cursorPos + html.length);
 }
 
 function getSectionTitle(section) {
