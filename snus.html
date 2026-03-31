@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Жевательный табак — Справочник</title>
-<link rel="stylesheet" href="style.css?v=31">
+<link rel="stylesheet" href="style.css?v=32">
 </head>
 <body>
 
@@ -80,7 +80,7 @@
 
 </main>
 
-<script src="core.js?v=31"></script>
+<script src="core.js?v=32"></script>
 <script>
   let isRop = false;
 
@@ -89,6 +89,25 @@
     medium: { name: 'Средний (20-50мг)', color: '#fcb830', bg: 'rgba(252,184,48,0.2)' },
     strong: { name: 'Крепкий (50+мг)', color: '#fc5c7c', bg: 'rgba(252,92,124,0.2)' }
   };
+
+  // ========== СОРТИРОВКА ==========
+  function sortManufacturersByClass(manufacturers) {
+    const order = { premium: 1, medium: 2, economy: 3 };
+    return manufacturers.sort((a, b) => {
+      const aClass = a.quality_class || 'medium';
+      const bClass = b.quality_class || 'medium';
+      return (order[aClass] || 2) - (order[bClass] || 2);
+    });
+  }
+
+  function sortLinesByStrength(lines) {
+    const order = { light: 1, medium: 2, strong: 3 };
+    return lines.sort((a, b) => {
+      const aStrength = a.strength_color || 'medium';
+      const bStrength = b.strength_color || 'medium';
+      return (order[aStrength] || 2) - (order[bStrength] || 2);
+    });
+  }
 
   async function checkPermissions() {
     const response = await fetch('/api/check-auth', { credentials: 'include' });
@@ -362,7 +381,8 @@
 
   async function loadManufacturers() {
     const response = await fetch('/api/snus-manufacturers', { credentials: 'include' });
-    const manufacturers = await response.json();
+    let manufacturers = await response.json();
+    manufacturers = sortManufacturersByClass(manufacturers);
     
     const grid = document.getElementById('manufacturersGrid');
     grid.innerHTML = '';
@@ -374,6 +394,7 @@
       
       const card = document.createElement('div');
       card.className = 'manufacturer-card';
+      card.setAttribute('data-class', qualityClass);
       card.innerHTML = `
         <div class="manufacturer-header">
           <div>
@@ -409,11 +430,13 @@
     
     const response = await fetch(`/api/snus-manufacturers/${manufacturerId}`, { credentials: 'include' });
     const data = await response.json();
+    let lines = data.lines || [];
+    lines = sortLinesByStrength(lines);
     
     const linesList = document.getElementById(`lines-list-${manufacturerId}`);
     linesList.innerHTML = '';
     
-    for (const line of data.lines) {
+    for (const line of lines) {
       const colorConfig = strengthColors[line.strength_color || 'medium'];
       
       const lineDiv = document.createElement('div');
