@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Жидкости — Справочник</title>
-<link rel="stylesheet" href="style.css?v=27">
+<link rel="stylesheet" href="style.css?v=30">
 </head>
 <body>
 
@@ -53,6 +53,7 @@
         <div class="info-card"><h3>💡 Уровни никотина</h3><ul><li>0 мг — нулёвки</li><li>20 мг — стандарт, большинство</li><li>50 мг — крепкие</li><li>70+ мг — очень крепкие</li></ul></div>
       </div>
       <div class="accordion"><div class="acc-header"><span class="acc-title">Black Jack vs Camel</span><span class="acc-arrow">▼</span></div><div class="acc-body"><div class="two-col"><div class="info-card"><h3>🐫 Camel</h3><ul><li>1-й план — вкус</li><li>2-й план — табачная нота</li></ul></div><div class="info-card"><h3>🃏 Black Jack</h3><ul><li>1-й план — табак</li><li>2-й план — вкус</li></ul></div></div></div></div>
+      <div class="accordion"><div class="acc-header"><span class="acc-title">Почему жидкость темнеет?</span><span class="acc-arrow">▼</span></div><div class="acc-body"><p>Жидкость темнеет при карамелизации — когда долго стоит или находится в тепле. Цвет не означает плохое качество.</p><div class="hl ok">Скрипт: «Цвет ароматизатора ни на что не влияет — он может быть светлым и тёмным. Это зависит от производителя»</div></div></div>
     </div>
   </div>
 
@@ -75,13 +76,13 @@
       <button class="btn-edit-content" data-page="liquids" data-section="coils" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="coils-content">
-      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead>   \\<th>Устройство</th><th>Тип коила</th><th>Совместимые модели</th> </thead><tbody><tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr><tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco</td></tr></tbody></table></div></div>
+      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead>   \\<th>Устройство</th><th>Тип коила</th><th>Совместимые модели</th> </thead><tbody>   <tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr>   <tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco</td></tr>   </tbody></table></div></div>
     </div>
   </div>
 
 </main>
 
-<script src="core.js?v=27"></script>
+<script src="core.js?v=30"></script>
 <script>
   let isRop = false;
 
@@ -101,6 +102,7 @@
       document.getElementById('ropBtn').style.display = isRop ? 'block' : 'none';
       document.getElementById('btnAddManufacturer').style.display = isRop ? 'flex' : 'none';
       
+      // Показываем кнопки редактирования контента
       const editBtns = document.querySelectorAll('.btn-edit-content');
       editBtns.forEach(btn => {
         btn.style.display = isRop ? 'inline-flex' : 'none';
