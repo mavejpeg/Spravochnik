@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Жидкости — Справочник</title>
-<link rel="stylesheet" href="style.css?v=30">
+<link rel="stylesheet" href="style.css?v=32">
 </head>
 <body>
 
@@ -76,13 +76,13 @@
       <button class="btn-edit-content" data-page="liquids" data-section="coils" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="coils-content">
-      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead>   \\<th>Устройство</th><th>Тип коила</th><th>Совместимые модели</th> </thead><tbody>   <tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr>   <tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco</td></tr>   </tbody></table></div></div>
+      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead>   \\<th>Устройство</th><th>Тип коила</th><th>Совместимые модели</th> </thead><tbody>   \s<tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr>   \s<tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco</td></tr>   </tbody></table></div></div>
     </div>
   </div>
 
 </main>
 
-<script src="core.js?v=30"></script>
+<script src="core.js?v=32"></script>
 <script>
   let isRop = false;
 
@@ -91,6 +91,25 @@
     medium: { name: 'Средний (20-50мг)', color: '#fcb830', bg: 'rgba(252,184,48,0.2)' },
     strong: { name: 'Крепкий (50+мг)', color: '#fc5c7c', bg: 'rgba(252,92,124,0.2)' }
   };
+
+  // ========== СОРТИРОВКА ==========
+  function sortManufacturersByClass(manufacturers) {
+    const order = { premium: 1, medium: 2, economy: 3 };
+    return manufacturers.sort((a, b) => {
+      const aClass = a.quality_class || 'medium';
+      const bClass = b.quality_class || 'medium';
+      return (order[aClass] || 2) - (order[bClass] || 2);
+    });
+  }
+
+  function sortLinesByStrength(lines) {
+    const order = { light: 1, medium: 2, strong: 3 };
+    return lines.sort((a, b) => {
+      const aStrength = a.strength_color || 'medium';
+      const bStrength = b.strength_color || 'medium';
+      return (order[aStrength] || 2) - (order[bStrength] || 2);
+    });
+  }
 
   async function checkPermissions() {
     const response = await fetch('/api/check-auth', { credentials: 'include' });
@@ -102,7 +121,6 @@
       document.getElementById('ropBtn').style.display = isRop ? 'block' : 'none';
       document.getElementById('btnAddManufacturer').style.display = isRop ? 'flex' : 'none';
       
-      // Показываем кнопки редактирования контента
       const editBtns = document.querySelectorAll('.btn-edit-content');
       editBtns.forEach(btn => {
         btn.style.display = isRop ? 'inline-flex' : 'none';
@@ -365,7 +383,8 @@
 
   async function loadManufacturers() {
     const response = await fetch('/api/liquid-manufacturers', { credentials: 'include' });
-    const manufacturers = await response.json();
+    let manufacturers = await response.json();
+    manufacturers = sortManufacturersByClass(manufacturers);
     
     const grid = document.getElementById('manufacturersGrid');
     grid.innerHTML = '';
@@ -377,6 +396,7 @@
       
       const card = document.createElement('div');
       card.className = 'manufacturer-card';
+      card.setAttribute('data-class', qualityClass);
       card.innerHTML = `
         <div class="manufacturer-header">
           <div>
@@ -412,11 +432,13 @@
     
     const response = await fetch(`/api/liquid-manufacturers/${manufacturerId}`, { credentials: 'include' });
     const data = await response.json();
+    let lines = data.lines || [];
+    lines = sortLinesByStrength(lines);
     
     const linesList = document.getElementById(`lines-list-${manufacturerId}`);
     linesList.innerHTML = '';
     
-    for (const line of data.lines) {
+    for (const line of lines) {
       const colorConfig = strengthColors[line.strength_color || 'medium'];
       
       const lineDiv = document.createElement('div');
