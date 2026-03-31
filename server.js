@@ -68,6 +68,15 @@ async function initDatabase() {
             )
         `);
 
+        // Session table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS session (
+                sid VARCHAR(255) PRIMARY KEY,
+                sess JSON NOT NULL,
+                expire TIMESTAMP NOT NULL
+            )
+        `);
+
         // Content table
         await client.query(`
             CREATE TABLE IF NOT EXISTS content (
@@ -81,7 +90,7 @@ async function initDatabase() {
             )
         `);
 
-        // Manufacturers table
+        // Tobacco manufacturers and lines
         await client.query(`
             CREATE TABLE IF NOT EXISTS manufacturers (
                 id SERIAL PRIMARY KEY,
@@ -93,7 +102,6 @@ async function initDatabase() {
             )
         `);
 
-        // Lines table
         await client.query(`
             CREATE TABLE IF NOT EXISTS lines (
                 id SERIAL PRIMARY KEY,
@@ -106,38 +114,106 @@ async function initDatabase() {
             )
         `);
 
-        // Add columns if missing
+        // Liquid manufacturers and lines
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS liquid_manufacturers (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL UNIQUE,
+                description TEXT,
+                logo TEXT,
+                quality_class VARCHAR(20) DEFAULT 'medium',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS liquid_lines (
+                id SERIAL PRIMARY KEY,
+                manufacturer_id INTEGER REFERENCES liquid_manufacturers(id) ON DELETE CASCADE,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                strength_color VARCHAR(20) DEFAULT 'medium',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(manufacturer_id, name)
+            )
+        `);
+
+        // Disposables manufacturers and lines
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS disposables_manufacturers (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL UNIQUE,
+                description TEXT,
+                logo TEXT,
+                quality_class VARCHAR(20) DEFAULT 'medium',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS disposables_lines (
+                id SERIAL PRIMARY KEY,
+                manufacturer_id INTEGER REFERENCES disposables_manufacturers(id) ON DELETE CASCADE,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                strength_color VARCHAR(20) DEFAULT 'medium',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(manufacturer_id, name)
+            )
+        `);
+
+        // Snus manufacturers and lines
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS snus_manufacturers (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL UNIQUE,
+                description TEXT,
+                logo TEXT,
+                quality_class VARCHAR(20) DEFAULT 'medium',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS snus_lines (
+                id SERIAL PRIMARY KEY,
+                manufacturer_id INTEGER REFERENCES snus_manufacturers(id) ON DELETE CASCADE,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                strength_color VARCHAR(20) DEFAULT 'medium',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(manufacturer_id, name)
+            )
+        `);
+
+        // Add quality_class to products if missing
         await client.query(`
             ALTER TABLE products ADD COLUMN IF NOT EXISTS quality_class VARCHAR(20) DEFAULT 'medium'
         `).catch(e => console.log('Column check:', e.message));
-        
+
+        // Add strength_color to lines if missing
         await client.query(`
             ALTER TABLE lines ADD COLUMN IF NOT EXISTS strength_color VARCHAR(20) DEFAULT 'medium'
         `).catch(e => console.log('Column check:', e.message));
 
-        // Insert default users if not exist
-        const userCheck = await client.query('SELECT COUNT(*) FROM users');
-        if (parseInt(userCheck.rows[0].count) === 0) {
-            await client.query(`
-                INSERT INTO users (username, password, full_name, role) VALUES 
-                ('user', '1111', 'Обычный пользователь', 'user'),
-                ('rop', '1234', 'Руководитель отдела продаж', 'rop'),
-                ('root', 'root123', 'Главный администратор', 'root')
-            `);
-            console.log('✅ Default users inserted');
-        }
-
-        // Insert default content for liquids if not exist
-        const contentCheck = await client.query('SELECT COUNT(*) FROM content WHERE page = $1', ['liquids']);
-        if (parseInt(contentCheck.rows[0].count) === 0) {
-            await client.query(`
-                INSERT INTO content (page, section, content) VALUES 
-                ('liquids', 'info', '<div class="two-col"><div class="info-card"><h3>⚗️ Типы жидкостей</h3><ul><li><strong>Солевые (Salt Nic)</strong> — быстро накуривают</li><li><strong>Щелочные (Freebase)</strong> — накопительный эффект</li></ul></div><div class="info-card"><h3>💡 Уровни никотина</h3><ul><li>0 мг — нулёвки</li><li>20 мг — стандарт</li><li>50 мг — крепкие</li></ul></div></div>'),
-                ('liquids', 'alternatives', '<div class="info-card"><h3>🔄 Чем заменить</h3><ul><li><strong>Брызги</strong> → Провинция, Наркоз</li><li><strong>Рик и Морти</strong> → Сайонара</li></ul></div><div class="info-card"><h3>🎨 Цвета Хром</h3><ul><li>Розовая — сладкая</li><li>Оранжевая — генетик</li></ul></div>'),
-                ('liquids', 'coils', '<div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead><tr><th>Устройство</th><th>Тип коила</th></tr></thead><tbody><tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td></tr></tbody></table></div></div>')
-            `);
-            console.log('✅ Default content inserted');
-        }
+        // Insert default users
+        await client.query(`
+            INSERT INTO users (username, password, full_name, role) 
+            VALUES ('user', '1111', 'Обычный пользователь', 'user')
+            ON CONFLICT (username) DO NOTHING
+        `);
+        
+        await client.query(`
+            INSERT INTO users (username, password, full_name, role) 
+            VALUES ('rop', '1234', 'Руководитель отдела продаж', 'rop')
+            ON CONFLICT (username) DO NOTHING
+        `);
+        
+        await client.query(`
+            INSERT INTO users (username, password, full_name, role) 
+            VALUES ('root', 'root123', 'Главный администратор', 'root')
+            ON CONFLICT (username) DO NOTHING
+        `);
 
         client.release();
         console.log('✅ Database tables ready');
