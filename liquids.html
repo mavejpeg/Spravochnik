@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Жидкости — Справочник</title>
-<link rel="stylesheet" href="style.css?v=32">
+<link rel="stylesheet" href="style.css?v=35">
 </head>
 <body>
 
@@ -76,14 +76,14 @@
       <button class="btn-edit-content" data-page="liquids" data-section="coils" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="coils-content">
-      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead>   \\<th>Устройство</th><th>Тип коила</th><th>Совместимые модели</th> </thead><tbody>   \s<tr><td>Geek Vape B Aegis</td><td>Geek Vape B</td><td>Aegis</td></tr>   \s<tr><td>MiniCan</td><td>4-я платформа</td><td>Brusco</td></tr>   </tbody></table></div></div>
+      <div class="accordion open"><div class="acc-header"><span class="acc-title">Таблица коилов</span><span class="acc-arrow">▼</span></div><div class="acc-body"><table class="ref-table"><thead>   \\<th>Устройство</th><th>Тип коила</th><th>Совместимые модели</th> </thead><tbody>   \s<th>Geek Vape B Aegis</th><th>Geek Vape B</th><th>Aegis</th>   \s<th>MiniCan</th><th>4-я платформа</th><th>Brusco</th>   </tbody> </table></div></div>
     </div>
   </div>
 
 </main>
 
-<script src="core.js?v=32"></script>
-<script src="main.js?v=33"></script>
+<script src="core.js?v=35"></script>
+<script src="main.js?v=35"></script>
 <script src="editor.js?v=1"></script>
 <script>
   let isRop = false;
@@ -94,7 +94,6 @@
     strong: { name: 'Крепкий (50+мг)', color: '#fc5c7c', bg: 'rgba(252,92,124,0.2)' }
   };
 
-  // ========== СОРТИРОВКА ==========
   function sortManufacturersByClass(manufacturers) {
     const order = { premium: 1, medium: 2, economy: 3 };
     return manufacturers.sort((a, b) => {
@@ -122,11 +121,6 @@
       document.getElementById('userName').textContent = data.user.full_name;
       document.getElementById('ropBtn').style.display = isRop ? 'block' : 'none';
       document.getElementById('btnAddManufacturer').style.display = isRop ? 'flex' : 'none';
-      
-      const editBtns = document.querySelectorAll('.btn-edit-content');
-      editBtns.forEach(btn => {
-        btn.style.display = isRop ? 'inline-flex' : 'none';
-      });
     } else {
       window.location.href = '/login.html';
     }
