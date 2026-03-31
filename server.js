@@ -741,7 +741,8 @@ app.get('/api/liquid-manufacturers', requireAuth, async (req, res) => {
         const result = await pool.query('SELECT * FROM liquid_manufacturers ORDER BY name');
         res.json(result.rows);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to get liquid manufacturers' });
+        console.error('Get liquid manufacturers error:', error);
+        res.json([]);
     }
 });
 
@@ -755,13 +756,16 @@ app.get('/api/liquid-manufacturers/:id', requireAuth, async (req, res) => {
         const lines = await pool.query('SELECT * FROM liquid_lines WHERE manufacturer_id = $1 ORDER BY name', [id]);
         res.json({ ...manufacturer.rows[0], lines: lines.rows });
     } catch (error) {
+        console.error('Get liquid manufacturer error:', error);
         res.status(500).json({ error: 'Failed to get manufacturer' });
     }
 });
 
 app.post('/api/liquid-manufacturers', requireRop, async (req, res) => {
     const { name, description, logo, quality_class } = req.body;
-    if (!name) return res.status(400).json({ error: 'Name is required' });
+    if (!name) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
     try {
         const result = await pool.query(
             'INSERT INTO liquid_manufacturers (name, description, logo, quality_class) VALUES ($1, $2, $3, $4) RETURNING *',
@@ -769,6 +773,7 @@ app.post('/api/liquid-manufacturers', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Create liquid manufacturer error:', error);
         res.status(500).json({ error: 'Failed to create manufacturer' });
     }
 });
@@ -783,6 +788,7 @@ app.put('/api/liquid-manufacturers/:id', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Update liquid manufacturer error:', error);
         res.status(500).json({ error: 'Failed to update manufacturer' });
     }
 });
@@ -793,6 +799,7 @@ app.delete('/api/liquid-manufacturers/:id', requireRop, async (req, res) => {
         await pool.query('DELETE FROM liquid_manufacturers WHERE id = $1', [id]);
         res.json({ success: true });
     } catch (error) {
+        console.error('Delete liquid manufacturer error:', error);
         res.status(500).json({ error: 'Failed to delete manufacturer' });
     }
 });
@@ -804,6 +811,7 @@ app.get('/api/liquid-lines/:id', requireAuth, async (req, res) => {
         const result = await pool.query('SELECT * FROM liquid_lines WHERE id = $1', [id]);
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Get liquid line error:', error);
         res.status(500).json({ error: 'Failed to get line' });
     }
 });
@@ -820,6 +828,7 @@ app.post('/api/liquid-lines', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Create liquid line error:', error);
         res.status(500).json({ error: 'Failed to create line' });
     }
 });
@@ -834,6 +843,7 @@ app.put('/api/liquid-lines/:id', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Update liquid line error:', error);
         res.status(500).json({ error: 'Failed to update line' });
     }
 });
@@ -844,6 +854,7 @@ app.delete('/api/liquid-lines/:id', requireRop, async (req, res) => {
         await pool.query('DELETE FROM liquid_lines WHERE id = $1', [id]);
         res.json({ success: true });
     } catch (error) {
+        console.error('Delete liquid line error:', error);
         res.status(500).json({ error: 'Failed to delete line' });
     }
 });
@@ -854,7 +865,8 @@ app.get('/api/disposables-manufacturers', requireAuth, async (req, res) => {
         const result = await pool.query('SELECT * FROM disposables_manufacturers ORDER BY name');
         res.json(result.rows);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to get disposables manufacturers' });
+        console.error('Get disposables manufacturers error:', error);
+        res.json([]);
     }
 });
 
@@ -868,13 +880,16 @@ app.get('/api/disposables-manufacturers/:id', requireAuth, async (req, res) => {
         const lines = await pool.query('SELECT * FROM disposables_lines WHERE manufacturer_id = $1 ORDER BY name', [id]);
         res.json({ ...manufacturer.rows[0], lines: lines.rows });
     } catch (error) {
+        console.error('Get disposables manufacturer error:', error);
         res.status(500).json({ error: 'Failed to get manufacturer' });
     }
 });
 
 app.post('/api/disposables-manufacturers', requireRop, async (req, res) => {
     const { name, description, logo, quality_class } = req.body;
-    if (!name) return res.status(400).json({ error: 'Name is required' });
+    if (!name) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
     try {
         const result = await pool.query(
             'INSERT INTO disposables_manufacturers (name, description, logo, quality_class) VALUES ($1, $2, $3, $4) RETURNING *',
@@ -882,6 +897,7 @@ app.post('/api/disposables-manufacturers', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Create disposables manufacturer error:', error);
         res.status(500).json({ error: 'Failed to create manufacturer' });
     }
 });
@@ -896,6 +912,7 @@ app.put('/api/disposables-manufacturers/:id', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Update disposables manufacturer error:', error);
         res.status(500).json({ error: 'Failed to update manufacturer' });
     }
 });
@@ -906,6 +923,7 @@ app.delete('/api/disposables-manufacturers/:id', requireRop, async (req, res) =>
         await pool.query('DELETE FROM disposables_manufacturers WHERE id = $1', [id]);
         res.json({ success: true });
     } catch (error) {
+        console.error('Delete disposables manufacturer error:', error);
         res.status(500).json({ error: 'Failed to delete manufacturer' });
     }
 });
@@ -917,6 +935,7 @@ app.get('/api/disposables-lines/:id', requireAuth, async (req, res) => {
         const result = await pool.query('SELECT * FROM disposables_lines WHERE id = $1', [id]);
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Get disposables line error:', error);
         res.status(500).json({ error: 'Failed to get line' });
     }
 });
@@ -933,6 +952,7 @@ app.post('/api/disposables-lines', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Create disposables line error:', error);
         res.status(500).json({ error: 'Failed to create line' });
     }
 });
@@ -947,6 +967,7 @@ app.put('/api/disposables-lines/:id', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Update disposables line error:', error);
         res.status(500).json({ error: 'Failed to update line' });
     }
 });
@@ -957,6 +978,7 @@ app.delete('/api/disposables-lines/:id', requireRop, async (req, res) => {
         await pool.query('DELETE FROM disposables_lines WHERE id = $1', [id]);
         res.json({ success: true });
     } catch (error) {
+        console.error('Delete disposables line error:', error);
         res.status(500).json({ error: 'Failed to delete line' });
     }
 });
@@ -967,7 +989,8 @@ app.get('/api/snus-manufacturers', requireAuth, async (req, res) => {
         const result = await pool.query('SELECT * FROM snus_manufacturers ORDER BY name');
         res.json(result.rows);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to get snus manufacturers' });
+        console.error('Get snus manufacturers error:', error);
+        res.json([]);
     }
 });
 
@@ -975,17 +998,22 @@ app.get('/api/snus-manufacturers/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     try {
         const manufacturer = await pool.query('SELECT * FROM snus_manufacturers WHERE id = $1', [id]);
-        if (manufacturer.rows.length === 0) return res.status(404).json({ error: 'Manufacturer not found' });
+        if (manufacturer.rows.length === 0) {
+            return res.status(404).json({ error: 'Manufacturer not found' });
+        }
         const lines = await pool.query('SELECT * FROM snus_lines WHERE manufacturer_id = $1 ORDER BY name', [id]);
         res.json({ ...manufacturer.rows[0], lines: lines.rows });
     } catch (error) {
+        console.error('Get snus manufacturer error:', error);
         res.status(500).json({ error: 'Failed to get manufacturer' });
     }
 });
 
 app.post('/api/snus-manufacturers', requireRop, async (req, res) => {
     const { name, description, logo, quality_class } = req.body;
-    if (!name) return res.status(400).json({ error: 'Name is required' });
+    if (!name) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
     try {
         const result = await pool.query(
             'INSERT INTO snus_manufacturers (name, description, logo, quality_class) VALUES ($1, $2, $3, $4) RETURNING *',
@@ -993,6 +1021,7 @@ app.post('/api/snus-manufacturers', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Create snus manufacturer error:', error);
         res.status(500).json({ error: 'Failed to create manufacturer' });
     }
 });
@@ -1007,6 +1036,7 @@ app.put('/api/snus-manufacturers/:id', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Update snus manufacturer error:', error);
         res.status(500).json({ error: 'Failed to update manufacturer' });
     }
 });
@@ -1017,6 +1047,7 @@ app.delete('/api/snus-manufacturers/:id', requireRop, async (req, res) => {
         await pool.query('DELETE FROM snus_manufacturers WHERE id = $1', [id]);
         res.json({ success: true });
     } catch (error) {
+        console.error('Delete snus manufacturer error:', error);
         res.status(500).json({ error: 'Failed to delete manufacturer' });
     }
 });
@@ -1028,13 +1059,16 @@ app.get('/api/snus-lines/:id', requireAuth, async (req, res) => {
         const result = await pool.query('SELECT * FROM snus_lines WHERE id = $1', [id]);
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Get snus line error:', error);
         res.status(500).json({ error: 'Failed to get line' });
     }
 });
 
 app.post('/api/snus-lines', requireRop, async (req, res) => {
     const { manufacturer_id, name, description, strength_color } = req.body;
-    if (!manufacturer_id || !name) return res.status(400).json({ error: 'Manufacturer ID and name are required' });
+    if (!manufacturer_id || !name) {
+        return res.status(400).json({ error: 'Manufacturer ID and name are required' });
+    }
     try {
         const result = await pool.query(
             'INSERT INTO snus_lines (manufacturer_id, name, description, strength_color) VALUES ($1, $2, $3, $4) RETURNING *',
@@ -1042,6 +1076,7 @@ app.post('/api/snus-lines', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Create snus line error:', error);
         res.status(500).json({ error: 'Failed to create line' });
     }
 });
@@ -1056,6 +1091,7 @@ app.put('/api/snus-lines/:id', requireRop, async (req, res) => {
         );
         res.json(result.rows[0]);
     } catch (error) {
+        console.error('Update snus line error:', error);
         res.status(500).json({ error: 'Failed to update line' });
     }
 });
@@ -1066,6 +1102,7 @@ app.delete('/api/snus-lines/:id', requireRop, async (req, res) => {
         await pool.query('DELETE FROM snus_lines WHERE id = $1', [id]);
         res.json({ success: true });
     } catch (error) {
+        console.error('Delete snus line error:', error);
         res.status(500).json({ error: 'Failed to delete line' });
     }
 });
