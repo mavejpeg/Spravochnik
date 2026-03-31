@@ -1183,6 +1183,10 @@ app.delete('/api/snus-lines/:id', requireRop, async (req, res) => {
     }
 });
 
+app.get('/editor.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'editor.js'));
+});
+
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
