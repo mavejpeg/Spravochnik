@@ -100,9 +100,10 @@ async function loadUserInfo() {
             if (userNameSpan) userNameSpan.textContent = data.user.full_name;
             isRop = (data.user.role === 'rop' || data.user.role === 'root');
             window.isRopGlobal = isRop;
+            setupEditButtons();
             if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
             
-            // НАСТРАИВАЕМ КНОПКИ РЕДАКТИРОВАНИЯ ДЛЯ ВСЕХ СТРАНИЦ
+            // ДОБАВЬТЕ ЭТУ СТРОКУ:
             setupEditButtons();
             
             const addBtn = document.querySelector('.btn-add');
@@ -203,9 +204,6 @@ function openVisualEditor(page, section) {
                 <div class="editor-area" id="editorArea">
                     <textarea id="contentEditor" style="width:100%; min-height:400px; font-family:monospace; font-size:13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: var(--text);">${escapeHtml(currentHtml)}</textarea>
                 </div>
-                <div class="drag-handle-info" style="margin-top: 12px; padding: 8px; background: var(--surface2); border-radius: 8px; font-size: 12px; color: var(--muted);">
-                    💡 Для перетаскивания блоков используйте кнопки ↑ и ↓ рядом с каждым блоком
-                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-cancel">Отмена</button>
@@ -218,17 +216,12 @@ function openVisualEditor(page, section) {
     setTimeout(() => modal.classList.add('open'), 10);
     
     const textarea = modal.querySelector('#contentEditor');
-    const editorArea = modal.querySelector('#editorArea');
-    
-    // Добавляем кнопки для перемещения блоков
-    addMoveButtonsToEditor(textarea);
     
     const toolBtns = modal.querySelectorAll('.tool-btn');
     toolBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             const action = btn.dataset.action;
             addHtmlToEditor(textarea, action);
-            addMoveButtonsToEditor(textarea);
         });
     });
     
@@ -260,7 +253,9 @@ function openVisualEditor(page, section) {
                 contentDiv.innerHTML = newContent;
                 alert('✅ Сохранено успешно!');
                 closeModal();
-                initAccordionsToDetails();
+                if (typeof initAccordionsToDetails === 'function') {
+                    initAccordionsToDetails();
+                }
             } else {
                 alert('❌ Ошибка сохранения');
             }
@@ -367,7 +362,7 @@ function addHtmlToEditor(textarea, action) {
             html = '<div class="steps">\n  <div class="step">\n    <div class="step-num">1</div>\n    <div class="step-body">\n      <strong>Заголовок</strong>\n      <span>Описание</span>\n    </div>\n  </div>\n</div>\n';
             break;
         case 'add-table':
-            html = '<table class="ref-table">\n  <thead>\n    <tr><th>Заголовок 1</th><th>Заголовок 2</th></tr>\n  </thead>\n  <tbody>\n    <tr><td>Данные 1</td><td>Данные 2</td></tr>\n  </tbody>\n</table>\n';
+            html = '<table class="ref-table">\n  <thead>\n      <tr><th>Заголовок 1</th><th>Заголовок 2</th></tr>\n  </thead>\n  <tbody>\n      <tr><td>Данные 1</td><td>Данные 2</td></tr>\n  </tbody>\n</table>\n';
             break;
         case 'add-alert':
             html = '<div class="alert-bar info">\n  <span>ℹ️</span>\n  <span>Текст предупреждения</span>\n</div>\n';
@@ -389,6 +384,19 @@ function addHtmlToEditor(textarea, action) {
     textarea.value = text.slice(0, cursorPos) + html + text.slice(cursorPos);
     textarea.focus();
     textarea.setSelectionRange(cursorPos + html.length, cursorPos + html.length);
+}
+
+function getSectionTitle(section) {
+    const titles = {
+        'parts': 'Комплектация кальяна', 'bowls': 'Чаши', 'coal': 'Уголь и управление', 'clean': 'Обслуживание и чистка',
+        'info': 'Общая информация', 'alternatives': 'Альтернативы', 'coils': 'Совместимость испарителей',
+        'howto': 'Как применять', 'formats': 'Форматы паучей', 'strength': 'Классификация по крепости',
+        'returns': 'Возврат картриджа', 'price': 'Отработка возражения по цене', 'color': 'Цвет жидкости',
+        'upsell': 'Добивание комбо', 'official': 'Официальная инструкция', 'practical': 'Практические советы',
+        'after': 'По окончании проверки', 'types': 'Типы товаров', 'qr': 'Работа с QR-кодами',
+        'register': 'Кассовый аппарат', 'syrye': 'Типы сырья', 'tips': 'Советы продавцу', 'guide': 'Гид по брендам'
+    };
+    return titles[section] || section;
 }
 
 function getSectionTitle(section) {
@@ -1453,4 +1461,31 @@ window.deleteUserById = async function(userId) {
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+}
+
+// ========== КНОПКИ РЕДАКТИРОВАНИЯ ДЛЯ ВСЕХ СТРАНИЦ ==========
+
+function setupEditButtons() {
+    const editBtns = document.querySelectorAll('.btn-edit-content');
+    console.log('Found edit buttons:', editBtns.length);
+    
+    editBtns.forEach(btn => {
+        btn.removeEventListener('click', handleEditClick);
+        btn.addEventListener('click', handleEditClick);
+        btn.style.display = window.isRopGlobal ? 'inline-flex' : 'none';
+    });
+}
+
+function handleEditClick(e) {
+    const btn = e.currentTarget;
+    const page = btn.dataset.page;
+    const section = btn.dataset.section;
+    console.log('Edit clicked for:', page, section);
+    
+    // Вызываем вашу существующую функцию openVisualEditor
+    if (typeof openVisualEditor === 'function') {
+        openVisualEditor(page, section);
+    } else {
+        console.error('openVisualEditor function not found');
+    }
 }
