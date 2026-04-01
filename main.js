@@ -1,18 +1,26 @@
-// main.js v3.0 - единый источник авторизации с системой событий
-// Исправлено: корректная инициализация кнопок редактора
-
+// main.js v3.1 - с принудительной перепроверкой сессии
 window.isRop = false;
 window.isRopGlobal = false;
 window._authLoaded = false;
+window._authRetryCount = 0;
+window._maxAuthRetries = 3;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Main.js v3.0 loaded');
+    console.log('Main.js v3.1 loaded');
     initTabs();
     initAccordionsToDetails();
     initSearch();
     loadUserInfo();
     setupLogout();
     setupRopPanel();
+    
+    // Дополнительная проверка через 2 секунды (на случай проблем с сессией)
+    setTimeout(() => {
+        if (!window._authLoaded) {
+            console.log('Auth not loaded after 2s, retrying...');
+            loadUserInfo();
+        }
+    }, 2000);
 });
 
 function initTabs() {
@@ -89,8 +97,13 @@ function handleSearch(e) {
 // ========== ЕДИНСТВЕННЫЙ ИСТОЧНИК АВТОРИЗАЦИИ ==========
 async function loadUserInfo() {
     try {
-        const response = await fetch('/api/check-auth', { credentials: 'include' });
+        console.log('Checking auth...');
+        const response = await fetch('/api/check-auth', { 
+            credentials: 'include',
+            headers: { 'Cache-Control': 'no-cache' }
+        });
         const data = await response.json();
+        console.log('Auth response:', data);
 
         if (data.authenticated) {
             const isRop = (data.user.role === 'rop' || data.user.role === 'root');
@@ -99,6 +112,8 @@ async function loadUserInfo() {
             window.isRopGlobal = isRop;
             window._authLoaded = true;
             window._currentUser = data.user;
+            
+            console.log('✅ User authenticated:', data.user.full_name, 'ROP:', isRop);
 
             const userNameSpan = document.getElementById('userName');
             const ropBtn = document.getElementById('ropBtn');
@@ -136,22 +151,27 @@ async function loadUserInfo() {
                 window.loadManufacturers();
             }
             
-            // Инициализация кнопок редактора (если editor.js загружен)
+            // Инициализация кнопок редактора
             if (typeof window.setupEditButtons === 'function') {
                 window.setupEditButtons(isRop);
             }
 
         } else {
-            // Неавторизован - редирект на логин
+            console.log('❌ Not authenticated, redirecting to login...');
             window.location.href = '/login.html';
         }
     } catch (error) {
         console.error('Auth error:', error);
-        window.location.href = '/login.html';
+        window._authRetryCount++;
+        if (window._authRetryCount <= window._maxAuthRetries) {
+            console.log(`Retrying auth (${window._authRetryCount}/${window._maxAuthRetries})...`);
+            setTimeout(() => loadUserInfo(), 1000);
+        } else {
+            window.location.href = '/login.html';
+        }
     }
 }
 
-// refreshEditButtons / setupEditButtons - вызывается из editor.js
 window.refreshEditButtons = function() {
     const isRop = window.isRopGlobal === true;
     document.querySelectorAll('.btn-edit-content').forEach(btn => {
