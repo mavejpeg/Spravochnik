@@ -1,4 +1,4 @@
-// server.js - исправленная версия с корректной настройкой сессии для HTTPS
+// server.js - исправленная версия с debug логированием
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -14,6 +14,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 console.log('\n🚀 STARTING SERVER...\n');
 console.log(`📡 Mode: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+console.log(`🔗 DATABASE_URL: ${process.env.DATABASE_URL ? 'SET' : 'NOT SET'}`);
 
 // ========== PostgreSQL connection ==========
 let pool = null;
@@ -249,25 +250,35 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
-// ========== SESSION MIDDLEWARE (исправлено для HTTPS) ==========
+// ========== SESSION MIDDLEWARE (исправлено для Railway) ==========
 app.use(session({
     secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: isProduction,  // true на Railway (HTTPS)
+        secure: true,  // всегда true на Railway (HTTPS)
         httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
-        sameSite: 'lax'
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        sameSite: 'lax',
+        domain: process.env.COOKIE_DOMAIN || undefined  // опционально: укажите домен
     },
     name: 'spravochnik.sid'
 }));
+
+// DEBUG: логирование сессии
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Session: ${req.session?.user?.username || 'none'}`);
+    }
+    next();
+});
 
 // ========== AUTH MIDDLEWARE ==========
 function requireAuth(req, res, next) {
     if (req.session && req.session.user) {
         next();
     } else {
+        console.log(`❌ Auth failed: ${req.path} - no session`);
         res.status(401).json({ error: 'Unauthorized', redirect: '/login.html' });
     }
 }
@@ -308,6 +319,7 @@ app.get('/editor.js', (req, res) => {
 // ========== AUTH ROUTES ==========
 
 app.get('/api/check-auth', (req, res) => {
+    console.log(`[check-auth] Session: ${req.session?.user?.username || 'none'}, ID: ${req.sessionID}`);
     if (req.session && req.session.user) {
         res.json({ authenticated: true, user: req.session.user });
     } else {
@@ -341,6 +353,7 @@ app.post('/api/simple-login', async (req, res) => {
             role: user.role
         };
         
+        console.log(`✅ User logged in: ${user.username} (${user.role})`);
         res.json({ success: true, user: req.session.user });
     } catch (err) {
         console.error('Login error:', err);
@@ -370,6 +383,7 @@ app.post('/api/login', async (req, res) => {
             role: user.role
         };
         
+        console.log(`✅ User logged in: ${user.username} (${user.role})`);
         res.json({ success: true, user: req.session.user });
     } catch (err) {
         console.error('Login error:', err);
@@ -378,7 +392,9 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/logout', (req, res) => {
+    const username = req.session?.user?.username;
     req.session.destroy(() => {
+        console.log(`👋 User logged out: ${username || 'unknown'}`);
         res.json({ success: true });
     });
 });
@@ -619,7 +635,7 @@ app.get('/api/manufacturers', requireAuth, async (req, res) => {
         res.json(result.rows);
     } catch (error) {
         console.error('Get manufacturers error:', error);
-        res.status(500).json([]);
+        res.json([]);
     }
 });
 
@@ -739,7 +755,7 @@ app.delete('/api/lines/:id', requireRop, async (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', session: !!req.session });
+    res.json({ status: 'ok', session: !!req.session, sessionId: req.sessionID });
 });
 
 // ========== HTML ROUTES ==========
@@ -1189,7 +1205,7 @@ async function startServer() {
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`🔐 Auth: Enabled (secure: ${isProduction})`);
+        console.log(`🔐 Auth: Enabled (secure: true)`);
         console.log(`\n📋 Данные для входа:`);
         console.log(`   👤 Обычный пользователь: пароль 1111`);
         console.log(`   👑 РОП: rop / 1234`);
