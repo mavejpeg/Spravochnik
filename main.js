@@ -1,26 +1,16 @@
-// main.js v3.1 - с принудительной перепроверкой сессии
+// main.js v3.3 - исправлены выпадающие списки
 window.isRop = false;
 window.isRopGlobal = false;
 window._authLoaded = false;
-window._authRetryCount = 0;
-window._maxAuthRetries = 3;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Main.js v3.1 loaded');
+    console.log('Main.js v3.3 loaded');
     initTabs();
     initAccordionsToDetails();
     initSearch();
     loadUserInfo();
     setupLogout();
     setupRopPanel();
-    
-    // Дополнительная проверка через 2 секунды (на случай проблем с сессией)
-    setTimeout(() => {
-        if (!window._authLoaded) {
-            console.log('Auth not loaded after 2s, retrying...');
-            loadUserInfo();
-        }
-    }, 2000);
 });
 
 function initTabs() {
@@ -41,7 +31,9 @@ function handleTabClick(e) {
     if (sec) sec.classList.add('active');
 }
 
+// ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ВЫПАДАЮЩИХ СПИСКОВ ==========
 function initAccordionsToDetails() {
+    // Находим все аккордеоны и преобразуем их в details
     const accordions = document.querySelectorAll('.accordion');
     accordions.forEach(acc => {
         if (!acc.classList.contains('converted')) {
@@ -49,26 +41,54 @@ function initAccordionsToDetails() {
             const body = acc.querySelector('.acc-body');
             if (header && body) {
                 const title = header.querySelector('.acc-title')?.innerHTML || '';
+                
+                // Создаем details элемент
                 const details = document.createElement('details');
+                
+                // Создаем summary
                 const summary = document.createElement('summary');
-                summary.innerHTML = title + '<span style="font-size: 12px;">▼</span>';
-                summary.style.cssText = 'cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none; display: flex; justify-content: space-between; align-items: center;';
+                summary.innerHTML = title;
+                
+                // Клонируем содержимое body
+                const contentDiv = document.createElement('div');
+                contentDiv.innerHTML = body.innerHTML;
+                contentDiv.className = 'acc-body';
+                
                 details.appendChild(summary);
-                details.appendChild(body.cloneNode(true));
-                details.style.cssText = 'background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px;';
-                details.open = acc.classList.contains('open');
+                details.appendChild(contentDiv);
+                
+                // Копируем состояние open
+                if (acc.classList.contains('open')) {
+                    details.open = true;
+                }
+                
+                // Заменяем аккордеон на details
                 acc.parentNode.replaceChild(details, acc);
-                details.classList.add('converted');
             }
         }
     });
+    
+    // Добавляем обработчики для всех details
+    initDetailsHandlers();
+}
+
+// ========== НОВАЯ ФУНКЦИЯ ДЛЯ ОБРАБОТКИ DETAILS ==========
+function initDetailsHandlers() {
     const details = document.querySelectorAll('details');
+    console.log('Found details elements:', details.length);
+    
     details.forEach(detail => {
+        // Убираем старый обработчик, если есть
         const summary = detail.querySelector('summary');
-        if (summary && !detail.hasAttribute('data-initialized')) {
+        if (summary && !detail.hasAttribute('data-handler-initialized')) {
+            // Удаляем старый обработчик и добавляем новый
             summary.removeEventListener('click', handleDetailsClick);
             summary.addEventListener('click', handleDetailsClick);
-            detail.setAttribute('data-initialized', 'true');
+            detail.setAttribute('data-handler-initialized', 'true');
+            
+            // Добавляем стиль курсора
+            summary.style.cursor = 'pointer';
+            summary.style.userSelect = 'none';
         }
     });
 }
@@ -76,7 +96,10 @@ function initAccordionsToDetails() {
 function handleDetailsClick(e) {
     e.preventDefault();
     const detail = e.currentTarget.closest('details');
-    if (detail) detail.open = !detail.open;
+    if (detail) {
+        detail.open = !detail.open;
+        console.log('Details toggled:', detail.open);
+    }
 }
 
 function initSearch() {
@@ -94,7 +117,7 @@ function handleSearch(e) {
     });
 }
 
-// ========== ЕДИНСТВЕННЫЙ ИСТОЧНИК АВТОРИЗАЦИИ ==========
+// ========== АВТОРИЗАЦИЯ ==========
 async function loadUserInfo() {
     try {
         console.log('Checking auth...');
@@ -152,9 +175,16 @@ async function loadUserInfo() {
             }
             
             // Инициализация кнопок редактора
-            if (typeof window.setupEditButtons === 'function') {
-                window.setupEditButtons(isRop);
-            }
+            setTimeout(function() {
+                if (typeof window.setupEditButtons === 'function') {
+                    window.setupEditButtons(isRop);
+                }
+            }, 100);
+            
+            // Повторная инициализация details (на случай, если контент загрузился позже)
+            setTimeout(function() {
+                initDetailsHandlers();
+            }, 500);
 
         } else {
             console.log('❌ Not authenticated, redirecting to login...');
@@ -162,13 +192,7 @@ async function loadUserInfo() {
         }
     } catch (error) {
         console.error('Auth error:', error);
-        window._authRetryCount++;
-        if (window._authRetryCount <= window._maxAuthRetries) {
-            console.log(`Retrying auth (${window._authRetryCount}/${window._maxAuthRetries})...`);
-            setTimeout(() => loadUserInfo(), 1000);
-        } else {
-            window.location.href = '/login.html';
-        }
+        window.location.href = '/login.html';
     }
 }
 
@@ -180,6 +204,9 @@ window.refreshEditButtons = function() {
     const addManufBtn = document.getElementById('btnAddManufacturer');
     if (addManufBtn) {
         addManufBtn.style.display = isRop ? 'flex' : 'none';
+    }
+    if (typeof window.setupEditButtons === 'function') {
+        window.setupEditButtons(isRop);
     }
 };
 window.setupEditButtons = window.refreshEditButtons;
@@ -329,4 +356,5 @@ function escapeHtml(str) {
 window.openRopPanel = openRopPanel;
 window.initTabs = initTabs;
 window.initAccordionsToDetails = initAccordionsToDetails;
+window.initDetailsHandlers = initDetailsHandlers;
 window.loadUserInfo = loadUserInfo;
