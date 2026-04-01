@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Session Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background: #4a4e69;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        pre {
+            background: #0f0f1a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+        .info { color: #2196f3; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Debug Session Test</h1>
+    
+    <div>
+        <button onclick="checkSession()">1. Проверить сессию</button>
+        <button onclick="setSession()">2. Установить тестовую сессию</button>
+        <button onclick="testLogin()">3. Тестовый логин</button>
+        <button onclick="testProtected()">4. Проверить защищенный эндпоинт</button>
+        <button onclick="testLogout()">5. Выйти</button>
+        <button onclick="clearCookies()">6. Очистить cookies</button>
+    </div>
+    
+    <h3>📋 Результат:</h3>
+    <pre id="output">Нажмите на кнопку...</pre>
+    
+    <h3>🍪 Текущие cookies:</h3>
+    <pre id="cookies">Загрузка...</pre>
+    
+    <script>
+        async function log(message, data = null) {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            let text = `[${timestamp}] ${message}\n`;
+            if (data) {
+                text += JSON.stringify(data, null, 2) + '\n';
+            }
+            output.textContent = text + output.textContent;
+        }
+        
+        function updateCookies() {
+            document.getElementById('cookies').textContent = document.cookie || '(нет cookies)';
+        }
+        
+        async function checkSession() {
+            try {
+                const res = await fetch('/api/debug-session', { credentials: 'include' });
+                const data = await res.json();
+                log('✅ Сессия получена:', data);
+                updateCookies();
+            } catch (err) {
+                log('❌ Ошибка: ' + err.message);
+            }
+        }
+        
+        async function setSession() {
+            try {
+                const res = await fetch('/api/debug-set-session', { 
+                    method: 'POST',
+                    credentials: 'include' 
+                });
+                const data = await res.json();
+                log('✅ Тестовая сессия установлена:', data);
+                updateCookies();
+                await checkSession();
+            } catch (err) {
+                log('❌ Ошибка: ' + err.message);
+            }
+        }
+        
+        async function testLogin() {
+            try {
+                const res = await fetch('/api/debug-login', { 
+                    method: 'POST',
+                    credentials: 'include' 
+                });
+                const data = await res.json();
+                log('✅ Тестовый логин выполнен:', data);
+                updateCookies();
+                await checkSession();
+            } catch (err) {
+                log('❌ Ошибка: ' + err.message);
+            }
+        }
+        
+        async function testProtected() {
+            try {
+                const res = await fetch('/api/debug-protected', { credentials: 'include' });
+                const data = await res.json();
+                log('🔒 Защищенный эндпоинт:', data);
+            } catch (err) {
+                log('❌ Ошибка: ' + err.message);
+            }
+        }
+        
+        async function testLogout() {
+            try {
+                const res = await fetch('/api/debug-logout', { 
+                    method: 'POST',
+                    credentials: 'include' 
+                });
+                const data = await res.json();
+                log('👋 Выход выполнен:', data);
+                updateCookies();
+                await checkSession();
+            } catch (err) {
+                log('❌ Ошибка: ' + err.message);
+            }
+        }
+        
+        function clearCookies() {
+            document.cookie.split(";").forEach(c => {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+            log('🍪 Cookies очищены');
+            updateCookies();
+        }
+        
+        // Автоматическая проверка при загрузке
+        checkSession();
+        updateCookies();
+        
+        // Каждые 5 секунд обновляем cookies
+        setInterval(updateCookies, 5000);
+    </script>
+</body>
+</html>
