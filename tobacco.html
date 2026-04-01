@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Табак для кальяна — Справочник</title>
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=38">
 </head>
 <body>
 
@@ -30,28 +30,144 @@
     </button>
   </div>
 
-  <div class="manufacturers-grid" id="manufacturersGrid"></div>
+  <div class="manufacturers-grid" id="manufacturersGrid">
+    <div style="text-align: center; padding: 40px; color: var(--muted);">Загрузка производителей...</div>
+  </div>
 
 </main>
 
-<script src="core.js?v=15"></script>
+<script src="core.js?v=38"></script>
+<script src="main.js?v=38"></script>
+<script src="editor.js?v=2"></script>
 <script>
   let isRop = false;
 
-  // Цветовая градация с цифрами
   const strengthColors = {
     light: { name: 'Лёгкий (1-3)', color: '#3cffa0', bg: 'rgba(60,255,160,0.2)' },
     medium: { name: 'Средний (4-6)', color: '#fcb830', bg: 'rgba(252,184,48,0.2)' },
     strong: { name: 'Крепкий (7-10)', color: '#fc5c7c', bg: 'rgba(252,92,124,0.2)' }
   };
 
-  window.onAuthReady = function(ropStatus, user) {
-    isRop = ropStatus;
-    loadManufacturers();
-  };
-  window.loadManufacturers = function() { loadManufacturers(); };
+  function sortManufacturersByClass(manufacturers) {
+    const order = { premium: 1, medium: 2, economy: 3 };
+    return manufacturers.sort((a, b) => {
+      const aClass = a.quality_class || 'medium';
+      const bClass = b.quality_class || 'medium';
+      return (order[aClass] || 2) - (order[bClass] || 2);
+    });
+  }
 
-  // Модальное окно для производителя
+  function sortLinesByStrength(lines) {
+    const order = { light: 1, medium: 2, strong: 3 };
+    return lines.sort((a, b) => {
+      const aStrength = a.strength_color || 'medium';
+      const bStrength = b.strength_color || 'medium';
+      return (order[aStrength] || 2) - (order[bStrength] || 2);
+    });
+  }
+
+  async function loadManufacturers() {
+    const grid = document.getElementById('manufacturersGrid');
+    if (!grid) return;
+    
+    try {
+      const response = await fetch('/api/manufacturers', { credentials: 'include' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      let manufacturers = await response.json();
+      manufacturers = sortManufacturersByClass(manufacturers);
+      
+      grid.innerHTML = '';
+      
+      if (manufacturers.length === 0) {
+        grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);">Нет производителей. Добавьте первого через кнопку выше (доступно только РОП).</div>';
+        return;
+      }
+      
+      for (const manufacturer of manufacturers) {
+        const qualityClass = manufacturer.quality_class || 'medium';
+        const qualityIcon = qualityClass === 'premium' ? '💎' : (qualityClass === 'economy' ? '📦' : '⭐');
+        const qualityName = qualityClass === 'premium' ? 'Премиум' : (qualityClass === 'economy' ? 'Эконом' : 'Средний класс');
+        
+        const card = document.createElement('div');
+        card.className = 'manufacturer-card';
+        card.innerHTML = `
+          <div class="manufacturer-header">
+            <div>
+              <h3>${escapeHtml(manufacturer.name)}</h3>
+              <span class="manufacturer-quality ${qualityClass}">${qualityIcon} ${qualityName}</span>
+            </div>
+            ${isRop ? `<div class="manufacturer-actions">
+              <button class="btn-edit" onclick="editManufacturer(${manufacturer.id})">✏️</button>
+              <button class="btn-delete" onclick="deleteManufacturer(${manufacturer.id})">🗑</button>
+            </div>` : ''}
+          </div>
+          ${manufacturer.logo ? `<img src="${manufacturer.logo}" class="manufacturer-logo">` : ''}
+          <div class="manufacturer-desc">${escapeHtml(manufacturer.description || '')}</div>
+          <button class="btn-expand" onclick="toggleManufacturer(${manufacturer.id})">📂 Показать линейки</button>
+          <div id="lines-${manufacturer.id}" class="lines-container" style="display: none;">
+            <div class="lines-header">
+              <span>Линейки</span>
+              ${isRop ? `<button class="btn-add-line" onclick="openLineModal(${manufacturer.id})">➕ Добавить линейку</button>` : ''}
+            </div>
+            <div id="lines-list-${manufacturer.id}" class="lines-list"></div>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    } catch (error) {
+      console.error('Failed to load manufacturers:', error);
+      grid.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--accent2);">❌ Ошибка загрузки данных. Проверьте подключение.</div>`;
+    }
+  }
+
+  async function toggleManufacturer(manufacturerId) {
+    const container = document.getElementById(`lines-${manufacturerId}`);
+    if (container.style.display === 'block') {
+      container.style.display = 'none';
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/manufacturers/${manufacturerId}`, { credentials: 'include' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      let lines = data.lines || [];
+      lines = sortLinesByStrength(lines);
+      
+      const linesList = document.getElementById(`lines-list-${manufacturerId}`);
+      linesList.innerHTML = '';
+      
+      if (lines.length === 0) {
+        linesList.innerHTML = '<div style="color: var(--muted); padding: 12px; text-align: center;">Нет линеек</div>';
+      } else {
+        for (const line of lines) {
+          const colorConfig = strengthColors[line.strength_color || 'medium'];
+          const lineDiv = document.createElement('div');
+          lineDiv.className = 'line-card';
+          lineDiv.style.borderLeft = `4px solid ${colorConfig.color}`;
+          lineDiv.innerHTML = `
+            <div class="line-header">
+              <div>
+                <span class="line-name">${escapeHtml(line.name)}</span>
+                <span class="line-strength-badge" style="background: ${colorConfig.bg}; color: ${colorConfig.color}; padding: 2px 8px; border-radius: 20px; font-size: 10px;">${colorConfig.name}</span>
+              </div>
+              ${isRop ? `<div>
+                <button class="btn-edit-small" onclick="editLine(${line.id}, ${manufacturerId})">✏️</button>
+                <button class="btn-delete-small" onclick="deleteLine(${line.id})">🗑</button>
+              </div>` : ''}
+            </div>
+            <div class="line-desc">${line.description || ''}</div>
+          `;
+          linesList.appendChild(lineDiv);
+        }
+      }
+      container.style.display = 'block';
+    } catch (error) {
+      console.error('Failed to load lines:', error);
+      alert('Ошибка загрузки линеек');
+    }
+  }
+
   function openManufacturerModal(editData = null) {
     const isEdit = !!editData;
     const modal = document.createElement('div');
@@ -66,7 +182,7 @@
           <div class="field">
             <label>📸 Логотип / Фото</label>
             <div class="photo-upload-area" id="photoUploadArea">
-              <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" class="photo-upload-input">
+              <input type="file" id="photoInput" accept="image/*" class="photo-upload-input">
               <div class="photo-upload-icon">📷</div>
               <div class="photo-upload-title">Нажмите для выбора фото</div>
             </div>
@@ -179,7 +295,6 @@
     });
   }
 
-  // Модальное окно для линейки
   function openLineModal(manufacturerId, editData = null) {
     const isEdit = !!editData;
     const modal = document.createElement('div');
@@ -200,24 +315,15 @@
             <div class="strength-color-options">
               <label class="strength-color-option light">
                 <input type="radio" name="strengthColor" value="light" ${editData?.strength_color === 'light' || (!editData && !editData?.strength_color) ? 'checked' : ''}>
-                <div class="option-content">
-                  <span class="color-dot"></span>
-                  <span class="option-text">🟢 Лёгкий (1-3)</span>
-                </div>
+                <div class="option-content"><span class="color-dot"></span><span class="option-text">🟢 Лёгкий (1-3)</span></div>
               </label>
               <label class="strength-color-option medium">
                 <input type="radio" name="strengthColor" value="medium" ${editData?.strength_color === 'medium' ? 'checked' : ''}>
-                <div class="option-content">
-                  <span class="color-dot"></span>
-                  <span class="option-text">🟡 Средний (4-6)</span>
-                </div>
+                <div class="option-content"><span class="color-dot"></span><span class="option-text">🟡 Средний (4-6)</span></div>
               </label>
               <label class="strength-color-option strong">
                 <input type="radio" name="strengthColor" value="strong" ${editData?.strength_color === 'strong' ? 'checked' : ''}>
-                <div class="option-content">
-                  <span class="color-dot"></span>
-                  <span class="option-text">🔴 Крепкий (7-10)</span>
-                </div>
+                <div class="option-content"><span class="color-dot"></span><span class="option-text">🔴 Крепкий (7-10)</span></div>
               </label>
             </div>
           </div>
@@ -225,14 +331,14 @@
             <label>📋 Описание</label>
             <div class="rich-editor-container">
               <div class="format-toolbar">
-                <button class="format-btn" data-format="bold" title="Жирный"><b>B</b></button>
-                <button class="format-btn" data-format="italic" title="Курсив"><i>I</i></button>
-                <button class="format-btn" data-format="underline" title="Подчеркнутый"><u>U</u></button>
-                <button class="format-btn" data-format="h3" title="Заголовок">H3</button>
-                <button class="format-btn" data-format="insertUnorderedList" title="Маркированный список">• Список</button>
-                <button class="format-btn" data-format="insertOrderedList" title="Нумерованный список">1. Нумер.</button>
+                <button class="format-btn" data-format="bold"><b>B</b></button>
+                <button class="format-btn" data-format="italic"><i>I</i></button>
+                <button class="format-btn" data-format="underline"><u>U</u></button>
+                <button class="format-btn" data-format="h3">H3</button>
+                <button class="format-btn" data-format="insertUnorderedList">• Список</button>
+                <button class="format-btn" data-format="insertOrderedList">1. Нумер.</button>
               </div>
-              <div class="rich-editor" contenteditable="true" style="min-height: 150px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; line-height: 1.6;"></div>
+              <div class="rich-editor" contenteditable="true" style="min-height: 100px;">${editData?.description || ''}</div>
             </div>
           </div>
         </div>
@@ -249,59 +355,12 @@
     const richEditor = modal.querySelector('.rich-editor');
     const formatBtns = modal.querySelectorAll('.format-btn');
     
-    // Функция для применения формата с сохранением позиции курсора
-    function applyFormat(format) {
-      const selection = window.getSelection();
-      const range = selection.getRangeAt(0);
-      
-      if (format === 'insertUnorderedList') {
-        document.execCommand('insertUnorderedList', false, null);
-      } else if (format === 'insertOrderedList') {
-        document.execCommand('insertOrderedList', false, null);
-      } else if (format === 'h3') {
-        document.execCommand('formatBlock', false, '<h3>');
-      } else {
-        document.execCommand(format, false, null);
-      }
-      
-      richEditor.focus();
-      updateActiveButtons();
-    }
-    
-    function updateActiveButtons() {
-      formatBtns.forEach(btn => {
-        const format = btn.dataset.format;
-        let isActive = false;
-        
-        if (format === 'bold') isActive = document.queryCommandState('bold');
-        else if (format === 'italic') isActive = document.queryCommandState('italic');
-        else if (format === 'underline') isActive = document.queryCommandState('underline');
-        else if (format === 'insertUnorderedList') isActive = document.queryCommandState('insertUnorderedList');
-        else if (format === 'insertOrderedList') isActive = document.queryCommandState('insertOrderedList');
-        else if (format === 'h3') {
-          const block = document.queryCommandValue('formatBlock');
-          isActive = block === 'h3' || block === '<h3>';
-        }
-        
-        if (isActive) {
-          btn.style.background = 'var(--accent-glow)';
-          btn.style.borderColor = 'var(--accent)';
-        } else {
-          btn.style.background = 'var(--surface2)';
-          btn.style.borderColor = 'var(--border)';
-        }
-      });
-    }
-    
-    richEditor.addEventListener('keyup', updateActiveButtons);
-    richEditor.addEventListener('mouseup', updateActiveButtons);
-    richEditor.addEventListener('click', updateActiveButtons);
-    
     formatBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         const format = btn.dataset.format;
-        applyFormat(format);
+        document.execCommand(format, false, null);
+        richEditor.focus();
       });
     });
     
@@ -330,8 +389,6 @@
         strength_color: strengthColor
       };
       
-      console.log('Saving line:', data);
-      
       let url = '/api/lines';
       let method = 'POST';
       if (isEdit) {
@@ -339,113 +396,27 @@
         method = 'PUT';
       }
       
-      try {
-        const response = await fetch(url, {
-          method: method,
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok) {
-          alert(isEdit ? 'Сохранено' : 'Линейка добавлена');
-          closeModal();
-          const container = document.getElementById(`lines-${manufacturerId}`);
-          if (container && container.style.display === 'block') {
-            container.style.display = 'none';
-            toggleManufacturer(manufacturerId);
-          } else {
-            loadManufacturers();
-          }
+      const response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+      
+      if (response.ok) {
+        alert(isEdit ? 'Сохранено' : 'Линейка добавлена');
+        closeModal();
+        const container = document.getElementById(`lines-${manufacturerId}`);
+        if (container && container.style.display === 'block') {
+          container.style.display = 'none';
+          toggleManufacturer(manufacturerId);
         } else {
-          alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+          loadManufacturers();
         }
-      } catch (error) {
-        console.error('Save error:', error);
-        alert('Ошибка: ' + error.message);
+      } else {
+        alert('Ошибка');
       }
     });
-    
-    setTimeout(updateActiveButtons, 100);
-  }
-
-  async function loadManufacturers() {
-    const response = await fetch('/api/manufacturers', { credentials: 'include' });
-    const manufacturers = await response.json();
-    
-    const grid = document.getElementById('manufacturersGrid');
-    grid.innerHTML = '';
-    
-    for (const manufacturer of manufacturers) {
-      const qualityClass = manufacturer.quality_class || 'medium';
-      const qualityIcon = qualityClass === 'premium' ? '💎' : (qualityClass === 'economy' ? '📦' : '⭐');
-      const qualityName = qualityClass === 'premium' ? 'Премиум' : (qualityClass === 'economy' ? 'Эконом' : 'Средний класс');
-      
-      const card = document.createElement('div');
-      card.className = 'manufacturer-card';
-      card.innerHTML = `
-        <div class="manufacturer-header">
-          <div>
-            <h3>${escapeHtml(manufacturer.name)}</h3>
-            <span class="manufacturer-quality ${qualityClass}">${qualityIcon} ${qualityName}</span>
-          </div>
-          ${isRop ? `<div class="manufacturer-actions">
-            <button class="btn-edit" onclick="editManufacturer(${manufacturer.id})">✏️</button>
-            <button class="btn-delete" onclick="deleteManufacturer(${manufacturer.id})">🗑</button>
-          </div>` : ''}
-        </div>
-        ${manufacturer.logo ? `<img src="${manufacturer.logo}" class="manufacturer-logo">` : ''}
-        <div class="manufacturer-desc">${escapeHtml(manufacturer.description || '')}</div>
-        <button class="btn-expand" onclick="toggleManufacturer(${manufacturer.id})">📂 Показать линейки</button>
-        <div id="lines-${manufacturer.id}" class="lines-container" style="display: none;">
-          <div class="lines-header">
-            <span>Линейки</span>
-            ${isRop ? `<button class="btn-add-line" onclick="openLineModal(${manufacturer.id})">➕ Добавить линейку</button>` : ''}
-          </div>
-          <div id="lines-list-${manufacturer.id}" class="lines-list"></div>
-        </div>
-      `;
-      grid.appendChild(card);
-    }
-  }
-
-  async function toggleManufacturer(manufacturerId) {
-    const container = document.getElementById(`lines-${manufacturerId}`);
-    if (container.style.display === 'block') {
-      container.style.display = 'none';
-      return;
-    }
-    
-    const response = await fetch(`/api/manufacturers/${manufacturerId}`, { credentials: 'include' });
-    const data = await response.json();
-    
-    const linesList = document.getElementById(`lines-list-${manufacturerId}`);
-    linesList.innerHTML = '';
-    
-    for (const line of data.lines) {
-      const colorConfig = strengthColors[line.strength_color || 'medium'];
-      
-      const lineDiv = document.createElement('div');
-      lineDiv.className = 'line-card';
-      lineDiv.style.borderLeft = `4px solid ${colorConfig.color}`;
-      lineDiv.innerHTML = `
-        <div class="line-header">
-          <div>
-            <span class="line-name">${escapeHtml(line.name)}</span>
-            <span class="line-strength-badge" style="background: ${colorConfig.bg}; color: ${colorConfig.color}; padding: 2px 8px; border-radius: 20px; font-size: 10px; margin-left: 8px;">${colorConfig.name}</span>
-          </div>
-          ${isRop ? `<div>
-            <button class="btn-edit-small" onclick="editLine(${line.id}, ${manufacturerId})">✏️</button>
-            <button class="btn-delete-small" onclick="deleteLine(${line.id})">🗑</button>
-          </div>` : ''}
-        </div>
-        <div class="line-desc">${line.description || ''}</div>
-      `;
-      linesList.appendChild(lineDiv);
-    }
-    container.style.display = 'block';
   }
 
   async function editLine(lineId, manufacturerId) {
@@ -456,29 +427,22 @@
   
   async function deleteLine(id) {
     if (confirm('Удалить линейку?')) {
-      const response = await fetch(`/api/lines/${id}`, { method: 'DELETE', credentials: 'include' });
-      if (response.ok) {
-        loadManufacturers();
-      } else {
-        alert('Ошибка удаления');
-      }
+      await fetch(`/api/lines/${id}`, { method: 'DELETE', credentials: 'include' });
+      loadManufacturers();
     }
   }
   
   window.editManufacturer = (id) => {
     fetch(`/api/manufacturers/${id}`, { credentials: 'include' })
       .then(res => res.json())
-      .then(data => openManufacturerModal(data));
+      .then(data => openManufacturerModal(data))
+      .catch(err => console.error('Failed to load manufacturer:', err));
   };
   
   async function deleteManufacturer(id) {
     if (confirm('Удалить производителя и все его линейки?')) {
-      const response = await fetch(`/api/manufacturers/${id}`, { method: 'DELETE', credentials: 'include' });
-      if (response.ok) {
-        loadManufacturers();
-      } else {
-        alert('Ошибка удаления');
-      }
+      await fetch(`/api/manufacturers/${id}`, { method: 'DELETE', credentials: 'include' });
+      loadManufacturers();
     }
   }
 
@@ -486,6 +450,11 @@
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
   }
+
+  window.onAuthReady = function(ropStatus, user) {
+    isRop = ropStatus;
+    loadManufacturers();
+  };
 
   document.getElementById('logoutBtn')?.addEventListener('click', async () => {
     await fetch('/api/logout', { method: 'POST', credentials: 'include' });
@@ -510,9 +479,9 @@
         <div class="modal-body">
           <div class="field">
             <label>➕ Добавить пользователя</label>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 8px;">
               <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
-              <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
+              <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width:100px">
               <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
               <button id="addUserBtn" class="btn-add">Добавить</button>
             </div>
@@ -581,8 +550,8 @@
       if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) canDelete = true;
       return `
         <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-            <div><strong>${escapeHtml(user.full_name)}</strong><br><span style="font-size: 11px;">Логин: ${user.username} | Роль: ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span></div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div><strong>${escapeHtml(user.full_name)}</strong><br><span style="font-size: 11px;">${user.username} | ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span></div>
             <div style="display: flex; gap: 6px;">
               ${canChange ? `<button onclick="window.changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
               ${canDelete ? `<button onclick="window.deleteUserById(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
@@ -604,7 +573,7 @@
       body: JSON.stringify({ newPassword })
     });
     if (response.ok) alert('Пароль успешно изменен');
-    else alert('Ошибка смены пароля');
+    else alert('Ошибка');
   };
 
   window.deleteUserById = async (userId) => {
@@ -613,11 +582,9 @@
       if (response.ok) {
         alert('Пользователь удален');
         location.reload();
-      } else alert('Ошибка удаления');
+      } else alert('Ошибка');
     }
   };
-
-  // main.js вызовет onAuthReady который вызовет loadManufacturers
 </script>
 
 <style>
@@ -633,7 +600,6 @@
 .manufacturer-logo { max-width: 100%; max-height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 12px; }
 .manufacturer-desc { color: var(--text2); font-size: 13px; margin-bottom: 16px; line-height: 1.5; }
 .btn-expand { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 12px; cursor: pointer; width: 100%; margin-top: 8px; }
-.btn-expand:hover { background: var(--surface3); border-color: var(--accent); }
 .lines-container { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 .lines-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: 600; color: var(--accent3); }
 .line-card { background: var(--surface2); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
@@ -641,124 +607,21 @@
 .line-name { font-weight: 600; color: var(--accent4); }
 .line-desc { font-size: 12px; color: var(--text2); line-height: 1.4; }
 .btn-add-line { background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; font-size: 11px; color: var(--accent); cursor: pointer; }
+.strength-color-options { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.strength-color-option { flex: 1; min-width: 100px; cursor: pointer; }
+.strength-color-option input { display: none; }
+.strength-color-option .option-content { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; border-radius: 30px; border: 1px solid var(--border); background: var(--surface2); transition: all 0.2s; }
+.strength-color-option input:checked + .option-content { border-color: var(--accent); background: var(--accent-glow); }
+.strength-color-option.light .color-dot { background: #3cffa0; width: 16px; height: 16px; border-radius: 50%; }
+.strength-color-option.medium .color-dot { background: #fcb830; }
+.strength-color-option.strong .color-dot { background: #fc5c7c; }
 .format-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; padding: 8px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border); }
-.format-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; color: var(--text); font-size: 12px; cursor: pointer; transition: all 0.2s; }
-.format-btn:hover { background: var(--accent-glow); border-color: var(--accent); }
-.rich-editor { min-height: 150px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; overflow-y: auto; line-height: 1.6; }
+.format-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; color: var(--text); font-size: 12px; cursor: pointer; }
+.rich-editor { min-height: 100px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px; overflow-y: auto; }
 .rich-editor:focus { outline: none; border-color: var(--accent); }
-.rich-editor ul, .rich-editor ol { margin: 8px 0; padding-left: 24px; }
-.rich-editor li { margin: 4px 0; }
-
 .btn-edit-small, .btn-delete-small { background: transparent; border: none; padding: 4px 8px; cursor: pointer; font-size: 12px; border-radius: 6px; }
 .btn-edit-small { color: var(--accent); }
 .btn-delete-small { color: var(--accent2); }
-
-/* Компактный выбор цветовой градации */
-.strength-color-options {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-}
-
-.strength-color-option {
-    flex: 1;
-    min-width: 100px;
-    cursor: pointer;
-}
-
-.strength-color-option input {
-    display: none;
-}
-
-.strength-color-option .option-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 30px;
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    transition: all 0.2s;
-    cursor: pointer;
-}
-
-.strength-color-option .color-dot {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-}
-
-.strength-color-option .option-text {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text);
-}
-
-.strength-color-option input:checked + .option-content {
-    border-color: var(--accent);
-    background: var(--accent-glow);
-}
-
-.strength-color-option.light .color-dot { background: #3cffa0; box-shadow: 0 0 4px #3cffa0; }
-.strength-color-option.medium .color-dot { background: #fcb830; box-shadow: 0 0 4px #fcb830; }
-.strength-color-option.strong .color-dot { background: #fc5c7c; box-shadow: 0 0 4px #fc5c7c; }
-
-/* Увеличенные иконки */
-.btn-delete, .btn-delete-small, .btn-edit, .btn-edit-small {
-    font-size: 16px;
-    width: 32px;
-    height: 32px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-delete, .btn-delete-small {
-    background: rgba(252, 92, 124, 0.15);
-    border: 1px solid rgba(252, 92, 124, 0.3);
-    color: #fc5c7c;
-}
-
-.btn-delete:hover, .btn-delete-small:hover {
-    background: rgba(252, 92, 124, 0.3);
-    transform: scale(1.05);
-}
-
-.btn-edit, .btn-edit-small {
-    background: rgba(124, 92, 252, 0.15);
-    border: 1px solid rgba(124, 92, 252, 0.3);
-    color: #7c5cfc;
-}
-
-.btn-edit:hover, .btn-edit-small:hover {
-    background: rgba(124, 92, 252, 0.3);
-    transform: scale(1.05);
-}
-
-.manufacturer-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.manufacturer-actions .btn-edit,
-.manufacturer-actions .btn-delete {
-    width: 34px;
-    height: 34px;
-    font-size: 16px;
-}
-
-.line-header .btn-edit-small,
-.line-header .btn-delete-small {
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
-    padding: 0;
-}
 </style>
 </body>
 </html>
