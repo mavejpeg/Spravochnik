@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Жевательный табак — Справочник</title>
-<link rel="stylesheet" href="style.css?v=44">
+<link rel="stylesheet" href="style.css?v=46">
 </head>
 <body>
 
@@ -68,8 +68,8 @@
 
 </main>
 
-<script src="core.js?v=44"></script>
-<script src="main.js?v=44"></script>
+<script src="core.js?v=46"></script>
+<script src="main.js?v=46"></script>
 <script src="editor.js?v=3"></script>
 <script>
   let isRop = false;
@@ -484,7 +484,6 @@
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
   }
 
-  // ========== ИНИЦИАЛИЗАЦИЯ ==========
   window.onAuthReady = function(ropStatus, user) {
     isRop = ropStatus;
     loadManufacturers();
