@@ -112,19 +112,14 @@
     });
   }
 
-  async function checkPermissions() {
-    const response = await fetch('/api/check-auth', { credentials: 'include' });
-    const data = await response.json();
-    if (data.authenticated) {
-      isRop = (data.user.role === 'rop' || data.user.role === 'root');
-      window.isRopGlobal = isRop;
-      document.getElementById('userName').textContent = data.user.full_name;
-      document.getElementById('ropBtn').style.display = isRop ? 'block' : 'none';
-      document.getElementById('btnAddManufacturer').style.display = isRop ? 'flex' : 'none';
-    } else {
-      window.location.href = '/login.html';
-    }
-  }
+  // Авторизация теперь управляется из main.js - подписываемся на событие
+  // checkPermissions() удалён - используем onAuthReady callback
+  window.onAuthReady = function(ropStatus, user) {
+    isRop = ropStatus;
+    loadManufacturers();
+  };
+  // Экспортируем loadManufacturers чтобы main.js мог вызвать его
+  window.loadManufacturers = function() { loadManufacturers(); };
 
   function openManufacturerModal(editData = null) {
     const isEdit = !!editData;
@@ -644,7 +639,7 @@
 
   initTabs();
   initAccordions();
-  checkPermissions().then(() => loadManufacturers());
+  // main.js вызовет onAuthReady после проверки авторизации, который вызовет loadManufacturers
 </script>
 
 <style>
