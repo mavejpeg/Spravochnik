@@ -3117,3 +3117,67 @@ details details summary {
     color: var(--text);
     line-height: 1.5;
 }
+
+/* ========== ВЫПАДАЮЩИЕ СПИСКИ (DETAILS) ========== */
+details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    display: block;
+}
+
+details summary {
+    cursor: pointer;
+    padding: 14px 18px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--surface2);
+    border-radius: 12px;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+details summary:hover {
+    background: var(--surface3);
+}
+
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+details summary::after {
+    content: "▼";
+    font-size: 12px;
+    transition: transform 0.2s;
+    color: var(--muted);
+}
+
+details[open] summary::after {
+    transform: rotate(180deg);
+}
+
+details .acc-body {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+}
+
+details ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style-type: disc;
+}
+
+details ul li {
+    margin: 8px 0;
+    color: var(--text);
+    line-height: 1.5;
+}
+
+details ul li strong {
+    color: var(--accent);
+}
