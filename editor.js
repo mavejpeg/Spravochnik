@@ -1,5 +1,5 @@
-// editor.js v3.2 - исправлено сохранение
-console.log('Editor.js v3.2 loaded');
+// editor.js v3.3 - исправлены выпадающие списки и редактор
+console.log('Editor.js v3.3 loaded');
 
 // Слушаем событие от main.js
 window.addEventListener('authReady', function(e) {
@@ -8,11 +8,10 @@ window.addEventListener('authReady', function(e) {
     setupEditButtons(isRop);
 });
 
-// На случай если editor.js загружен позже чем authReady сработал
+// На случай если editor.js загружен позже
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Editor.js: DOMContentLoaded, checking auth state');
     if (window._authLoaded === true) {
-        console.log('Editor.js: auth already loaded, isRop:', window.isRopGlobal);
         setupEditButtons(window.isRopGlobal);
     }
     setTimeout(function() {
@@ -24,7 +23,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function setupEditButtons(isRop) {
     const editBtns = document.querySelectorAll('.btn-edit-content');
-    console.log('Editor.js: Found edit buttons:', editBtns.length, '| isRop:', isRop);
     editBtns.forEach(btn => {
         btn.removeEventListener('click', handleEditClick);
         btn.addEventListener('click', handleEditClick);
@@ -33,15 +31,11 @@ function setupEditButtons(isRop) {
 }
 
 window.setupEditButtons = setupEditButtons;
-window.refreshEditButtons = function() { 
-    setupEditButtons(window.isRopGlobal); 
-};
 
 function handleEditClick(e) {
     const btn = e.currentTarget;
     const page = btn.dataset.page;
     const section = btn.dataset.section;
-    console.log('Editor.js: Edit clicked for:', page, section);
     openVisualEditor(page, section);
 }
 
@@ -53,7 +47,7 @@ function getSectionTitle(section) {
         'returns': 'Возврат картриджа', 'price': 'Отработка возражения по цене', 'color': 'Цвет жидкости',
         'upsell': 'Добивание комбо', 'official': 'Официальная инструкция', 'practical': 'Практические советы',
         'after': 'По окончании проверки', 'types': 'Типы товаров', 'qr': 'Работа с QR-кодами',
-        'register': 'Кассовый аппарат', 'syrye': 'Типы сырья', 'tips': 'Советы продавцу', 'guide': 'Гид по брендам',
+        'register': 'Кассовый аппарат', 'guide': 'Гид по брендам',
         'day1': 'День 1: Основы', 'day2': 'День 2: Кальянная тематика', 'day3': 'День 3: Касса и маркировка',
         'day4': 'День 4: Закрепление', 'scripts': 'Скрипты продаж', 'security': 'Безопасность'
     };
@@ -63,7 +57,6 @@ function getSectionTitle(section) {
 async function openVisualEditor(page, section) {
     const contentDiv = document.getElementById(`${section}-content`);
     if (!contentDiv) {
-        console.error('Content div not found:', `${section}-content`);
         alert('Не удалось найти контент для редактирования.');
         return;
     }
@@ -91,12 +84,9 @@ async function openVisualEditor(page, section) {
                     <button class="tool-btn" data-action="add-table">📊 Таблица</button>
                     <button class="tool-btn" data-action="add-alert">⚠️ Предупреждение</button>
                     <button class="tool-btn" data-action="add-note">💡 Примечание</button>
-                    <button class="tool-btn" data-action="add-dropdown">📁 Выпадающий</button>
+                    <button class="tool-btn" data-action="add-dropdown">📁 Выпадающий список</button>
                     <button class="tool-btn" data-action="add-card">🃏 Карточка</button>
                     <button class="tool-btn" data-action="add-quiz">📋 Опросник</button>
-                </div>
-                <div class="editor-hint" style="font-size: 11px; color: var(--muted); margin-bottom: 10px; padding: 0 2px;">
-                    💡 Перетаскивайте блоки за иконку ☰ для изменения порядка
                 </div>
                 <div class="editor-area" id="editorArea" style="min-height: 200px;">
                     ${parseContentToEditor(currentHtml)}
@@ -121,6 +111,7 @@ async function openVisualEditor(page, section) {
     setupStepsEditors(editorArea);
     setupQuizEditors(editorArea);
     setupDragAndDrop(editorArea);
+    setupDropdownEditors(editorArea);
 
     modal.querySelectorAll('.tool-btn').forEach(btn => {
         btn.addEventListener('click', () => addElementToEditor(editorArea, btn.dataset.action));
@@ -139,9 +130,6 @@ async function openVisualEditor(page, section) {
         const newContent = convertEditorToHtml(editorArea);
         const url = `/api/content/${page}/${section}`;
         
-        console.log('Saving content to:', url);
-        console.log('Content length:', newContent.length);
-        
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -157,6 +145,7 @@ async function openVisualEditor(page, section) {
                 alert('✅ Сохранено успешно!');
                 closeModal();
                 if (typeof initAccordions === 'function') initAccordions();
+                if (typeof initDetailsHandlers === 'function') initDetailsHandlers();
             } else {
                 alert('❌ Ошибка сохранения: ' + (result.error || 'Неизвестная ошибка'));
             }
@@ -167,68 +156,36 @@ async function openVisualEditor(page, section) {
     });
 }
 
-// ========== DRAG AND DROP ==========
-function setupDragAndDrop(editorArea) {
-    let draggedItem = null;
-    let dragOverItem = null;
-
-    function onDragStart(e) {
-        draggedItem = e.currentTarget.closest('.editor-item');
-        if (draggedItem) {
-            draggedItem.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
+// ========== НОВЫЙ РЕДАКТОР ДЛЯ ВЫПАДАЮЩИХ СПИСКОВ ==========
+function setupDropdownEditors(container) {
+    container.querySelectorAll('.dropdown-editor').forEach(editor => {
+        const addBtn = editor.querySelector('.add-dropdown-item');
+        if (addBtn && !addBtn._dropdownInit) {
+            addBtn._dropdownInit = true;
+            addBtn.addEventListener('click', () => {
+                const itemsContainer = editor.querySelector('.dropdown-items');
+                const newItem = document.createElement('div');
+                newItem.className = 'dropdown-item';
+                newItem.innerHTML = `
+                    <div class="dropdown-item-header" style="display: flex; gap: 8px; margin-bottom: 6px;">
+                        <input type="text" class="dropdown-item-title" placeholder="Заголовок пункта" style="flex:1; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;">
+                        <button class="remove-dropdown-item" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer;">🗑</button>
+                    </div>
+                    <textarea class="dropdown-item-desc" rows="2" placeholder="Описание пункта" style="width:100%; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; resize: vertical;"></textarea>
+                `;
+                newItem.querySelector('.remove-dropdown-item').addEventListener('click', () => newItem.remove());
+                itemsContainer.appendChild(newItem);
+                newItem.querySelector('.dropdown-item-title').focus();
+            });
         }
-    }
-    function onDragEnd(e) {
-        if (draggedItem) draggedItem.classList.remove('dragging');
-        editorArea.querySelectorAll('.editor-item').forEach(i => i.classList.remove('drag-over'));
-        draggedItem = null;
-        dragOverItem = null;
-    }
-    function onDragOver(e) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        const item = e.currentTarget.closest('.editor-item');
-        if (item && item !== draggedItem) {
-            editorArea.querySelectorAll('.editor-item').forEach(i => i.classList.remove('drag-over'));
-            item.classList.add('drag-over');
-            dragOverItem = item;
-        }
-    }
-    function onDrop(e) {
-        e.preventDefault();
-        if (draggedItem && dragOverItem && draggedItem !== dragOverItem) {
-            const items = [...editorArea.querySelectorAll('.editor-item')];
-            const fromIdx = items.indexOf(draggedItem);
-            const toIdx = items.indexOf(dragOverItem);
-            if (fromIdx < toIdx) {
-                dragOverItem.after(draggedItem);
-            } else {
-                dragOverItem.before(draggedItem);
+        
+        editor.querySelectorAll('.remove-dropdown-item').forEach(btn => {
+            if (!btn._rmInit) {
+                btn._rmInit = true;
+                btn.addEventListener('click', () => btn.closest('.dropdown-item').remove());
             }
-        }
-        editorArea.querySelectorAll('.editor-item').forEach(i => i.classList.remove('drag-over'));
-    }
-
-    function attachDragHandlers() {
-        editorArea.querySelectorAll('.editor-item').forEach(item => {
-            if (item.getAttribute('data-drag-init')) return;
-            item.setAttribute('data-drag-init', '1');
-            item.setAttribute('draggable', 'true');
-            const handle = item.querySelector('.drag-handle');
-            if (handle) {
-                handle.addEventListener('mousedown', () => item.setAttribute('draggable', 'true'));
-            }
-            item.addEventListener('dragstart', onDragStart);
-            item.addEventListener('dragend', onDragEnd);
-            item.addEventListener('dragover', onDragOver);
-            item.addEventListener('drop', onDrop);
         });
-    }
-
-    attachDragHandlers();
-    const observer = new MutationObserver(attachDragHandlers);
-    observer.observe(editorArea, { childList: true });
+    });
 }
 
 // ========== ПАРСИНГ HTML → РЕДАКТОР ==========
@@ -240,6 +197,153 @@ function parseContentToEditor(html) {
         result += convertElementToEditorItem(tempDiv.children[i]);
     }
     return result || '<div class="editor-empty">Нажмите кнопку выше, чтобы добавить элемент</div>';
+}
+
+function convertElementToEditorItem(el) {
+    const className = el.className || '';
+    const tagName = el.tagName.toLowerCase();
+
+    // Выпадающий список (details)
+    if (tagName === 'details') {
+        const summaryEl = el.querySelector('summary');
+        let title = '';
+        if (summaryEl) {
+            title = summaryEl.innerHTML.replace(/<span[^>]*>.*?<\/span>/g, '').trim();
+        }
+        
+        // Парсим пункты списка из acc-body
+        const bodyEl = el.querySelector('.acc-body') || el;
+        const items = [];
+        
+        // Ищем пункты списка (li с strong или просто текст)
+        const listItems = bodyEl.querySelectorAll('li');
+        listItems.forEach(li => {
+            const strong = li.querySelector('strong');
+            const itemTitle = strong ? strong.textContent.trim() : '';
+            let itemDesc = li.textContent.trim();
+            if (strong && itemDesc.startsWith(strong.textContent)) {
+                itemDesc = itemDesc.substring(strong.textContent.length).replace(/^[—\s]+/, '').trim();
+            }
+            items.push({ title: itemTitle, desc: itemDesc });
+        });
+        
+        // Если нет li, пробуем найти div с классом dropdown-item
+        if (items.length === 0) {
+            const divItems = bodyEl.querySelectorAll('.dropdown-item');
+            divItems.forEach(item => {
+                const itemTitle = item.querySelector('.dropdown-item-title')?.value || '';
+                const itemDesc = item.querySelector('.dropdown-item-desc')?.value || '';
+                if (itemTitle || itemDesc) {
+                    items.push({ title: itemTitle, desc: itemDesc });
+                }
+            });
+        }
+        
+        return itemWrapper('📁', 'Выпадающий список', `
+            <input type="text" class="dropdown-title" placeholder="Заголовок списка" value="${escapeHtml(title)}" style="width:100%; margin-bottom:12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px;">
+            <div class="dropdown-editor">
+                <div class="dropdown-items">
+                    ${items.map((item, idx) => `
+                        <div class="dropdown-item" style="background: var(--surface2); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                            <div class="dropdown-item-header" style="display: flex; gap: 8px; margin-bottom: 8px;">
+                                <input type="text" class="dropdown-item-title" placeholder="Заголовок пункта" value="${escapeHtml(item.title)}" style="flex:1; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;">
+                                <button class="remove-dropdown-item" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer;">🗑</button>
+                            </div>
+                            <textarea class="dropdown-item-desc" rows="2" placeholder="Описание пункта" style="width:100%; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; resize: vertical;">${escapeHtml(item.desc)}</textarea>
+                        </div>
+                    `).join('')}
+                </div>
+                <button class="add-dropdown-item" style="margin-top: 8px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 8px 12px; color: var(--accent); cursor: pointer;">➕ Добавить пункт</button>
+            </div>
+        `, 'dropdown');
+    }
+    
+    // Остальные типы элементов...
+    if (className.includes('quiz-block')) {
+        return itemWrapper('📋', 'Опросник', `<div class="quiz-editor" data-questions='${escapeAttr(extractQuizData(el))}'></div><button class="add-quiz-question">➕ Добавить вопрос</button>`, 'quiz');
+    }
+    if (className.includes('info-card')) {
+        const title = el.querySelector('h3')?.textContent || '';
+        const items = Array.from(el.querySelectorAll('ul li')).map(li => li.textContent.trim());
+        return itemWrapper('🃏', 'Карточка', `
+            <input type="text" class="card-title" placeholder="Заголовок" value="${escapeHtml(title)}" style="width:100%; margin-bottom:8px;">
+            <div class="list-editor" data-type="unordered">
+                <div class="list-items">${items.map(i => `<div class="list-item"><input type="text" value="${escapeHtml(i)}" placeholder="Пункт списка"><button class="remove-list-item">✕</button></div>`).join('')}</div>
+                <button class="add-list-item">➕ Добавить пункт</button>
+            </div>
+        `, 'card');
+    }
+    if (tagName === 'table' || (tagName === 'div' && el.querySelector('table'))) {
+        const tbl = tagName === 'table' ? el : el.querySelector('table');
+        const rows = [];
+        tbl.querySelectorAll('tr').forEach(tr => {
+            rows.push(Array.from(tr.querySelectorAll('th,td')).map(c => c.textContent.trim()));
+        });
+        return itemWrapper('📊', 'Таблица', `
+            <div class="table-editor" data-rows='${escapeAttr(JSON.stringify(rows))}'></div>
+            <div class="table-buttons" style="margin-top:8px; display:flex; gap:8px;">
+                <button class="add-table-row">➕ Добавить строку</button>
+                <button class="add-table-col">➕ Добавить столбец</button>
+            </div>
+        `, 'table');
+    }
+    if (className.includes('alert-bar')) {
+        const text = el.querySelector('span:last-child')?.textContent || el.textContent;
+        const type = className.includes('danger') ? 'danger' : (className.includes('success') ? 'success' : 'info');
+        return itemWrapper('⚠️', 'Предупреждение', `
+            <select class="alert-type" style="width:100%; margin-bottom:8px; padding:8px;">
+                <option value="danger" ${type==='danger'?'selected':''}>🔴 Важное</option>
+                <option value="success" ${type==='success'?'selected':''}>🟢 Успех</option>
+                <option value="info" ${type==='info'?'selected':''}>🔵 Информация</option>
+            </select>
+            <textarea class="alert-text" rows="2" placeholder="Текст" style="width:100%;">${escapeHtml(text)}</textarea>
+        `, 'alert');
+    }
+    if (className.includes('hl')) {
+        const text = el.textContent;
+        const type = className.includes('warn') ? 'warn' : (className.includes('ok') ? 'ok' : 'info');
+        return itemWrapper('💡', 'Примечание', `
+            <select class="note-type" style="width:100%; margin-bottom:8px; padding:8px;">
+                <option value="info" ${type==='info'?'selected':''}>📘 Обычное</option>
+                <option value="ok" ${type==='ok'?'selected':''}>✅ Успех</option>
+                <option value="warn" ${type==='warn'?'selected':''}>⚠️ Важное</option>
+            </select>
+            <textarea class="note-text" rows="2" placeholder="Текст" style="width:100%;">${escapeHtml(text)}</textarea>
+        `, 'note');
+    }
+    if (className.includes('steps') || el.querySelector?.('.step-num')) {
+        const steps = [];
+        el.querySelectorAll('.step').forEach(s => {
+            steps.push({
+                title: s.querySelector('.step-body strong')?.textContent || '',
+                desc: s.querySelector('.step-body span')?.textContent || ''
+            });
+        });
+        const stepsHtml = steps.map((s, i) => `
+            <div class="step-item" style="background:var(--surface2); border-radius:8px; padding:12px; margin-bottom:8px;">
+                <div class="step-header" style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                    <span class="step-num-display" style="background:var(--accent); color:white; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px;">${i+1}</span>
+                    <input type="text" class="step-title" value="${escapeHtml(s.title)}" placeholder="Заголовок" style="flex:1; padding:6px 10px;">
+                </div>
+                <textarea class="step-desc" rows="2" placeholder="Описание" style="width:100%; padding:8px;">${escapeHtml(s.desc)}</textarea>
+                <button class="remove-step-btn" style="margin-top:6px; background:rgba(252,92,124,0.15); border-radius:6px; padding:4px 10px;">🗑 Удалить шаг</button>
+            </div>
+        `).join('');
+        return itemWrapper('🔢', 'Нумерованные шаги', `
+            <div class="steps-editor">${stepsHtml}</div>
+            <button class="add-step-btn" style="margin-top:6px; background:var(--accent-glow); border:1px solid var(--accent); border-radius:6px; padding:6px 12px;">➕ Добавить шаг</button>
+        `, 'steps');
+    }
+    if (el.querySelector?.('ul') && !className.includes('info-card')) {
+        const items = Array.from(el.querySelectorAll('li')).map(li => li.textContent.trim());
+        return itemWrapper('📋', 'Маркированный список', `
+            <div class="list-editor" data-type="unordered">
+                <div class="list-items">${items.map(i => `<div class="list-item"><input type="text" value="${escapeHtml(i)}" placeholder="Пункт"><button class="remove-list-item">✕</button></div>`).join('')}</div>
+                <button class="add-list-item">➕ Добавить пункт</button>
+            </div>
+        `, 'list');
+    }
+    return itemWrapper('📝', 'Текст', richEditorBlock(el.innerHTML), 'text');
 }
 
 function itemWrapper(icon, label, inner, type) {
@@ -273,125 +377,6 @@ function richEditorBlock(content = '') {
     `;
 }
 
-function convertElementToEditorItem(el) {
-    const className = el.className || '';
-    const tagName = el.tagName.toLowerCase();
-
-    if (tagName === 'details') {
-        const summaryEl = el.querySelector('summary');
-        let title = '';
-        if (summaryEl) {
-            title = summaryEl.innerHTML.replace(/<span[^>]*>.*?<\/span>/g, '').trim();
-        }
-        const bodyEl = el.querySelector('.acc-body') || el;
-        const content = Array.from(bodyEl.children).map(c => c.outerHTML).join('');
-        return itemWrapper('📁', 'Выпадающий список', `
-            <input type="text" class="dropdown-title" placeholder="Заголовок" value="${escapeHtml(title)}" style="width:100%; margin-bottom:8px;">
-            ${richEditorBlock(content || '<ul><li>Пункт списка</li></ul>')}
-        `, 'dropdown');
-    }
-    if (className.includes('quiz-block')) {
-        return itemWrapper('📋', 'Опросник', `<div class="quiz-editor" data-questions='${escapeAttr(extractQuizData(el))}'></div><button class="add-quiz-question">➕ Добавить вопрос</button>`, 'quiz');
-    }
-    if (className.includes('info-card')) {
-        const title = el.querySelector('h3')?.textContent || '';
-        const items = Array.from(el.querySelectorAll('ul li')).map(li => li.textContent.trim());
-        return itemWrapper('🃏', 'Карточка', `
-            <input type="text" class="card-title" placeholder="Заголовок" value="${escapeHtml(title)}" style="width:100%; margin-bottom:8px;">
-            <div class="list-editor" data-type="unordered">
-                <div class="list-items">${items.map(i => `<div class="list-item"><input type="text" value="${escapeHtml(i)}" placeholder="Пункт списка"><button class="remove-list-item">✕</button></div>`).join('')}</div>
-                <button class="add-list-item">➕ Добавить пункт</button>
-            </div>
-        `, 'card');
-    }
-    if (tagName === 'table' || (tagName === 'div' && el.querySelector('table'))) {
-        const tbl = tagName === 'table' ? el : el.querySelector('table');
-        const rows = [];
-        tbl.querySelectorAll('tr').forEach(tr => {
-            rows.push(Array.from(tr.querySelectorAll('th,td')).map(c => c.textContent.trim()));
-        });
-        return itemWrapper('📊', 'Таблица', `
-            <div class="table-editor" data-rows='${escapeAttr(JSON.stringify(rows))}'></div>
-            <div class="table-buttons" style="margin-top:8px; display:flex; gap:8px;">
-                <button class="add-table-row">➕ Добавить строку</button>
-                <button class="add-table-col">➕ Добавить столбец</button>
-            </div>
-        `, 'table');
-    }
-    if (className.includes('alert-bar')) {
-        const text = el.querySelector('span:last-child')?.textContent || el.textContent;
-        const type = className.includes('danger') ? 'danger' : (className.includes('success') ? 'success' : 'info');
-        return itemWrapper('⚠️', 'Предупреждение', `
-            <select class="alert-type" style="width:100%; margin-bottom:8px; padding:8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
-                <option value="danger" ${type==='danger'?'selected':''}>🔴 Важное</option>
-                <option value="success" ${type==='success'?'selected':''}>🟢 Успех</option>
-                <option value="info" ${type==='info'?'selected':''}>🔵 Информация</option>
-            </select>
-            <textarea class="alert-text" rows="2" placeholder="Текст" style="width:100%;">${escapeHtml(text)}</textarea>
-        `, 'alert');
-    }
-    if (className.includes('hl')) {
-        const text = el.textContent;
-        const type = className.includes('warn') ? 'warn' : (className.includes('ok') ? 'ok' : 'info');
-        return itemWrapper('💡', 'Примечание', `
-            <select class="note-type" style="width:100%; margin-bottom:8px; padding:8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
-                <option value="info" ${type==='info'?'selected':''}>📘 Обычное</option>
-                <option value="ok" ${type==='ok'?'selected':''}>✅ Успех</option>
-                <option value="warn" ${type==='warn'?'selected':''}>⚠️ Важное</option>
-            </select>
-            <textarea class="note-text" rows="2" placeholder="Текст" style="width:100%;">${escapeHtml(text)}</textarea>
-        `, 'note');
-    }
-    if (className.includes('steps') || el.querySelector?.('.step-num')) {
-        const steps = [];
-        el.querySelectorAll('.step').forEach(s => {
-            steps.push({
-                title: s.querySelector('.step-body strong')?.textContent || '',
-                desc: s.querySelector('.step-body span')?.textContent || ''
-            });
-        });
-        const stepsHtml = steps.map((s, i) => `
-            <div class="step-item" style="background:var(--surface2); border-radius:8px; padding:12px; margin-bottom:8px;">
-                <div class="step-header" style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                    <span class="step-num-display" style="background:var(--accent); color:white; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">${i+1}</span>
-                    <input type="text" class="step-title" value="${escapeHtml(s.title)}" placeholder="Заголовок" style="flex:1; padding:6px 10px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text);">
-                </div>
-                <textarea class="step-desc" rows="2" placeholder="Описание" style="width:100%; padding:8px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text); resize:vertical;">${escapeHtml(s.desc)}</textarea>
-                <button class="remove-step-btn" style="margin-top:6px; background:rgba(252,92,124,0.15); border:1px solid rgba(252,92,124,0.3); border-radius:6px; padding:4px 10px; color:var(--accent2); cursor:pointer; font-size:12px;">🗑 Удалить шаг</button>
-            </div>
-        `).join('');
-        return itemWrapper('🔢', 'Нумерованные шаги', `
-            <div class="steps-editor">${stepsHtml}</div>
-            <button class="add-step-btn" style="margin-top:6px; background:var(--accent-glow); border:1px solid var(--accent); border-radius:6px; padding:6px 12px; color:var(--accent); cursor:pointer; font-size:12px;">➕ Добавить шаг</button>
-        `, 'steps');
-    }
-    if (el.querySelector?.('ul') && !className.includes('info-card')) {
-        const items = Array.from(el.querySelectorAll('li')).map(li => li.textContent.trim());
-        return itemWrapper('📋', 'Маркированный список', `
-            <div class="list-editor" data-type="unordered">
-                <div class="list-items">${items.map(i => `<div class="list-item"><input type="text" value="${escapeHtml(i)}" placeholder="Пункт"><button class="remove-list-item">✕</button></div>`).join('')}</div>
-                <button class="add-list-item">➕ Добавить пункт</button>
-            </div>
-        `, 'list');
-    }
-    return itemWrapper('📝', 'Текст', richEditorBlock(el.innerHTML), 'text');
-}
-
-function extractQuizData(el) {
-    const questions = [];
-    el.querySelectorAll('.quiz-question').forEach(q => {
-        const text = q.querySelector('.quiz-question-text')?.textContent?.replace(/^\d+\.\s*/, '') || '';
-        const options = Array.from(q.querySelectorAll('.quiz-option span')).map(s => s.textContent.trim());
-        questions.push({ text, options, correct: 0 });
-    });
-    return JSON.stringify(questions);
-}
-
-function escapeAttr(str) {
-    if (!str) return '';
-    return str.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
-}
-
 function addElementToEditor(editorArea, action) {
     const emptyMsg = editorArea.querySelector('.editor-empty');
     if (emptyMsg) emptyMsg.remove();
@@ -414,14 +399,14 @@ function addElementToEditor(editorArea, action) {
                 <div class="steps-editor">
                     <div class="step-item" style="background:var(--surface2); border-radius:8px; padding:12px; margin-bottom:8px;">
                         <div class="step-header" style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                            <span class="step-num-display" style="background:var(--accent); color:white; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">1</span>
-                            <input type="text" class="step-title" placeholder="Заголовок" style="flex:1; padding:6px 10px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text);">
+                            <span class="step-num-display" style="background:var(--accent); color:white; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px;">1</span>
+                            <input type="text" class="step-title" placeholder="Заголовок" style="flex:1; padding:6px 10px;">
                         </div>
-                        <textarea class="step-desc" rows="2" placeholder="Описание" style="width:100%; padding:8px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text); resize:vertical;"></textarea>
-                        <button class="remove-step-btn" style="margin-top:6px; background:rgba(252,92,124,0.15); border:1px solid rgba(252,92,124,0.3); border-radius:6px; padding:4px 10px; color:var(--accent2); cursor:pointer; font-size:12px;">🗑 Удалить шаг</button>
+                        <textarea class="step-desc" rows="2" placeholder="Описание" style="width:100%; padding:8px;"></textarea>
+                        <button class="remove-step-btn" style="margin-top:6px; background:rgba(252,92,124,0.15); border-radius:6px; padding:4px 10px;">🗑 Удалить шаг</button>
                     </div>
                 </div>
-                <button class="add-step-btn" style="margin-top:6px; background:var(--accent-glow); border:1px solid var(--accent); border-radius:6px; padding:6px 12px; color:var(--accent); cursor:pointer; font-size:12px;">➕ Добавить шаг</button>
+                <button class="add-step-btn" style="margin-top:6px; background:var(--accent-glow); border:1px solid var(--accent); border-radius:6px; padding:6px 12px;">➕ Добавить шаг</button>
             `, 'steps');
             break;
         case 'add-table':
@@ -435,7 +420,7 @@ function addElementToEditor(editorArea, action) {
             break;
         case 'add-alert':
             html = itemWrapper('⚠️', 'Предупреждение', `
-                <select class="alert-type" style="width:100%; margin-bottom:8px; padding:8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+                <select class="alert-type" style="width:100%; margin-bottom:8px; padding:8px;">
                     <option value="danger">🔴 Важное</option>
                     <option value="success">🟢 Успех</option>
                     <option value="info">🔵 Информация</option>
@@ -445,7 +430,7 @@ function addElementToEditor(editorArea, action) {
             break;
         case 'add-note':
             html = itemWrapper('💡', 'Примечание', `
-                <select class="note-type" style="width:100%; margin-bottom:8px; padding:8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text);">
+                <select class="note-type" style="width:100%; margin-bottom:8px; padding:8px;">
                     <option value="info">📘 Обычное</option>
                     <option value="ok">✅ Успех</option>
                     <option value="warn">⚠️ Важное</option>
@@ -455,8 +440,19 @@ function addElementToEditor(editorArea, action) {
             break;
         case 'add-dropdown':
             html = itemWrapper('📁', 'Выпадающий список', `
-                <input type="text" class="dropdown-title" placeholder="Заголовок" style="width:100%; margin-bottom:8px;">
-                ${richEditorBlock()}
+                <input type="text" class="dropdown-title" placeholder="Заголовок списка" style="width:100%; margin-bottom:12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px;">
+                <div class="dropdown-editor">
+                    <div class="dropdown-items">
+                        <div class="dropdown-item" style="background: var(--surface2); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                            <div class="dropdown-item-header" style="display: flex; gap: 8px; margin-bottom: 8px;">
+                                <input type="text" class="dropdown-item-title" placeholder="Заголовок пункта" style="flex:1; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;">
+                                <button class="remove-dropdown-item" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer;">🗑</button>
+                            </div>
+                            <textarea class="dropdown-item-desc" rows="2" placeholder="Описание пункта" style="width:100%; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; resize: vertical;"></textarea>
+                        </div>
+                    </div>
+                    <button class="add-dropdown-item" style="margin-top: 8px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 8px 12px; color: var(--accent); cursor: pointer;">➕ Добавить пункт</button>
+                </div>
             `, 'dropdown');
             break;
         case 'add-card':
@@ -471,7 +467,7 @@ function addElementToEditor(editorArea, action) {
         case 'add-quiz':
             html = itemWrapper('📋', 'Опросник', `
                 <div class="quiz-editor" data-questions='[]'></div>
-                <button class="add-quiz-question" style="margin-top:8px; background:var(--accent-glow); border:1px solid var(--accent); border-radius:6px; padding:6px 12px; color:var(--accent); cursor:pointer;">➕ Добавить вопрос</button>
+                <button class="add-quiz-question" style="margin-top:8px; background:var(--accent-glow); border:1px solid var(--accent); border-radius:6px; padding:6px 12px;">➕ Добавить вопрос</button>
             `, 'quiz');
             break;
     }
@@ -486,9 +482,195 @@ function addElementToEditor(editorArea, action) {
         setupListEditors(lastItem);
         setupStepsEditors(lastItem);
         setupQuizEditors(lastItem);
+        setupDropdownEditors(lastItem);
         setupDragAndDrop(editorArea);
         lastItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
+}
+
+function convertEditorToHtml(editorArea) {
+    let html = '';
+    editorArea.querySelectorAll('.editor-item').forEach(item => {
+        const type = item.dataset.type;
+        switch(type) {
+            case 'text': {
+                const content = item.querySelector('.rich-editor')?.innerHTML || '';
+                if (content.trim()) html += `<div>${content}</div>`;
+                break;
+            }
+            case 'list': {
+                const items = Array.from(item.querySelectorAll('.list-item input')).map(i => i.value.trim()).filter(Boolean);
+                if (items.length) html += `<ul>${items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
+                break;
+            }
+            case 'steps': {
+                const steps = [];
+                item.querySelectorAll('.step-item').forEach(s => {
+                    const title = s.querySelector('.step-title')?.value.trim() || '';
+                    const desc = s.querySelector('.step-desc')?.value.trim() || '';
+                    if (title || desc) steps.push({ title, desc });
+                });
+                if (steps.length) {
+                    html += '<div class="steps">' + steps.map((s, i) => `
+                        <div class="step">
+                            <div class="step-num">${i+1}</div>
+                            <div class="step-body">
+                                <strong>${escapeHtml(s.title)}</strong>
+                                <span>${escapeHtml(s.desc)}</span>
+                            </div>
+                        </div>`).join('') + '</div>';
+                }
+                break;
+            }
+            case 'table': {
+                updateTableData(item.querySelector('.table-editor'));
+                const rows = JSON.parse(item.querySelector('.table-editor')?.dataset.rows || '[]');
+                if (rows.length > 1) {
+                    html += `<table class="ref-table"><thead> tr<${rows[0].map(c => `<th>${escapeHtml(c)}</th>`).join('')} </thead><tbody>`;
+                    for (let i = 1; i < rows.length; i++) {
+                        html += `<tr>${rows[i].map(c => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`;
+                    }
+                    html += '</tbody></table>';
+                }
+                break;
+            }
+            case 'alert': {
+                const alertType = item.querySelector('.alert-type')?.value || 'info';
+                const alertText = item.querySelector('.alert-text')?.value || '';
+                if (alertText) {
+                    const icon = alertType === 'danger' ? '🚨' : (alertType === 'success' ? '✅' : 'ℹ️');
+                    html += `<div class="alert-bar ${alertType}"><span>${icon}</span><span>${escapeHtml(alertText)}</span></div>`;
+                }
+                break;
+            }
+            case 'note': {
+                const noteType = item.querySelector('.note-type')?.value || 'info';
+                const noteText = item.querySelector('.note-text')?.value || '';
+                if (noteText) {
+                    const cls = noteType === 'warn' ? 'hl warn' : (noteType === 'ok' ? 'hl ok' : 'hl info');
+                    html += `<div class="${cls}">${escapeHtml(noteText)}</div>`;
+                }
+                break;
+            }
+            case 'dropdown': {
+                const title = item.querySelector('.dropdown-title')?.value || '';
+                const items = [];
+                item.querySelectorAll('.dropdown-item').forEach(di => {
+                    const itemTitle = di.querySelector('.dropdown-item-title')?.value || '';
+                    const itemDesc = di.querySelector('.dropdown-item-desc')?.value || '';
+                    if (itemTitle || itemDesc) {
+                        items.push({ title: itemTitle, desc: itemDesc });
+                    }
+                });
+                
+                if (title || items.length) {
+                    html += `<details>
+                        <summary>${escapeHtml(title)}</summary>
+                        <div class="acc-body">
+                            ${items.length ? `<ul>${items.map(item => `<li><strong>${escapeHtml(item.title)}</strong> — ${escapeHtml(item.desc)}</li>`).join('')}</ul>` : ''}
+                        </div>
+                    </details>`;
+                }
+                break;
+            }
+            case 'card': {
+                const ctitle = item.querySelector('.card-title')?.value || '';
+                const citems = Array.from(item.querySelectorAll('.list-item input')).map(i => i.value.trim()).filter(Boolean);
+                if (ctitle || citems.length) {
+                    html += `<div class="info-card">${ctitle ? `<h3>${escapeHtml(ctitle)}</h3>` : ''}${citems.length ? `<ul>${citems.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>` : ''}</div>`;
+                }
+                break;
+            }
+            case 'quiz': {
+                const questions = [];
+                item.querySelectorAll('.quiz-question-editor').forEach(q => {
+                    const text = q.querySelector('.quiz-question-text')?.value.trim() || '';
+                    const options = Array.from(q.querySelectorAll('.quiz-option-editor input[type=text]')).map(i => i.value.trim());
+                    const correctR = q.querySelector('input[type=radio]:checked');
+                    const correct = correctR ? parseInt(correctR.value) : 0;
+                    if (text && options.length >= 2) questions.push({ text, options, correct });
+                });
+                if (questions.length) {
+                    const ts = Date.now();
+                    html += `<div class="quiz-block"><div class="quiz-title">📋 Опросник</div>` +
+                        questions.map((q, qi) => `
+                            <div class="quiz-question">
+                                <div class="quiz-question-text">${qi+1}. ${escapeHtml(q.text)}</div>
+                                <div class="quiz-options">
+                                    ${q.options.map((opt, oi) => `
+                                        <label class="quiz-option">
+                                            <input type="radio" name="quiz_${ts}_${qi}" value="${oi}">
+                                            <span>${escapeHtml(opt)}</span>
+                                        </label>`).join('')}
+                                </div>
+                                <div class="quiz-answer" id="qa_${ts}_${qi}"></div>
+                            </div>`).join('') +
+                        `<button class="quiz-btn" onclick="checkQuizInline(this)">✅ Проверить</button>
+                         <button class="quiz-btn quiz-reset" onclick="resetQuizInline(this)">🔄 Сбросить</button>
+                         <div class="quiz-result"></div></div>`;
+                }
+                break;
+            }
+        }
+    });
+    return html;
+}
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+function setupDragAndDrop(editorArea) {
+    let draggedItem = null;
+    let dragOverItem = null;
+
+    function onDragStart(e) {
+        draggedItem = e.currentTarget.closest('.editor-item');
+        if (draggedItem) {
+            draggedItem.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+    }
+    function onDragEnd(e) {
+        if (draggedItem) draggedItem.classList.remove('dragging');
+        editorArea.querySelectorAll('.editor-item').forEach(i => i.classList.remove('drag-over'));
+        draggedItem = null;
+        dragOverItem = null;
+    }
+    function onDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const item = e.currentTarget.closest('.editor-item');
+        if (item && item !== draggedItem) {
+            editorArea.querySelectorAll('.editor-item').forEach(i => i.classList.remove('drag-over'));
+            item.classList.add('drag-over');
+            dragOverItem = item;
+        }
+    }
+    function onDrop(e) {
+        e.preventDefault();
+        if (draggedItem && dragOverItem && draggedItem !== dragOverItem) {
+            if (draggedItem.compareDocumentPosition(dragOverItem) & 2) {
+                dragOverItem.before(draggedItem);
+            } else {
+                dragOverItem.after(draggedItem);
+            }
+        }
+        editorArea.querySelectorAll('.editor-item').forEach(i => i.classList.remove('drag-over'));
+    }
+
+    function attachDragHandlers() {
+        editorArea.querySelectorAll('.editor-item').forEach(item => {
+            if (item.getAttribute('data-drag-init')) return;
+            item.setAttribute('data-drag-init', '1');
+            item.setAttribute('draggable', 'true');
+            item.addEventListener('dragstart', onDragStart);
+            item.addEventListener('dragend', onDragEnd);
+            item.addEventListener('dragover', onDragOver);
+            item.addEventListener('drop', onDrop);
+        });
+    }
+
+    attachDragHandlers();
+    const observer = new MutationObserver(attachDragHandlers);
+    observer.observe(editorArea, { childList: true });
 }
 
 function setupRichEditors(container) {
@@ -547,11 +729,11 @@ function setupStepsEditors(container) {
                 newStep.style.cssText = 'background:var(--surface2); border-radius:8px; padding:12px; margin-bottom:8px;';
                 newStep.innerHTML = `
                     <div class="step-header" style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                        <span class="step-num-display" style="background:var(--accent); color:white; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">${stepNum}</span>
-                        <input type="text" class="step-title" placeholder="Заголовок" style="flex:1; padding:6px 10px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text);">
+                        <span class="step-num-display" style="background:var(--accent); color:white; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px;">${stepNum}</span>
+                        <input type="text" class="step-title" placeholder="Заголовок" style="flex:1; padding:6px 10px;">
                     </div>
-                    <textarea class="step-desc" rows="2" placeholder="Описание" style="width:100%; padding:8px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text); resize:vertical;"></textarea>
-                    <button class="remove-step-btn" style="margin-top:6px; background:rgba(252,92,124,0.15); border:1px solid rgba(252,92,124,0.3); border-radius:6px; padding:4px 10px; color:var(--accent2); cursor:pointer; font-size:12px;">🗑 Удалить шаг</button>
+                    <textarea class="step-desc" rows="2" placeholder="Описание" style="width:100%; padding:8px;"></textarea>
+                    <button class="remove-step-btn" style="margin-top:6px; background:rgba(252,92,124,0.15); border-radius:6px; padding:4px 10px;">🗑 Удалить шаг</button>
                 `;
                 const removeBtn = newStep.querySelector('.remove-step-btn');
                 removeBtn.addEventListener('click', () => { newStep.remove(); updateStepNumbers(editor); });
@@ -625,23 +807,23 @@ function initTableEditor(container) {
     for (let i = 0; i < rows[0].length; i++) {
         html += `<th style="border:1px solid var(--border); padding:6px; background:var(--surface2);">
             <input type="text" class="table-header" value="${escapeHtml(rows[0][i]||'')}" placeholder="Заголовок ${i+1}"
-                style="width:100%; background:transparent; border:none; padding:2px; color:var(--text); font-weight:600;">
+                style="width:100%; background:transparent; border:none; padding:2px;">
         </th>`;
     }
-    html += `<th style="width:36px; border:1px solid var(--border);"></th> </thead><tbody>`;
+    html += `<th style="width:36px; border:1px solid var(--border);"></th></tr></thead><tbody>`;
     for (let i = 1; i < rows.length; i++) {
-        html += '端';
+        html += '<tr>';
         for (let j = 0; j < rows[i].length; j++) {
             html += `<td style="border:1px solid var(--border); padding:6px;">
                 <input type="text" class="table-cell" value="${escapeHtml(rows[i][j]||'')}" placeholder="Значение"
-                    style="width:100%; background:transparent; border:none; padding:2px; color:var(--text);">
-             </td>`;
+                    style="width:100%; background:transparent; border:none; padding:2px;">
+                </td>`;
         }
         html += `<td style="border:1px solid var(--border); text-align:center; padding:4px;">
-            <button class="remove-table-row" style="background:rgba(252,92,124,0.15); border:none; border-radius:4px; padding:3px 7px; cursor:pointer; color:var(--accent2);">🗑</button>
-         </td> </tr>`;
+            <button class="remove-table-row" style="background:rgba(252,92,124,0.15); border:none; border-radius:4px; padding:3px 7px; cursor:pointer;">🗑</button>
+        </td></tr>`;
     }
-    html += '</tbody> </table>';
+    html += '</tbody></table>';
     container.innerHTML = html;
 
     container.querySelectorAll('.remove-table-row').forEach(btn => {
@@ -679,7 +861,7 @@ function initQuizEditor(editor) {
     try { questions = JSON.parse(editor.dataset.questions || '[]'); } catch(e) {}
     editor.innerHTML = '';
     if (questions.length === 0) {
-        editor.innerHTML = `<div style="color:var(--muted); font-size:12px; padding:12px; text-align:center; background:var(--surface2); border-radius:8px;">📋 Нажмите "Добавить вопрос" чтобы создать опросник</div>`;
+        editor.innerHTML = `<div style="color:var(--muted); font-size:12px; padding:12px; text-align:center;">📋 Нажмите "Добавить вопрос" чтобы создать опросник</div>`;
     } else {
         questions.forEach((q, idx) => {
             const qId = Date.now() + idx;
@@ -688,25 +870,23 @@ function initQuizEditor(editor) {
             qDiv.style.cssText = 'background:var(--surface2); border-radius:12px; padding:16px; margin-bottom:12px; border-left:3px solid var(--accent);';
             qDiv.innerHTML = `
                 <div style="margin-bottom:10px;">
-                    <label style="display:block; margin-bottom:5px; font-size:11px; color:var(--muted);">📝 Вопрос:</label>
-                    <input type="text" class="quiz-question-text" value="${escapeHtml(q.text)}" placeholder="Введите вопрос"
-                        style="width:100%; padding:8px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text);">
+                    <label style="display:block; margin-bottom:5px; font-size:11px;">📝 Вопрос:</label>
+                    <input type="text" class="quiz-question-text" value="${escapeHtml(q.text)}" placeholder="Введите вопрос" style="width:100%; padding:8px;">
                 </div>
                 <div class="quiz-options-editor" style="margin-bottom:8px;">
                     ${(q.options || []).map((opt, oi) => `
                         <div class="quiz-option-editor" style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
-                            <input type="text" value="${escapeHtml(opt)}" placeholder="Вариант"
-                                style="flex:1; padding:7px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text);">
-                            <label style="display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; font-size:11px; color:var(--accent3);">
+                            <input type="text" value="${escapeHtml(opt)}" placeholder="Вариант" style="flex:1; padding:7px;">
+                            <label style="display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; font-size:11px;">
                                 <input type="radio" name="correct_${qId}" value="${oi}" ${q.correct===oi?'checked':''}>✓ Верный
                             </label>
-                            <button class="remove-option-btn" style="background:rgba(252,92,124,0.15); border:none; border-radius:5px; padding:5px 8px; color:var(--accent2); cursor:pointer;">🗑</button>
+                            <button class="remove-option-btn" style="background:rgba(252,92,124,0.15); border:none; border-radius:5px; padding:5px 8px;">🗑</button>
                         </div>
                     `).join('')}
                 </div>
                 <div style="display:flex; gap:8px;">
-                    <button class="add-option-btn" style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:5px 10px; color:var(--text); cursor:pointer; font-size:12px;">➕ Вариант</button>
-                    <button class="remove-question-btn" style="background:rgba(252,92,124,0.15); border:1px solid rgba(252,92,124,0.3); border-radius:6px; padding:5px 10px; color:var(--accent2); cursor:pointer; font-size:12px;">🗑 Вопрос</button>
+                    <button class="add-option-btn" style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:5px 10px;">➕ Вариант</button>
+                    <button class="remove-question-btn" style="background:rgba(252,92,124,0.15); border-radius:6px; padding:5px 10px;">🗑 Вопрос</button>
                 </div>
             `;
             editor.appendChild(qDiv);
@@ -724,22 +904,21 @@ function handleAddQuestion(editor) {
     qDiv.style.cssText = 'background:var(--surface2); border-radius:12px; padding:16px; margin-bottom:12px; border-left:3px solid var(--accent);';
     qDiv.innerHTML = `
         <div style="margin-bottom:10px;">
-            <label style="display:block; margin-bottom:5px; font-size:11px; color:var(--muted);">📝 Вопрос:</label>
-            <input type="text" class="quiz-question-text" placeholder="Введите вопрос"
-                style="width:100%; padding:8px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text);">
+            <label style="display:block; margin-bottom:5px; font-size:11px;">📝 Вопрос:</label>
+            <input type="text" class="quiz-question-text" placeholder="Введите вопрос" style="width:100%; padding:8px;">
         </div>
         <div class="quiz-options-editor" style="margin-bottom:8px;">
             <div class="quiz-option-editor" style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
-                <input type="text" placeholder="Вариант ответа" style="flex:1; padding:7px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text);">
-                <label style="display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; font-size:11px; color:var(--accent3);">
+                <input type="text" placeholder="Вариант ответа" style="flex:1; padding:7px;">
+                <label style="display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; font-size:11px;">
                     <input type="radio" name="correct_${qId}" value="0" checked>✓ Верный
                 </label>
-                <button class="remove-option-btn" style="background:rgba(252,92,124,0.15); border:none; border-radius:5px; padding:5px 8px; color:var(--accent2); cursor:pointer;">🗑</button>
+                <button class="remove-option-btn" style="background:rgba(252,92,124,0.15); border:none; border-radius:5px; padding:5px 8px;">🗑</button>
             </div>
         </div>
         <div style="display:flex; gap:8px;">
-            <button class="add-option-btn" style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:5px 10px; color:var(--text); cursor:pointer; font-size:12px;">➕ Вариант</button>
-            <button class="remove-question-btn" style="background:rgba(252,92,124,0.15); border:1px solid rgba(252,92,124,0.3); border-radius:6px; padding:5px 10px; color:var(--accent2); cursor:pointer; font-size:12px;">🗑 Вопрос</button>
+            <button class="add-option-btn" style="background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:5px 10px;">➕ Вариант</button>
+            <button class="remove-question-btn" style="background:rgba(252,92,124,0.15); border-radius:6px; padding:5px 10px;">🗑 Вопрос</button>
         </div>
     `;
     editor.appendChild(qDiv);
@@ -755,11 +934,11 @@ function setupQuestionHandlers(qDiv, qId) {
         newOpt.className = 'quiz-option-editor';
         newOpt.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:6px;';
         newOpt.innerHTML = `
-            <input type="text" placeholder="Вариант ответа" style="flex:1; padding:7px; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text);">
-            <label style="display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; font-size:11px; color:var(--accent3);">
+            <input type="text" placeholder="Вариант ответа" style="flex:1; padding:7px;">
+            <label style="display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; font-size:11px;">
                 <input type="radio" name="correct_${qId}" value="${count}">✓ Верный
             </label>
-            <button class="remove-option-btn" style="background:rgba(252,92,124,0.15); border:none; border-radius:5px; padding:5px 8px; color:var(--accent2); cursor:pointer;">🗑</button>
+            <button class="remove-option-btn" style="background:rgba(252,92,124,0.15); border:none; border-radius:5px; padding:5px 8px;">🗑</button>
         `;
         optCont.appendChild(newOpt);
         newOpt.querySelector('.remove-option-btn').addEventListener('click', () => newOpt.remove());
@@ -769,129 +948,6 @@ function setupQuestionHandlers(qDiv, qId) {
     qDiv.querySelectorAll('.remove-option-btn').forEach(btn => {
         btn.addEventListener('click', () => btn.closest('.quiz-option-editor').remove());
     });
-}
-
-function convertEditorToHtml(editorArea) {
-    let html = '';
-    editorArea.querySelectorAll('.editor-item').forEach(item => {
-        const type = item.dataset.type;
-        switch(type) {
-            case 'text': {
-                const content = item.querySelector('.rich-editor')?.innerHTML || '';
-                if (content.trim()) html += `<div>${content}</div>`;
-                break;
-            }
-            case 'list': {
-                const items = Array.from(item.querySelectorAll('.list-item input')).map(i => i.value.trim()).filter(Boolean);
-                if (items.length) html += `<ul>${items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
-                break;
-            }
-            case 'steps': {
-                const steps = [];
-                item.querySelectorAll('.step-item').forEach(s => {
-                    const title = s.querySelector('.step-title')?.value.trim() || '';
-                    const desc = s.querySelector('.step-desc')?.value.trim() || '';
-                    if (title || desc) steps.push({ title, desc });
-                });
-                if (steps.length) {
-                    html += '<div class="steps">' + steps.map((s, i) => `
-                        <div class="step">
-                            <div class="step-num">${i+1}</div>
-                            <div class="step-body">
-                                <strong>${escapeHtml(s.title)}</strong>
-                                <span>${escapeHtml(s.desc)}</span>
-                            </div>
-                        </div>`).join('') + '</div>';
-                }
-                break;
-            }
-            case 'table': {
-                updateTableData(item.querySelector('.table-editor'));
-                const rows = JSON.parse(item.querySelector('.table-editor')?.dataset.rows || '[]');
-                if (rows.length > 1) {
-                    html += `<table class="ref-table"><thead> <tr>${rows[0].map(c => `<th>${escapeHtml(c)}</th>`).join('')} </tr> </thead><tbody>`;
-                    for (let i = 1; i < rows.length; i++) {
-                        html += `<tr>${rows[i].map(c => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`;
-                    }
-                    html += '</tbody> </table>';
-                }
-                break;
-            }
-            case 'alert': {
-                const alertType = item.querySelector('.alert-type')?.value || 'info';
-                const alertText = item.querySelector('.alert-text')?.value || '';
-                if (alertText) {
-                    const icon = alertType === 'danger' ? '🚨' : (alertType === 'success' ? '✅' : 'ℹ️');
-                    html += `<div class="alert-bar ${alertType}"><span>${icon}</span><span>${escapeHtml(alertText)}</span></div>`;
-                }
-                break;
-            }
-            case 'note': {
-                const noteType = item.querySelector('.note-type')?.value || 'info';
-                const noteText = item.querySelector('.note-text')?.value || '';
-                if (noteText) {
-                    const cls = noteType === 'warn' ? 'hl warn' : (noteType === 'ok' ? 'hl ok' : 'hl info');
-                    html += `<div class="${cls}">${escapeHtml(noteText)}</div>`;
-                }
-                break;
-            }
-            case 'dropdown': {
-                const dtitle = item.querySelector('.dropdown-title')?.value || '';
-                let dcontent = item.querySelector('.rich-editor')?.innerHTML || '';
-                if (!dcontent.trim()) {
-                    dcontent = '<ul><li><strong>Пример пункта 1</strong> — описание</li><li><strong>Пример пункта 2</strong> — описание</li></ul>';
-                }
-                if (dtitle || dcontent) {
-                    html += `<details>
-                        <summary>${escapeHtml(dtitle)}</summary>
-                        <div class="acc-body">
-                            ${dcontent}
-                        </div>
-                    </details>`;
-                }
-                break;
-            }
-            case 'card': {
-                const ctitle = item.querySelector('.card-title')?.value || '';
-                const citems = Array.from(item.querySelectorAll('.list-item input')).map(i => i.value.trim()).filter(Boolean);
-                if (ctitle || citems.length) {
-                    html += `<div class="info-card">${ctitle ? `<h3>${escapeHtml(ctitle)}</h3>` : ''}${citems.length ? `<ul>${citems.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>` : ''}</div>`;
-                }
-                break;
-            }
-            case 'quiz': {
-                const questions = [];
-                item.querySelectorAll('.quiz-question-editor').forEach(q => {
-                    const text = q.querySelector('.quiz-question-text')?.value.trim() || '';
-                    const options = Array.from(q.querySelectorAll('.quiz-option-editor input[type=text]')).map(i => i.value.trim());
-                    const correctR = q.querySelector('input[type=radio]:checked');
-                    const correct = correctR ? parseInt(correctR.value) : 0;
-                    if (text && options.length >= 2) questions.push({ text, options, correct });
-                });
-                if (questions.length) {
-                    const ts = Date.now();
-                    html += `<div class="quiz-block"><div class="quiz-title">📋 Опросник</div>` +
-                        questions.map((q, qi) => `
-                            <div class="quiz-question">
-                                <div class="quiz-question-text">${qi+1}. ${escapeHtml(q.text)}</div>
-                                <div class="quiz-options">
-                                    ${q.options.map((opt, oi) => `
-                                        <label class="quiz-option">
-                                            <input type="radio" name="quiz_${ts}_${qi}" value="${oi}">
-                                            <span>${escapeHtml(opt)}</span>
-                                        </label>`).join('')}
-                                </div>
-                                <div class="quiz-answer" id="qa_${ts}_${qi}"></div>
-                            </div>`).join('') +
-                        `<button class="quiz-btn" onclick="checkQuizInline(this)">✅ Проверить</button>
-                         <button class="quiz-btn quiz-reset" onclick="resetQuizInline(this)">🔄 Сбросить</button>
-                         <div class="quiz-result"></div></div>`;
-                }
-                break;
-            }
-        }
-    });
-    return html;
 }
 
 window.checkQuizInline = function(btn) {
@@ -921,6 +977,21 @@ window.resetQuizInline = function(btn) {
     const r = quizBlock.querySelector('.quiz-result');
     if (r) { r.innerHTML = ''; r.className = 'quiz-result'; }
 };
+
+function extractQuizData(el) {
+    const questions = [];
+    el.querySelectorAll('.quiz-question').forEach(q => {
+        const text = q.querySelector('.quiz-question-text')?.textContent?.replace(/^\d+\.\s*/, '') || '';
+        const options = Array.from(q.querySelectorAll('.quiz-option span')).map(s => s.textContent.trim());
+        questions.push({ text, options, correct: 0 });
+    });
+    return JSON.stringify(questions);
+}
+
+function escapeAttr(str) {
+    if (!str) return '';
+    return str.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+}
 
 function escapeHtml(str) {
     if (!str) return '';
