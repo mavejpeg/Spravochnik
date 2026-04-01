@@ -1,4 +1,4 @@
-// main.js - полная версия
+// main.js - полная версия с поддержкой всех страниц
 let isRop = false;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -101,21 +101,28 @@ async function loadUserInfo() {
             isRop = (data.user.role === 'rop' || data.user.role === 'root');
             window.isRopGlobal = isRop;
             window.isRop = isRop;
+            
             if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
             
-            // Настройка кнопок редактирования из editor.js
-            if (typeof window.setupEditButtons === 'function') {
-                window.setupEditButtons();
-            } else {
-                setTimeout(() => {
-                    if (typeof window.setupEditButtons === 'function') {
-                        window.setupEditButtons();
-                    }
-                }, 300);
+            // Показываем кнопку добавления производителя
+            const addBtn = document.querySelector('.btn-add');
+            if (addBtn) {
+                addBtn.style.display = isRop ? 'flex' : 'none';
+                console.log('Add button display set to:', isRop ? 'flex' : 'none');
             }
             
-            const addBtn = document.querySelector('.btn-add');
-            if (addBtn) addBtn.style.display = isRop ? 'flex' : 'none';
+            // Обновляем кнопки редактирования
+            if (typeof window.refreshEditButtons === 'function') {
+                window.refreshEditButtons();
+            } else if (typeof window.setupEditButtons === 'function') {
+                window.setupEditButtons();
+            }
+            
+            // Вызываем перерисовку производителей если есть функция
+            if (typeof window.loadManufacturers === 'function') {
+                window.loadManufacturers();
+            }
+            
         } else {
             window.location.href = '/login.html';
         }
@@ -295,4 +302,5 @@ function escapeHtml(str) {
 }
 
 window.openRopPanel = openRopPanel;
-window.isRop = false;
+window.initTabs = initTabs;
+window.initAccordionsToDetails = initAccordionsToDetails;
