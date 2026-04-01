@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Одноразки — Справочник</title>
-<link rel="stylesheet" href="style.css?v=35">
+<link rel="stylesheet" href="style.css?v=38">
 </head>
 <body>
 
@@ -27,7 +27,6 @@
 
 <main>
 
-  <!-- ПРОИЗВОДИТЕЛИ -->
   <div class="section active" id="tab-manufacturers">
     <div class="sec-header">
       <span class="sec-title">⚡ Производители одноразок</span>
@@ -36,10 +35,11 @@
         Добавить производителя
       </button>
     </div>
-    <div class="manufacturers-grid" id="manufacturersGrid"></div>
+    <div class="manufacturers-grid" id="manufacturersGrid">
+      <div style="text-align: center; padding: 40px; color: var(--muted);">Загрузка производителей...</div>
+    </div>
   </div>
 
-  <!-- ГИД ПО БРЕНДАМ -->
   <div class="section" id="tab-guide">
     <div class="sec-header">
       <span class="sec-title">Гид по брендам</span>
@@ -54,9 +54,9 @@
 
 </main>
 
-<script src="core.js?v=35"></script>
-<script src="main.js?v=35"></script>
-<script src="editor.js?v=1"></script>
+<script src="core.js?v=38"></script>
+<script src="main.js?v=38"></script>
+<script src="editor.js?v=2"></script>
 <script>
   let isRop = false;
 
@@ -84,11 +84,108 @@
     });
   }
 
-  window.onAuthReady = function(ropStatus, user) {
-    isRop = ropStatus;
-    loadManufacturers();
-  };
-  window.loadManufacturers = function() { loadManufacturers(); };
+  async function loadManufacturers() {
+    const grid = document.getElementById('manufacturersGrid');
+    if (!grid) return;
+    
+    try {
+      const response = await fetch('/api/disposables-manufacturers', { credentials: 'include' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      let manufacturers = await response.json();
+      manufacturers = sortManufacturersByClass(manufacturers);
+      
+      grid.innerHTML = '';
+      
+      if (manufacturers.length === 0) {
+        grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);">Нет производителей. Добавьте первого через кнопку выше (доступно только РОП).</div>';
+        return;
+      }
+      
+      for (const manufacturer of manufacturers) {
+        const qualityClass = manufacturer.quality_class || 'medium';
+        const qualityIcon = qualityClass === 'premium' ? '💎' : (qualityClass === 'economy' ? '📦' : '⭐');
+        const qualityName = qualityClass === 'premium' ? 'Премиум' : (qualityClass === 'economy' ? 'Эконом' : 'Средний класс');
+        
+        const card = document.createElement('div');
+        card.className = 'manufacturer-card';
+        card.setAttribute('data-class', qualityClass);
+        card.innerHTML = `
+          <div class="manufacturer-header">
+            <div>
+              <h3>${escapeHtml(manufacturer.name)}</h3>
+              <span class="manufacturer-quality ${qualityClass}">${qualityIcon} ${qualityName}</span>
+            </div>
+            ${isRop ? `<div class="manufacturer-actions">
+              <button class="btn-edit" onclick="editManufacturer(${manufacturer.id})">✏️</button>
+              <button class="btn-delete" onclick="deleteManufacturer(${manufacturer.id})">🗑</button>
+            </div>` : ''}
+          </div>
+          ${manufacturer.logo ? `<img src="${manufacturer.logo}" class="manufacturer-logo">` : ''}
+          <div class="manufacturer-desc">${escapeHtml(manufacturer.description || '')}</div>
+          <button class="btn-expand" onclick="toggleManufacturer(${manufacturer.id})">📂 Показать линейки</button>
+          <div id="lines-${manufacturer.id}" class="lines-container" style="display: none;">
+            <div class="lines-header">
+              <span>Линейки</span>
+              ${isRop ? `<button class="btn-add-line" onclick="openLineModal(${manufacturer.id})">➕ Добавить линейку</button>` : ''}
+            </div>
+            <div id="lines-list-${manufacturer.id}" class="lines-list"></div>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    } catch (error) {
+      console.error('Failed to load manufacturers:', error);
+      grid.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--accent2);">❌ Ошибка загрузки данных. Проверьте подключение.</div>`;
+    }
+  }
+
+  async function toggleManufacturer(manufacturerId) {
+    const container = document.getElementById(`lines-${manufacturerId}`);
+    if (container.style.display === 'block') {
+      container.style.display = 'none';
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/disposables-manufacturers/${manufacturerId}`, { credentials: 'include' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      let lines = data.lines || [];
+      lines = sortLinesByStrength(lines);
+      
+      const linesList = document.getElementById(`lines-list-${manufacturerId}`);
+      linesList.innerHTML = '';
+      
+      if (lines.length === 0) {
+        linesList.innerHTML = '<div style="color: var(--muted); padding: 12px; text-align: center;">Нет линеек</div>';
+      } else {
+        for (const line of lines) {
+          const colorConfig = strengthColors[line.strength_color || 'medium'];
+          const lineDiv = document.createElement('div');
+          lineDiv.className = 'line-card';
+          lineDiv.style.borderLeft = `4px solid ${colorConfig.color}`;
+          lineDiv.innerHTML = `
+            <div class="line-header">
+              <div>
+                <span class="line-name">${escapeHtml(line.name)}</span>
+                <span class="line-strength-badge" style="background: ${colorConfig.bg}; color: ${colorConfig.color}; padding: 2px 8px; border-radius: 20px; font-size: 10px;">${colorConfig.name}</span>
+              </div>
+              ${isRop ? `<div>
+                <button class="btn-edit-small" onclick="editLine(${line.id}, ${manufacturerId})">✏️</button>
+                <button class="btn-delete-small" onclick="deleteLine(${line.id})">🗑</button>
+              </div>` : ''}
+            </div>
+            <div class="line-desc">${line.description || ''}</div>
+          `;
+          linesList.appendChild(lineDiv);
+        }
+      }
+      container.style.display = 'block';
+    } catch (error) {
+      console.error('Failed to load lines:', error);
+      alert('Ошибка загрузки линеек');
+    }
+  }
 
   function openManufacturerModal(editData = null) {
     const isEdit = !!editData;
@@ -341,87 +438,6 @@
     });
   }
 
-  async function loadManufacturers() {
-    const response = await fetch('/api/disposables-manufacturers', { credentials: 'include' });
-    let manufacturers = await response.json();
-    manufacturers = sortManufacturersByClass(manufacturers);
-    
-    const grid = document.getElementById('manufacturersGrid');
-    grid.innerHTML = '';
-    
-    for (const manufacturer of manufacturers) {
-      const qualityClass = manufacturer.quality_class || 'medium';
-      const qualityIcon = qualityClass === 'premium' ? '💎' : (qualityClass === 'economy' ? '📦' : '⭐');
-      const qualityName = qualityClass === 'premium' ? 'Премиум' : (qualityClass === 'economy' ? 'Эконом' : 'Средний класс');
-      
-      const card = document.createElement('div');
-      card.className = 'manufacturer-card';
-      card.setAttribute('data-class', qualityClass);
-      card.innerHTML = `
-        <div class="manufacturer-header">
-          <div>
-            <h3>${escapeHtml(manufacturer.name)}</h3>
-            <span class="manufacturer-quality ${qualityClass}">${qualityIcon} ${qualityName}</span>
-          </div>
-          ${isRop ? `<div class="manufacturer-actions">
-            <button class="btn-edit" onclick="editManufacturer(${manufacturer.id})">✏️</button>
-            <button class="btn-delete" onclick="deleteManufacturer(${manufacturer.id})">🗑</button>
-          </div>` : ''}
-        </div>
-        ${manufacturer.logo ? `<img src="${manufacturer.logo}" class="manufacturer-logo">` : ''}
-        <div class="manufacturer-desc">${escapeHtml(manufacturer.description || '')}</div>
-        <button class="btn-expand" onclick="toggleManufacturer(${manufacturer.id})">📂 Показать линейки</button>
-        <div id="lines-${manufacturer.id}" class="lines-container" style="display: none;">
-          <div class="lines-header">
-            <span>Линейки</span>
-            ${isRop ? `<button class="btn-add-line" onclick="openLineModal(${manufacturer.id})">➕ Добавить линейку</button>` : ''}
-          </div>
-          <div id="lines-list-${manufacturer.id}" class="lines-list"></div>
-        </div>
-      `;
-      grid.appendChild(card);
-    }
-  }
-
-  async function toggleManufacturer(manufacturerId) {
-    const container = document.getElementById(`lines-${manufacturerId}`);
-    if (container.style.display === 'block') {
-      container.style.display = 'none';
-      return;
-    }
-    
-    const response = await fetch(`/api/disposables-manufacturers/${manufacturerId}`, { credentials: 'include' });
-    const data = await response.json();
-    let lines = data.lines || [];
-    lines = sortLinesByStrength(lines);
-    
-    const linesList = document.getElementById(`lines-list-${manufacturerId}`);
-    linesList.innerHTML = '';
-    
-    for (const line of lines) {
-      const colorConfig = strengthColors[line.strength_color || 'medium'];
-      
-      const lineDiv = document.createElement('div');
-      lineDiv.className = 'line-card';
-      lineDiv.style.borderLeft = `4px solid ${colorConfig.color}`;
-      lineDiv.innerHTML = `
-        <div class="line-header">
-          <div>
-            <span class="line-name">${escapeHtml(line.name)}</span>
-            <span class="line-strength-badge" style="background: ${colorConfig.bg}; color: ${colorConfig.color}; padding: 2px 8px; border-radius: 20px; font-size: 10px;">${colorConfig.name}</span>
-          </div>
-          ${isRop ? `<div>
-            <button class="btn-edit-small" onclick="editLine(${line.id}, ${manufacturerId})">✏️</button>
-            <button class="btn-delete-small" onclick="deleteLine(${line.id})">🗑</button>
-          </div>` : ''}
-        </div>
-        <div class="line-desc">${line.description || ''}</div>
-      `;
-      linesList.appendChild(lineDiv);
-    }
-    container.style.display = 'block';
-  }
-
   async function editLine(lineId, manufacturerId) {
     const response = await fetch(`/api/disposables-lines/${lineId}`, { credentials: 'include' });
     const data = await response.json();
@@ -438,7 +454,8 @@
   window.editManufacturer = (id) => {
     fetch(`/api/disposables-manufacturers/${id}`, { credentials: 'include' })
       .then(res => res.json())
-      .then(data => openManufacturerModal(data));
+      .then(data => openManufacturerModal(data))
+      .catch(err => console.error('Failed to load manufacturer:', err));
   };
   
   async function deleteManufacturer(id) {
@@ -475,6 +492,11 @@
       });
     });
   }
+
+  window.onAuthReady = function(ropStatus, user) {
+    isRop = ropStatus;
+    loadManufacturers();
+  };
 
   document.getElementById('logoutBtn')?.addEventListener('click', async () => {
     await fetch('/api/logout', { method: 'POST', credentials: 'include' });
@@ -608,7 +630,6 @@
 
   initTabs();
   initAccordions();
-  // main.js вызовет onAuthReady
 </script>
 
 <style>
