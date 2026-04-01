@@ -1,307 +1,40 @@
-// main.js v3.4 - работающие аккордеоны
-window.isRop = false;
-window.isRopGlobal = false;
-window._authLoaded = false;
+// Добавьте в server.js (если еще нет)
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Main.js v3.4 loaded');
-    initTabs();
-    initAccordions();
-    initSearch();
-    loadUserInfo();
-    setupLogout();
-    setupRopPanel();
+// ========== CONTENT MANAGEMENT ==========
+
+app.get('/api/content/:page/:section', async (req, res) => {
+    const { page, section } = req.params;
+    try {
+        const result = await pool.query(
+            'SELECT content FROM content WHERE page = $1 AND section = $2',
+            [page, section]
+        );
+        res.json({ content: result.rows[0]?.content || '' });
+    } catch (error) {
+        console.error('Get content error:', error);
+        res.json({ content: '' });
+    }
 });
 
-function initTabs() {
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    tabBtns.forEach(btn => {
-        btn.removeEventListener('click', handleTabClick);
-        btn.addEventListener('click', handleTabClick);
-    });
-}
-
-function handleTabClick(e) {
-    const btn = e.currentTarget;
-    const target = btn.dataset.tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    btn.classList.add('active');
-    const sec = document.getElementById(target);
-    if (sec) sec.classList.add('active');
-}
-
-// ========== ПРОСТЫЕ РАБОТАЮЩИЕ АККОРДЕОНЫ ==========
-function initAccordions() {
-    const accordions = document.querySelectorAll('.accordion');
-    console.log('Found accordions:', accordions.length);
+app.post('/api/content/:page/:section', requireRop, async (req, res) => {
+    const { page, section } = req.params;
+    const { content } = req.body;
     
-    accordions.forEach(accordion => {
-        const header = accordion.querySelector('.acc-header');
-        if (header && !accordion.hasAttribute('data-initialized')) {
-            header.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                accordion.classList.toggle('open');
-                console.log('Accordion toggled:', accordion.classList.contains('open'));
-            });
-            accordion.setAttribute('data-initialized', 'true');
-        }
-    });
-}
-
-function initSearch() {
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.removeEventListener('input', handleSearch);
-        searchInput.addEventListener('input', handleSearch);
-    }
-}
-
-function handleSearch(e) {
-    const val = e.target.value.toLowerCase();
-    document.querySelectorAll('[data-searchable]').forEach(el => {
-        el.classList.toggle('search-hidden', !el.textContent.toLowerCase().includes(val));
-    });
-}
-
-// ========== АВТОРИЗАЦИЯ ==========
-async function loadUserInfo() {
+    console.log(`Saving content: page=${page}, section=${section}, content length=${content?.length || 0}`);
+    
     try {
-        console.log('Checking auth...');
-        const response = await fetch('/api/check-auth', { 
-            credentials: 'include',
-            headers: { 'Cache-Control': 'no-cache' }
-        });
-        const data = await response.json();
-        console.log('Auth response:', data);
-
-        if (data.authenticated) {
-            const isRop = (data.user.role === 'rop' || data.user.role === 'root');
-
-            window.isRop = isRop;
-            window.isRopGlobal = isRop;
-            window._authLoaded = true;
-            window._currentUser = data.user;
-            
-            console.log('✅ User authenticated:', data.user.full_name, 'ROP:', isRop);
-
-            const userNameSpan = document.getElementById('userName');
-            const ropBtn = document.getElementById('ropBtn');
-            if (userNameSpan) userNameSpan.textContent = data.user.full_name;
-            if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
-
-            // Показываем кнопку добавления производителя
-            const addManufBtn = document.getElementById('btnAddManufacturer');
-            if (addManufBtn) {
-                addManufBtn.style.display = isRop ? 'flex' : 'none';
-            }
-
-            // Все .btn-add кроме btnAddManufacturer
-            document.querySelectorAll('.btn-add:not(#btnAddManufacturer)').forEach(btn => {
-                btn.style.display = isRop ? 'flex' : 'none';
-            });
-
-            // Кнопки редактирования контента
-            document.querySelectorAll('.btn-edit-content').forEach(btn => {
-                btn.style.display = isRop ? 'inline-flex' : 'none';
-            });
-
-            // Диспатчим событие для editor.js и страничных скриптов
-            window.dispatchEvent(new CustomEvent('authReady', {
-                detail: { isRop, user: data.user }
-            }));
-
-            // Вызываем колбэк страницы если зарегистрирован
-            if (typeof window.onAuthReady === 'function') {
-                window.onAuthReady(isRop, data.user);
-            }
-
-            // Для страниц с производителями
-            if (typeof window.loadManufacturers === 'function') {
-                window.loadManufacturers();
-            }
-            
-            // Инициализация кнопок редактора
-            setTimeout(function() {
-                if (typeof window.setupEditButtons === 'function') {
-                    window.setupEditButtons(isRop);
-                }
-            }, 100);
-            
-            // Повторная инициализация аккордеонов (на случай динамического контента)
-            setTimeout(function() {
-                initAccordions();
-            }, 500);
-
-        } else {
-            console.log('❌ Not authenticated, redirecting to login...');
-            window.location.href = '/login.html';
-        }
+        const result = await pool.query(
+            `INSERT INTO content (page, section, content, updated_at, updated_by) 
+             VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)
+             ON CONFLICT (page, section) 
+             DO UPDATE SET content = EXCLUDED.content, updated_at = CURRENT_TIMESTAMP, updated_by = EXCLUDED.updated_by
+             RETURNING *`,
+            [page, section, content, req.session.user?.username]
+        );
+        console.log('Content saved successfully');
+        res.json({ success: true });
     } catch (error) {
-        console.error('Auth error:', error);
-        window.location.href = '/login.html';
+        console.error('Save content error:', error);
+        res.status(500).json({ error: 'Failed to save content: ' + error.message });
     }
-}
-
-window.refreshEditButtons = function() {
-    const isRop = window.isRopGlobal === true;
-    document.querySelectorAll('.btn-edit-content').forEach(btn => {
-        btn.style.display = isRop ? 'inline-flex' : 'none';
-    });
-    const addManufBtn = document.getElementById('btnAddManufacturer');
-    if (addManufBtn) {
-        addManufBtn.style.display = isRop ? 'flex' : 'none';
-    }
-    if (typeof window.setupEditButtons === 'function') {
-        window.setupEditButtons(isRop);
-    }
-};
-window.setupEditButtons = window.refreshEditButtons;
-
-function setupLogout() {
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.removeEventListener('click', handleLogout);
-        logoutBtn.addEventListener('click', handleLogout);
-    }
-}
-
-async function handleLogout() {
-    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
-    window.location.href = '/login.html';
-}
-
-function setupRopPanel() {
-    const ropBtn = document.getElementById('ropBtn');
-    if (ropBtn) {
-        ropBtn.removeEventListener('click', handleRopPanel);
-        ropBtn.addEventListener('click', handleRopPanel);
-    }
-}
-
-async function handleRopPanel() {
-    await openRopPanel();
-}
-
-async function openRopPanel() {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal" style="max-width: 600px;">
-            <div class="modal-header">
-                <span class="modal-title">👑 Панель управления</span>
-                <button class="modal-close">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="field">
-                    <label>➕ Добавить пользователя</label>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <input type="text" id="newUsername" placeholder="Логин" style="flex:1">
-                        <input type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width: 120px">
-                        <input type="text" id="newFullName" placeholder="ФИО" style="flex:1">
-                        <button id="addUserBtn" class="btn-add">Добавить</button>
-                    </div>
-                </div>
-                <div class="field">
-                    <label>📋 Список пользователей</label>
-                    <div id="usersList" style="max-height: 300px; overflow-y: auto;"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-cancel">Закрыть</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    const closeModal = () => { modal.classList.remove('open'); setTimeout(() => modal.remove(), 300); };
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    await loadUsersList(modal);
-    document.getElementById('addUserBtn').addEventListener('click', async () => {
-        const username = document.getElementById('newUsername').value.trim();
-        const password = document.getElementById('newPassword').value;
-        const full_name = document.getElementById('newFullName').value.trim();
-        if (!username || !password || !full_name) { alert('Заполните все поля'); return; }
-        if (!/^\d{4}$/.test(password)) { alert('Пароль должен быть 4 цифры'); return; }
-        const response = await fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ username, password, full_name, role: 'user' })
-        });
-        if (response.ok) {
-            alert('Пользователь добавлен');
-            document.getElementById('newUsername').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('newFullName').value = '';
-            await loadUsersList(modal);
-        } else {
-            const error = await response.json();
-            alert(error.error);
-        }
-    });
-}
-
-async function loadUsersList(modal) {
-    const response = await fetch('/api/users', { credentials: 'include' });
-    const users = await response.json();
-    const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
-    const me = await meResponse.json();
-    const container = modal.querySelector('#usersList');
-    if (!container) return;
-    container.innerHTML = users.map(user => {
-        let canChange = false;
-        if (me.user.role === 'root') canChange = true;
-        else if (me.user.role === 'rop' && user.role === 'user') canChange = true;
-        let canDelete = false;
-        if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) canDelete = true;
-        return `
-            <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                    <div>
-                        <strong>${escapeHtml(user.full_name)}</strong><br>
-                        <span style="font-size: 11px;">${user.username} | ${user.role === 'root' ? 'ROOT' : (user.role === 'rop' ? 'РОП' : 'Пользователь')}</span>
-                    </div>
-                    <div style="display: flex; gap: 6px;">
-                        ${canChange ? `<button onclick="window.changePasswordUser(${user.id}, '${escapeHtml(user.full_name)}')" class="btn-edit" style="padding: 4px 12px;">🔑 Сменить пароль</button>` : ''}
-                        ${canDelete ? `<button onclick="window.deleteUserById(${user.id})" class="btn-delete" style="padding: 4px 12px;">🗑 Удалить</button>` : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-window.changePasswordUser = async function(userId, userName) {
-    const newPassword = prompt(`Введите новый пароль (4 цифры) для ${userName}`);
-    if (!newPassword) return;
-    if (!/^\d{4}$/.test(newPassword)) { alert('Пароль должен быть 4 цифры'); return; }
-    const response = await fetch(`/api/users/${userId}/change-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ newPassword })
-    });
-    if (response.ok) alert('Пароль успешно изменен');
-    else alert('Ошибка');
-};
-
-window.deleteUserById = async function(userId) {
-    if (confirm('Удалить пользователя?')) {
-        const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
-        if (response.ok) { alert('Пользователь удален'); location.reload(); }
-        else alert('Ошибка');
-    }
-};
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
-}
-
-window.openRopPanel = openRopPanel;
-window.initTabs = initTabs;
-window.initAccordions = initAccordions;
-window.loadUserInfo = loadUserInfo;
+});
