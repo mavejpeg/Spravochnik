@@ -271,11 +271,21 @@ function convertElementToEditorItem(el) {
     const tagName = el.tagName.toLowerCase();
 
     if (tagName === 'details') {
-        const title = el.querySelector('summary')?.innerHTML.replace(/<span[^>]*>.*?<\/span>/g, '').trim() || '';
-        const content = Array.from(el.querySelectorAll(':scope > :not(summary)')).map(c => c.outerHTML).join('');
+    // Получаем заголовок из summary (убираем стрелку)
+        const summaryEl = el.querySelector('summary');
+        let title = '';
+        if (summaryEl) {
+            // Убираем возможные span со стрелкой
+            title = summaryEl.innerHTML.replace(/<span[^>]*>.*?<\/span>/g, '').trim();
+        }
+    
+        // Получаем содержимое body (все что не summary)
+        const bodyEl = el.querySelector('.acc-body') || el;
+        const content = Array.from(bodyEl.children).map(c => c.outerHTML).join('');
+    
         return itemWrapper('📁', 'Выпадающий список', `
             <input type="text" class="dropdown-title" placeholder="Заголовок" value="${escapeHtml(title)}" style="width:100%; margin-bottom:8px;">
-            ${richEditorBlock(content)}
+            ${richEditorBlock(content || '<ul><li>Пункт списка</li></ul>')}
         `, 'dropdown');
     }
     if (className.includes('quiz-block')) {
@@ -835,15 +845,24 @@ function convertEditorToHtml(editorArea) {
             }
             case 'dropdown': {
                 const dtitle = item.querySelector('.dropdown-title')?.value || '';
-                const dcontent = item.querySelector('.rich-editor')?.innerHTML || '';
-                if (dtitle || dcontent) {
-                    html += `<details style="background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:10px;">
-                        <summary style="cursor:pointer; padding:12px 16px; font-weight:600; color:var(--accent); list-style:none; display:flex; justify-content:space-between;">${escapeHtml(dtitle)}<span style="font-size:12px;">▼</span></summary>
-                        ${dcontent}
-                    </details>`;
+                    // Получаем контент из rich-editor и преобразуем его в правильную структуру
+                let dcontent = item.querySelector('.rich-editor')?.innerHTML || '';
+    
+                    // Если контент пустой, создаем структуру по умолчанию
+                    if (!dcontent.trim()) {
+                        dcontent = '<ul><li><strong>Пример пункта 1</strong> — описание</li><li><strong>Пример пункта 2</strong> — описание</li><li><strong>Пример пункта 3</strong> — описание</li></ul>';
+                    }
+    
+                    if (dtitle || dcontent) {
+                        html += `<details>
+                            <summary>${escapeHtml(dtitle)}</summary>
+                            <div class="acc-body">
+                                ${dcontent}
+                            </div>
+                        </details>`;
+                    }
+                    break;
                 }
-                break;
-            }
             case 'card': {
                 const ctitle = item.querySelector('.card-title')?.value || '';
                 const citems = Array.from(item.querySelectorAll('.list-item input')).map(i => i.value.trim()).filter(Boolean);
