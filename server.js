@@ -1,4 +1,4 @@
-// server.js - финальная версия с правильной сессией для Railway
+// server.js - ПОЛНАЯ ВЕРСИЯ
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -11,13 +11,7 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// На Railway всегда HTTPS, но иногда прокси может быть
-const isProduction = process.env.NODE_ENV === 'production';
-const isRailway = !!process.env.RAILWAY_ENVIRONMENT;
-
 console.log('\n🚀 STARTING SERVER...\n');
-console.log(`📡 Mode: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-console.log(`🚂 Railway: ${isRailway ? 'YES' : 'NO'}`);
 
 // ========== PostgreSQL connection ==========
 let pool = null;
@@ -30,7 +24,7 @@ function initPool() {
     }
     return new Pool({
         connectionString: databaseUrl,
-        ssl: isProduction ? { rejectUnauthorized: false } : false,
+        ssl: { rejectUnauthorized: false },
         max: 20,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 10000,
@@ -46,7 +40,7 @@ async function initDatabase() {
         const client = await pool.connect();
         console.log('✅ Database connected');
 
-        // Users table (создаем первой, так как нужна для сессии)
+        // Users table
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -58,7 +52,7 @@ async function initDatabase() {
             )
         `);
 
-        // Session table для connect-pg-simple
+        // Session table
         await client.query(`
             CREATE TABLE IF NOT EXISTS session (
                 sid VARCHAR(255) PRIMARY KEY,
@@ -253,42 +247,28 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
-// ========== SESSION MIDDLEWARE - исправлено для Railway ==========
-const sessionConfig = {
+// ========== SESSION MIDDLEWARE ==========
+app.use(session({
     secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
     resave: false,
     saveUninitialized: false,
-    name: 'spravochnik.sid',
     cookie: {
-        // На Railway всегда HTTPS, но secure нужно ставить true только если приложение действительно на HTTPS
-        secure: isRailway ? true : false,
+        secure: false,
         httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
-        sameSite: 'lax',
-        // Важно: domain не указываем, если не уверены
-    }
-};
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        sameSite: 'lax'
+    },
+    name: 'spravochnik.sid'
+}));
 
-// Добавляем store для production
-if (isRailway && pool) {
-    const pgSession = require('connect-pg-simple')(session);
-    sessionConfig.store = new pgSession({
-        pool: pool,
-        tableName: 'session',
-        createTableIfMissing: false, // таблица уже создана
-    });
-    console.log('✅ PostgreSQL session store configured');
-}
+// Trust proxy (для Railway)
+app.set('trust proxy', 1);
 
-app.use(session(sessionConfig));
-
-// DEBUG: логирование сессии
+// DEBUG логирование
 app.use((req, res, next) => {
-    const originalSend = res.send;
-    res.send = function(data) {
-        console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Session: ${req.session?.user?.username || 'none'}, SessionID: ${req.sessionID?.substring(0, 10)}...`);
-        return originalSend.call(this, data);
-    };
+    if (req.path.startsWith('/api/')) {
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Session: ${req.session?.user?.username || 'none'}`);
+    }
     next();
 });
 
@@ -297,8 +277,8 @@ function requireAuth(req, res, next) {
     if (req.session && req.session.user) {
         next();
     } else {
-        console.log(`❌ Auth failed: ${req.path} - no session`);
-        res.status(401).json({ error: 'Unauthorized', redirect: '/login.html' });
+        console.log(`❌ Auth failed: ${req.path}`);
+        res.status(401).json({ error: 'Unauthorized' });
     }
 }
 
@@ -338,7 +318,6 @@ app.get('/editor.js', (req, res) => {
 // ========== AUTH ROUTES ==========
 
 app.get('/api/check-auth', (req, res) => {
-    console.log(`[check-auth] Session: ${req.session?.user?.username || 'none'}, ID: ${req.sessionID}`);
     if (req.session && req.session.user) {
         res.json({ authenticated: true, user: req.session.user });
     } else {
@@ -384,7 +363,7 @@ app.post('/api/simple-login', async (req, res) => {
                     return res.status(500).json({ error: 'Ошибка сохранения сессии' });
                 }
                 
-                console.log(`✅ User logged in: ${user.username} (${user.role})`);
+                console.log(`✅ User logged in: ${user.username}`);
                 res.json({ success: true, user: req.session.user });
             });
         });
@@ -439,10 +418,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/logout', (req, res) => {
-    const username = req.session?.user?.username;
-    req.session.destroy((err) => {
-        if (err) console.error('Logout error:', err);
-        console.log(`👋 User logged out: ${username || 'unknown'}`);
+    req.session.destroy(() => {
         res.json({ success: true });
     });
 });
@@ -802,61 +778,8 @@ app.delete('/api/lines/:id', requireRop, async (req, res) => {
     }
 });
 
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', session: !!req.session, sessionId: req.sessionID });
-});
-
-// ========== HTML ROUTES ==========
-
-app.get('/login.html', (req, res) => {
-    if (req.session && req.session.user) {
-        res.redirect('/');
-    } else {
-        res.sendFile(path.join(__dirname, 'login.html'));
-    }
-});
-
-app.get('/', protectPage, (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/tobacco.html', protectPage, (req, res) => {
-    res.sendFile(path.join(__dirname, 'tobacco.html'));
-});
-
-app.get('/liquids.html', protectPage, (req, res) => {
-    res.sendFile(path.join(__dirname, 'liquids.html'));
-});
-
-app.get('/snus.html', protectPage, (req, res) => {
-    res.sendFile(path.join(__dirname, 'snus.html'));
-});
-
-app.get('/hookah.html', protectPage, (req, res) => {
-    res.sendFile(path.join(__dirname, 'hookah.html'));
-});
-
-app.get('/sales.html', protectPage, (req, res) => {
-    res.sendFile(path.join(__dirname, 'sales.html'));
-});
-
-app.get('/checks.html', protectPage, (req, res) => {
-    res.sendFile(path.join(__dirname, 'checks.html'));
-});
-
-app.get('/cash.html', protectPage, (req, res) => {
-    res.sendFile(path.join(__dirname, 'cash.html'));
-});
-
-app.get('/disposables.html', protectPage, (req, res) => {
-    res.sendFile(path.join(__dirname, 'disposables.html'));
-});
-
-app.get('/training.html', protectPage, (req, res) => {
-    res.sendFile(path.join(__dirname, 'training.html'));
-});
-
 // ========== LIQUID MANUFACTURERS ==========
+
 app.get('/api/liquid-manufacturers', requireAuth, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM liquid_manufacturers ORDER BY name');
@@ -926,6 +849,7 @@ app.delete('/api/liquid-manufacturers/:id', requireRop, async (req, res) => {
 });
 
 // ========== LIQUID LINES ==========
+
 app.get('/api/liquid-lines/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     try {
@@ -981,6 +905,7 @@ app.delete('/api/liquid-lines/:id', requireRop, async (req, res) => {
 });
 
 // ========== DISPOSABLES MANUFACTURERS ==========
+
 app.get('/api/disposables-manufacturers', requireAuth, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM disposables_manufacturers ORDER BY name');
@@ -1050,6 +975,7 @@ app.delete('/api/disposables-manufacturers/:id', requireRop, async (req, res) =>
 });
 
 // ========== DISPOSABLES LINES ==========
+
 app.get('/api/disposables-lines/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     try {
@@ -1105,6 +1031,7 @@ app.delete('/api/disposables-lines/:id', requireRop, async (req, res) => {
 });
 
 // ========== SNUS MANUFACTURERS ==========
+
 app.get('/api/snus-manufacturers', requireAuth, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM snus_manufacturers ORDER BY name');
@@ -1174,6 +1101,7 @@ app.delete('/api/snus-manufacturers/:id', requireRop, async (req, res) => {
 });
 
 // ========== SNUS LINES ==========
+
 app.get('/api/snus-lines/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     try {
@@ -1240,8 +1168,62 @@ app.get('/api/count/manufacturers', requireAuth, async (req, res) => {
 
 app.post('/api/devtools-detected', requireAuth, (req, res) => {
     const username = req.session.user?.username || 'unknown';
-    console.log(`⚠️ DevTools detected for user: ${username} at ${new Date().toISOString()}`);
+    console.log(`⚠️ DevTools detected for user: ${username}`);
     res.json({ success: true });
+});
+
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', session: !!req.session, sessionId: req.sessionID });
+});
+
+// ========== HTML ROUTES ==========
+
+app.get('/login.html', (req, res) => {
+    if (req.session && req.session.user) {
+        res.redirect('/');
+    } else {
+        res.sendFile(path.join(__dirname, 'login.html'));
+    }
+});
+
+app.get('/', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/tobacco.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'tobacco.html'));
+});
+
+app.get('/liquids.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'liquids.html'));
+});
+
+app.get('/snus.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'snus.html'));
+});
+
+app.get('/hookah.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'hookah.html'));
+});
+
+app.get('/sales.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'sales.html'));
+});
+
+app.get('/checks.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'checks.html'));
+});
+
+app.get('/cash.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'cash.html'));
+});
+
+app.get('/disposables.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'disposables.html'));
+});
+
+app.get('/training.html', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'training.html'));
 });
 
 // ========== START SERVER ==========
@@ -1253,8 +1235,7 @@ async function startServer() {
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`🔐 Session store: ${isRailway ? 'PostgreSQL' : 'Memory'}`);
-        console.log(`🍪 Cookie secure: ${sessionConfig.cookie.secure}`);
+        console.log(`🍪 Session cookie: spravochnik.sid`);
         console.log(`\n📋 Данные для входа:`);
         console.log(`   👤 Обычный пользователь: пароль 1111`);
         console.log(`   👑 РОП: rop / 1234`);
