@@ -2631,3 +2631,215 @@ details .acc-body {
 .line-card {
     transition: all 0.2s;
 }
+
+/* ========== EDITOR v2.0 - drag & drop, новые стили ========== */
+
+.drag-handle {
+    cursor: grab;
+    font-size: 16px;
+    color: var(--muted);
+    padding: 0 6px;
+    user-select: none;
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+.drag-handle:hover { color: var(--accent); }
+.drag-handle:active { cursor: grabbing; }
+
+.editor-item {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    background: var(--surface);
+    transition: all 0.15s;
+    position: relative;
+}
+.editor-item.dragging {
+    opacity: 0.4;
+    border: 2px dashed var(--accent);
+    transform: scale(0.98);
+}
+.editor-item.drag-over {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+    transform: translateY(2px);
+}
+
+.editor-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    border-radius: 12px 12px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+.editor-item-header span:not(.drag-handle) { flex: 1; }
+
+.remove-editor-item {
+    background: rgba(252,92,124,0.12);
+    border: 1px solid rgba(252,92,124,0.25);
+    border-radius: 6px;
+    padding: 3px 8px;
+    cursor: pointer;
+    color: var(--accent2);
+    font-size: 13px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+.remove-editor-item:hover { background: rgba(252,92,124,0.25); }
+
+.editor-item-content {
+    padding: 14px;
+}
+.editor-item-content input[type=text],
+.editor-item-content textarea,
+.editor-item-content select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 6px;
+}
+.editor-item-content input[type=text]:focus,
+.editor-item-content textarea:focus,
+.editor-item-content select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.tool-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.tool-btn:hover {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.editor-area {
+    min-height: 80px;
+}
+.editor-empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 20px;
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    font-size: 13px;
+}
+
+.list-item {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.list-item input { flex: 1; margin-bottom: 0 !important; }
+.remove-list-item {
+    background: rgba(252,92,124,0.12);
+    border: 1px solid rgba(252,92,124,0.25);
+    border-radius: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+    color: var(--accent2);
+    font-size: 12px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+.remove-list-item:hover { background: rgba(252,92,124,0.25); }
+
+.add-list-item {
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 5px 12px;
+    color: var(--accent);
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: all 0.15s;
+}
+.add-list-item:hover { background: var(--accent); color: white; }
+
+.editor-table { border-collapse: collapse; width: 100%; }
+.editor-table th, .editor-table td { border: 1px solid var(--border); padding: 6px; }
+.editor-table th { background: var(--surface2); }
+
+.rich-editor-container { position: relative; }
+.format-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px 8px 0 0;
+    border-bottom: none;
+}
+.format-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.format-btn:hover { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+.rich-editor {
+    min-height: 90px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0 0 8px 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-y: auto;
+}
+.rich-editor:focus { outline: none; border-color: var(--accent); }
+.rich-editor ul, .rich-editor ol { padding-left: 20px; margin: 6px 0; }
+.rich-editor li { margin: 3px 0; }
+
+/* btn-edit-content должна быть inline-flex */
+.btn-edit-content {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 6px 14px;
+    color: var(--accent);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-edit-content:hover { background: var(--accent); color: white; transform: translateY(-1px); }
