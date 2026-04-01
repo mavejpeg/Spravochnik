@@ -1,11 +1,12 @@
-// main.js v2.0 - единый источник авторизации с системой событий
+// main.js v3.0 - единый источник авторизации с системой событий
+// Исправлено: корректная инициализация кнопок редактора
 
 window.isRop = false;
 window.isRopGlobal = false;
 window._authLoaded = false;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Main.js v2.0 loaded');
+    console.log('Main.js v3.0 loaded');
     initTabs();
     initAccordionsToDetails();
     initSearch();
@@ -134,8 +135,14 @@ async function loadUserInfo() {
             if (typeof window.loadManufacturers === 'function') {
                 window.loadManufacturers();
             }
+            
+            // Инициализация кнопок редактора (если editor.js загружен)
+            if (typeof window.setupEditButtons === 'function') {
+                window.setupEditButtons(isRop);
+            }
 
         } else {
+            // Неавторизован - редирект на логин
             window.location.href = '/login.html';
         }
     } catch (error) {
