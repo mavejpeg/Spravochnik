@@ -2956,3 +2956,96 @@ details details .acc-body {
     background: var(--surface2);
 }
 
+/* ========== ВЫПАДАЮЩИЕ СПИСКИ (DETAILS) - ИСПРАВЛЕНО ========== */
+details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    display: block;
+    overflow: hidden;
+}
+
+details summary {
+    cursor: pointer;
+    padding: 14px 18px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--surface2);
+    transition: all 0.2s;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+details summary:hover {
+    background: var(--surface3);
+}
+
+/* Убираем стандартную стрелку */
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Добавляем свою стрелку */
+details summary::after {
+    content: "▼";
+    font-size: 12px;
+    transition: transform 0.2s;
+    color: var(--muted);
+}
+
+details[open] summary::after {
+    transform: rotate(180deg);
+}
+
+/* Содержимое */
+details .acc-body,
+details > :not(summary) {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+}
+
+/* Списки внутри details */
+details ul {
+    margin: 8px 0;
+    padding-left: 24px;
+    list-style-type: disc;
+}
+
+details ul li {
+    margin: 6px 0;
+    color: var(--text);
+    line-height: 1.5;
+}
+
+details ul li strong {
+    color: var(--accent);
+}
+
+details ol {
+    margin: 8px 0;
+    padding-left: 24px;
+    list-style-type: decimal;
+}
+
+details ol li {
+    margin: 6px 0;
+    color: var(--text);
+    line-height: 1.5;
+}
+
+/* Вложенные details */
+details details {
+    margin: 12px 0;
+    background: var(--surface2);
+}
+
+details details summary {
+    background: var(--surface3);
+    padding: 10px 14px;
+    font-size: 13px;
+}
