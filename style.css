@@ -2843,3 +2843,115 @@ details .acc-body {
     transition: all 0.2s;
 }
 .btn-edit-content:hover { background: var(--accent); color: white; transform: translateY(-1px); }
+
+/* ========== ВЫПАДАЮЩИЕ СПИСКИ (DETAILS) ========== */
+details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    display: block;
+    overflow: hidden;
+}
+
+details summary {
+    cursor: pointer;
+    padding: 14px 18px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--surface2);
+    border-radius: 12px;
+    transition: all 0.2s;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+details summary:hover {
+    background: var(--surface3);
+}
+
+/* Убираем стандартную стрелку браузера */
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Добавляем свою стрелку */
+details summary::after {
+    content: "▼";
+    font-size: 12px;
+    transition: transform 0.2s;
+    color: var(--muted);
+}
+
+details[open] summary::after {
+    transform: rotate(180deg);
+}
+
+/* Содержимое выпадающего списка */
+details .acc-body,
+details > :not(summary) {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+}
+
+/* Стили для списков внутри details */
+details ul {
+    margin: 8px 0;
+    padding-left: 24px;
+    list-style-type: disc;
+}
+
+details ul li {
+    margin: 6px 0;
+    color: var(--text);
+    line-height: 1.5;
+}
+
+details ul li strong {
+    color: var(--accent);
+}
+
+/* Стили для нумерованных списков */
+details ol {
+    margin: 8px 0;
+    padding-left: 24px;
+    list-style-type: decimal;
+}
+
+details ol li {
+    margin: 6px 0;
+    color: var(--text);
+    line-height: 1.5;
+}
+
+/* Стили для заголовков внутри details */
+details h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent4);
+    margin: 12px 0 8px 0;
+}
+
+details h3:first-child {
+    margin-top: 0;
+}
+
+/* Стили для вложенных details */
+details details {
+    margin: 12px 0;
+    background: var(--surface2);
+}
+
+details details summary {
+    background: var(--surface3);
+    padding: 10px 14px;
+    font-size: 13px;
+}
+
+details details .acc-body {
+    background: var(--surface2);
+}
