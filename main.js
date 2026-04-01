@@ -1,8 +1,11 @@
-// main.js - полная версия с поддержкой всех страниц
-let isRop = false;
+// main.js v2.0 - единый источник авторизации с системой событий
+
+window.isRop = false;
+window.isRopGlobal = false;
+window._authLoaded = false;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Main.js loaded');
+    console.log('Main.js v2.0 loaded');
     initTabs();
     initAccordionsToDetails();
     initSearch();
@@ -39,9 +42,8 @@ function initAccordionsToDetails() {
                 const title = header.querySelector('.acc-title')?.innerHTML || '';
                 const details = document.createElement('details');
                 const summary = document.createElement('summary');
-                summary.innerHTML = title;
-                summary.style.cssText = 'cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none; display: flex; justify-content: space-between; align-items: center;';
                 summary.innerHTML = title + '<span style="font-size: 12px;">▼</span>';
+                summary.style.cssText = 'cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none; display: flex; justify-content: space-between; align-items: center;';
                 details.appendChild(summary);
                 details.appendChild(body.cloneNode(true));
                 details.style.cssText = 'background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px;';
@@ -51,7 +53,6 @@ function initAccordionsToDetails() {
             }
         }
     });
-    
     const details = document.querySelectorAll('details');
     details.forEach(detail => {
         const summary = detail.querySelector('summary');
@@ -80,49 +81,60 @@ function initSearch() {
 function handleSearch(e) {
     const val = e.target.value.toLowerCase();
     document.querySelectorAll('[data-searchable]').forEach(el => {
-        if (el.textContent.toLowerCase().includes(val)) {
-            el.classList.remove('search-hidden');
-        } else {
-            el.classList.add('search-hidden');
-        }
+        el.classList.toggle('search-hidden', !el.textContent.toLowerCase().includes(val));
     });
 }
 
+// ========== ЕДИНСТВЕННЫЙ ИСТОЧНИК АВТОРИЗАЦИИ ==========
 async function loadUserInfo() {
     try {
         const response = await fetch('/api/check-auth', { credentials: 'include' });
         const data = await response.json();
-        
-        const userNameSpan = document.getElementById('userName');
-        const ropBtn = document.getElementById('ropBtn');
-        
+
         if (data.authenticated) {
-            if (userNameSpan) userNameSpan.textContent = data.user.full_name;
-            isRop = (data.user.role === 'rop' || data.user.role === 'root');
-            window.isRopGlobal = isRop;
+            const isRop = (data.user.role === 'rop' || data.user.role === 'root');
+
             window.isRop = isRop;
-            
+            window.isRopGlobal = isRop;
+            window._authLoaded = true;
+            window._currentUser = data.user;
+
+            const userNameSpan = document.getElementById('userName');
+            const ropBtn = document.getElementById('ropBtn');
+            if (userNameSpan) userNameSpan.textContent = data.user.full_name;
             if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
-            
+
             // Показываем кнопку добавления производителя
-            const addBtn = document.querySelector('.btn-add');
-            if (addBtn) {
-                addBtn.style.display = isRop ? 'flex' : 'none';
-                console.log('Add button display set to:', isRop ? 'flex' : 'none');
+            const addManufBtn = document.getElementById('btnAddManufacturer');
+            if (addManufBtn) {
+                addManufBtn.style.display = isRop ? 'flex' : 'none';
             }
-            
-            // Обновляем кнопки редактирования
-            if (typeof window.refreshEditButtons === 'function') {
-                window.refreshEditButtons();
-            } else if (typeof window.setupEditButtons === 'function') {
-                window.setupEditButtons();
+
+            // Все .btn-add кроме btnAddManufacturer
+            document.querySelectorAll('.btn-add:not(#btnAddManufacturer)').forEach(btn => {
+                btn.style.display = isRop ? 'flex' : 'none';
+            });
+
+            // Кнопки редактирования контента
+            document.querySelectorAll('.btn-edit-content').forEach(btn => {
+                btn.style.display = isRop ? 'inline-flex' : 'none';
+            });
+
+            // Диспатчим событие для editor.js и страничных скриптов
+            window.dispatchEvent(new CustomEvent('authReady', {
+                detail: { isRop, user: data.user }
+            }));
+
+            // Вызываем колбэк страницы если зарегистрирован
+            if (typeof window.onAuthReady === 'function') {
+                window.onAuthReady(isRop, data.user);
             }
-            
-            // Вызываем перерисовку производителей если есть функция
+
+            // Для страниц с производителями
             if (typeof window.loadManufacturers === 'function') {
                 window.loadManufacturers();
             }
-            
+
         } else {
             window.location.href = '/login.html';
         }
@@ -131,6 +143,19 @@ async function loadUserInfo() {
         window.location.href = '/login.html';
     }
 }
+
+// refreshEditButtons / setupEditButtons - вызывается из editor.js
+window.refreshEditButtons = function() {
+    const isRop = window.isRopGlobal === true;
+    document.querySelectorAll('.btn-edit-content').forEach(btn => {
+        btn.style.display = isRop ? 'inline-flex' : 'none';
+    });
+    const addManufBtn = document.getElementById('btnAddManufacturer');
+    if (addManufBtn) {
+        addManufBtn.style.display = isRop ? 'flex' : 'none';
+    }
+};
+window.setupEditButtons = window.refreshEditButtons;
 
 function setupLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
@@ -157,7 +182,6 @@ async function handleRopPanel() {
     await openRopPanel();
 }
 
-// ========== ПАНЕЛЬ УПРАВЛЕНИЯ РОП ==========
 async function openRopPanel() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -187,41 +211,24 @@ async function openRopPanel() {
             </div>
         </div>
     `;
-    
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
-    
-    const closeModal = () => {
-        modal.classList.remove('open');
-        setTimeout(() => modal.remove(), 300);
-    };
-    
+    const closeModal = () => { modal.classList.remove('open'); setTimeout(() => modal.remove(), 300); };
     modal.querySelector('.modal-close').addEventListener('click', closeModal);
     modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
     await loadUsersList(modal);
-    
     document.getElementById('addUserBtn').addEventListener('click', async () => {
         const username = document.getElementById('newUsername').value.trim();
         const password = document.getElementById('newPassword').value;
         const full_name = document.getElementById('newFullName').value.trim();
-        
-        if (!username || !password || !full_name) {
-            alert('Заполните все поля');
-            return;
-        }
-        if (!/^\d{4}$/.test(password)) {
-            alert('Пароль должен быть 4 цифры');
-            return;
-        }
-        
+        if (!username || !password || !full_name) { alert('Заполните все поля'); return; }
+        if (!/^\d{4}$/.test(password)) { alert('Пароль должен быть 4 цифры'); return; }
         const response = await fetch('/api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({ username, password, full_name, role: 'user' })
         });
-        
         if (response.ok) {
             alert('Пользователь добавлен');
             document.getElementById('newUsername').value = '';
@@ -240,18 +247,14 @@ async function loadUsersList(modal) {
     const users = await response.json();
     const meResponse = await fetch('/api/check-auth', { credentials: 'include' });
     const me = await meResponse.json();
-    
     const container = modal.querySelector('#usersList');
     if (!container) return;
-    
     container.innerHTML = users.map(user => {
         let canChange = false;
         if (me.user.role === 'root') canChange = true;
         else if (me.user.role === 'rop' && user.role === 'user') canChange = true;
-        
         let canDelete = false;
         if (me.user.role === 'root' && user.username !== 'root' && user.id !== me.user.id) canDelete = true;
-        
         return `
             <div style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
@@ -270,12 +273,9 @@ async function loadUsersList(modal) {
 }
 
 window.changePasswordUser = async function(userId, userName) {
-    const newPassword = prompt(`Введите новый пароль (4 цифры) для пользователя ${userName}`);
+    const newPassword = prompt(`Введите новый пароль (4 цифры) для ${userName}`);
     if (!newPassword) return;
-    if (!/^\d{4}$/.test(newPassword)) {
-        alert('Пароль должен быть 4 цифры');
-        return;
-    }
+    if (!/^\d{4}$/.test(newPassword)) { alert('Пароль должен быть 4 цифры'); return; }
     const response = await fetch(`/api/users/${userId}/change-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -289,10 +289,8 @@ window.changePasswordUser = async function(userId, userName) {
 window.deleteUserById = async function(userId) {
     if (confirm('Удалить пользователя?')) {
         const response = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
-        if (response.ok) {
-            alert('Пользователь удален');
-            location.reload();
-        } else alert('Ошибка');
+        if (response.ok) { alert('Пользователь удален'); location.reload(); }
+        else alert('Ошибка');
     }
 };
 
@@ -304,3 +302,4 @@ function escapeHtml(str) {
 window.openRopPanel = openRopPanel;
 window.initTabs = initTabs;
 window.initAccordionsToDetails = initAccordionsToDetails;
+window.loadUserInfo = loadUserInfo;
