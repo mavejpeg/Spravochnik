@@ -1,8 +1,8 @@
-// editor.js - полная версия для всех страниц
+// editor.js - полная версия с модальными окнами
 
 let isRop = false;
 
-// Получаем роль пользователя
+// ========== ПОЛУЧЕНИЕ РОЛИ ==========
 async function getUserRole() {
     try {
         const response = await fetch('/api/check-auth', { credentials: 'include' });
@@ -19,8 +19,8 @@ async function getUserRole() {
     }
 }
 
-// Настройка кнопок редактирования
-function setupEditButtons() {
+// ========== НАСТРОЙКА КНОПОК ==========
+window.setupEditButtons = function() {
     const editBtns = document.querySelectorAll('.btn-edit-content');
     console.log('Editor.js: Found edit buttons:', editBtns.length);
     
@@ -29,7 +29,7 @@ function setupEditButtons() {
         btn.addEventListener('click', handleEditClick);
         btn.style.display = isRop ? 'inline-flex' : 'none';
     });
-}
+};
 
 function handleEditClick(e) {
     const btn = e.currentTarget;
@@ -40,6 +40,21 @@ function handleEditClick(e) {
 }
 
 // ========== ВИЗУАЛЬНЫЙ РЕДАКТОР ==========
+
+function getSectionTitle(section) {
+    const titles = {
+        'parts': 'Комплектация кальяна', 'bowls': 'Чаши', 'coal': 'Уголь и управление', 'clean': 'Обслуживание и чистка',
+        'info': 'Общая информация', 'alternatives': 'Альтернативы', 'coils': 'Совместимость испарителей',
+        'howto': 'Как применять', 'formats': 'Форматы паучей', 'strength': 'Классификация по крепости',
+        'returns': 'Возврат картриджа', 'price': 'Отработка возражения по цене', 'color': 'Цвет жидкости',
+        'upsell': 'Добивание комбо', 'official': 'Официальная инструкция', 'practical': 'Практические советы',
+        'after': 'По окончании проверки', 'types': 'Типы товаров', 'qr': 'Работа с QR-кодами',
+        'register': 'Кассовый аппарат', 'syrye': 'Типы сырья', 'tips': 'Советы продавцу', 'guide': 'Гид по брендам',
+        'day1': 'День 1: Основы', 'day2': 'День 2: Кальянная тематика', 'day3': 'День 3: Касса и маркировка',
+        'day4': 'День 4: Закрепление', 'scripts': 'Скрипты продаж', 'security': 'Безопасность'
+    };
+    return titles[section] || section;
+}
 
 function openVisualEditor(page, section) {
     const contentDiv = document.getElementById(`${section}-content`);
@@ -120,6 +135,9 @@ function openVisualEditor(page, section) {
         const newContent = convertEditorToHtml(editorArea);
         
         let url = `/api/content/${page}/${section}`;
+        if (page === 'training') {
+            url = `/api/content/training/${section}`;
+        }
         
         try {
             const response = await fetch(url, {
@@ -133,7 +151,6 @@ function openVisualEditor(page, section) {
                 contentDiv.innerHTML = newContent;
                 alert('✅ Сохранено успешно!');
                 closeModal();
-                // Переинициализируем аккордеоны если функция есть
                 if (typeof initAccordionsToDetails === 'function') {
                     initAccordionsToDetails();
                 }
@@ -751,18 +768,18 @@ function initTableEditor(container) {
     const rows = JSON.parse(container.dataset.rows || '[]');
     if (rows.length === 0) rows.push(['', '']);
     
-    let html = '<table class="editor-table" style="width:100%; border-collapse: collapse;"><thead>   \\(';
+    let html = '<table class="editor-table" style="width:100%; border-collapse: collapse;"><thead><tr>';
     for (let i = 0; i < rows[0].length; i++) {
         html += `<th style="border: 1px solid var(--border); padding: 8px;"><input type="text" class="table-header" value="${escapeHtml(rows[0][i] || '')}" placeholder="Заголовок ${i+1}" style="width:100%; background: transparent; border: none; padding: 4px;"></th>`;
     }
-    html += '<th style="width:40px;"></th>   </thead><tbody>';
+    html += '<th style="width:40px;"></th></tr></thead><tbody>';
     for (let i = 1; i < rows.length; i++) {
-        html += '     <tr>';
+        html += '<tr>';
         for (let j = 0; j < rows[i].length; j++) {
             html += `<td style="border: 1px solid var(--border); padding: 8px;"><input type="text" class="table-cell" value="${escapeHtml(rows[i][j] || '')}" placeholder="Значение" style="width:100%; background: transparent; border: none; padding: 4px;"></td>`;
         }
         html += `<td style="border: 1px solid var(--border); text-align: center;"><button class="remove-table-row" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer;">🗑</button></td>`;
-        html += '    </tr>';
+        html += '</tr>';
     }
     html += '</tbody></table>';
     container.innerHTML = html;
@@ -839,13 +856,13 @@ function convertEditorToHtml(editorArea) {
             case 'table':
                 const tableData = JSON.parse(item.querySelector('.table-editor')?.dataset.rows || '[]');
                 if (tableData.length > 1) {
-                    let tableHtml = '<table class="ref-table"><thead>     <tr>';
+                    let tableHtml = '<table class="ref-table"><thead><tr>';
                     tableData[0].forEach(cell => tableHtml += `<th>${escapeHtml(cell)}</th>`);
-                    tableHtml += '    </tr></thead><tbody>';
+                    tableHtml += '</tr></thead><tbody>';
                     for (let i = 1; i < tableData.length; i++) {
-                        tableHtml += '    <tr>';
+                        tableHtml += '<tr>';
                         tableData[i].forEach(cell => tableHtml += `<td>${escapeHtml(cell)}</td>`);
-                        tableHtml += '    </tr>';
+                        tableHtml += '</tr>';
                     }
                     tableHtml += '</tbody></table>';
                     html += tableHtml;
@@ -873,7 +890,7 @@ function convertEditorToHtml(editorArea) {
                 if (dropdownTitle && dropdownContent) {
                     html += `
                         <details style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px;">
-                            <summary style="cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none;">${escapeHtml(dropdownTitle)}<span style="float: right;">▼</span></summary>
+                            <summary style="cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--accent); list-style: none; display: flex; justify-content: space-between;">${escapeHtml(dropdownTitle)}<span style="font-size: 12px;">▼</span></summary>
                             ${dropdownContent}
                         </details>
                     `;
@@ -934,7 +951,7 @@ function convertEditorToHtml(editorArea) {
     return html;
 }
 
-// Глобальные функции для проверки опросников
+// ========== ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ ОПРОСНИКОВ ==========
 window.checkQuizInline = function(btn) {
     const quizBlock = btn.closest('.quiz-block');
     const questions = quizBlock.querySelectorAll('.quiz-question');
@@ -979,31 +996,17 @@ window.resetQuizInline = function(btn) {
     resultDiv.classList.remove('show', 'success', 'fail');
 };
 
-function getSectionTitle(section) {
-    const titles = {
-        'parts': 'Комплектация кальяна', 'bowls': 'Чаши', 'coal': 'Уголь и управление', 'clean': 'Обслуживание и чистка',
-        'info': 'Общая информация', 'alternatives': 'Альтернативы', 'coils': 'Совместимость испарителей',
-        'howto': 'Как применять', 'formats': 'Форматы паучей', 'strength': 'Классификация по крепости',
-        'returns': 'Возврат картриджа', 'price': 'Отработка возражения по цене', 'color': 'Цвет жидкости',
-        'upsell': 'Добивание комбо', 'official': 'Официальная инструкция', 'practical': 'Практические советы',
-        'after': 'По окончании проверки', 'types': 'Типы товаров', 'qr': 'Работа с QR-кодами',
-        'register': 'Кассовый аппарат', 'syrye': 'Типы сырья', 'tips': 'Советы продавцу', 'guide': 'Гид по брендам'
-    };
-    return titles[section] || section;
-}
-
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
 }
 
-// Инициализация
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
 async function initEditor() {
     await getUserRole();
-    setupEditButtons();
+    window.setupEditButtons();
 }
 
-// Запуск после загрузки страницы
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initEditor);
 } else {
