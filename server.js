@@ -1,4 +1,4 @@
-// server.js - исправленная версия
+// server.js - исправленная версия с корректной настройкой сессии для HTTPS
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -10,8 +10,10 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const isProduction = process.env.NODE_ENV === 'production';
 
 console.log('\n🚀 STARTING SERVER...\n');
+console.log(`📡 Mode: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
 
 // ========== PostgreSQL connection ==========
 let pool = null;
@@ -24,7 +26,7 @@ function initPool() {
     }
     return new Pool({
         connectionString: databaseUrl,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+        ssl: isProduction ? { rejectUnauthorized: false } : false,
         max: 20,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 10000,
@@ -186,15 +188,9 @@ async function initDatabase() {
             )
         `);
 
-        // Add quality_class to products if missing
-        await client.query(`
-            ALTER TABLE products ADD COLUMN IF NOT EXISTS quality_class VARCHAR(20) DEFAULT 'medium'
-        `).catch(e => console.log('Column check:', e.message));
-
-        // Add strength_color to lines if missing
-        await client.query(`
-            ALTER TABLE lines ADD COLUMN IF NOT EXISTS strength_color VARCHAR(20) DEFAULT 'medium'
-        `).catch(e => console.log('Column check:', e.message));
+        // Add missing columns
+        await client.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS quality_class VARCHAR(20) DEFAULT 'medium'`).catch(e => {});
+        await client.query(`ALTER TABLE lines ADD COLUMN IF NOT EXISTS strength_color VARCHAR(20) DEFAULT 'medium'`).catch(e => {});
 
         // Insert default users
         await client.query(`
@@ -253,15 +249,15 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
-// ========== SESSION MIDDLEWARE ==========
+// ========== SESSION MIDDLEWARE (исправлено для HTTPS) ==========
 app.use(session({
-    secret: 'spravochnik_secret_key_2024',
+    secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false,
+        secure: isProduction,  // true на Railway (HTTPS)
         httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000,
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
         sameSite: 'lax'
     },
     name: 'spravochnik.sid'
@@ -272,7 +268,7 @@ function requireAuth(req, res, next) {
     if (req.session && req.session.user) {
         next();
     } else {
-        res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized', redirect: '/login.html' });
     }
 }
 
@@ -303,6 +299,10 @@ app.get('/core.js', (req, res) => {
 
 app.get('/main.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'main.js'));
+});
+
+app.get('/editor.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'editor.js'));
 });
 
 // ========== AUTH ROUTES ==========
@@ -611,7 +611,7 @@ app.post('/api/content/:page/:section', requireRop, async (req, res) => {
     }
 });
 
-// ========== MANUFACTURERS ROUTES ==========
+// ========== MANUFACTURERS ROUTES (Tobacco) ==========
 
 app.get('/api/manufacturers', requireAuth, async (req, res) => {
     try {
@@ -619,7 +619,7 @@ app.get('/api/manufacturers', requireAuth, async (req, res) => {
         res.json(result.rows);
     } catch (error) {
         console.error('Get manufacturers error:', error);
-        res.status(500).json({ error: 'Failed to get manufacturers' });
+        res.status(500).json([]);
     }
 });
 
@@ -683,7 +683,7 @@ app.delete('/api/manufacturers/:id', requireRop, async (req, res) => {
     }
 });
 
-// ========== LINES ROUTES ==========
+// ========== LINES ROUTES (Tobacco) ==========
 
 app.get('/api/lines/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
@@ -786,25 +786,6 @@ app.get('/cash.html', protectPage, (req, res) => {
 
 app.get('/disposables.html', protectPage, (req, res) => {
     res.sendFile(path.join(__dirname, 'disposables.html'));
-});
-
-// Count manufacturers for tobacco page
-app.get('/api/count/manufacturers', requireAuth, async (req, res) => {
-    try {
-        const result = await pool.query('SELECT COUNT(*) FROM manufacturers');
-        res.json({ count: parseInt(result.rows[0].count) });
-    } catch (error) {
-        console.error('Count manufacturers error:', error);
-        res.json({ count: 0 });
-    }
-});
-
-// Логирование попыток взлома
-app.post('/api/devtools-detected', requireAuth, (req, res) => {
-    const username = req.session.user?.username || 'unknown';
-    console.log(`⚠️ DevTools detected for user: ${username} at ${new Date().toISOString()}`);
-    // Здесь можно записать в базу данных
-    res.json({ success: true });
 });
 
 app.get('/training.html', protectPage, (req, res) => {
@@ -1183,8 +1164,20 @@ app.delete('/api/snus-lines/:id', requireRop, async (req, res) => {
     }
 });
 
-app.get('/editor.js', (req, res) => {
-    res.sendFile(path.join(__dirname, 'editor.js'));
+app.get('/api/count/manufacturers', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT COUNT(*) FROM manufacturers');
+        res.json({ count: parseInt(result.rows[0].count) });
+    } catch (error) {
+        console.error('Count manufacturers error:', error);
+        res.json({ count: 0 });
+    }
+});
+
+app.post('/api/devtools-detected', requireAuth, (req, res) => {
+    const username = req.session.user?.username || 'unknown';
+    console.log(`⚠️ DevTools detected for user: ${username} at ${new Date().toISOString()}`);
+    res.json({ success: true });
 });
 
 // ========== START SERVER ==========
@@ -1196,7 +1189,7 @@ async function startServer() {
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`🔐 Auth: Enabled`);
+        console.log(`🔐 Auth: Enabled (secure: ${isProduction})`);
         console.log(`\n📋 Данные для входа:`);
         console.log(`   👤 Обычный пользователь: пароль 1111`);
         console.log(`   👑 РОП: rop / 1234`);
