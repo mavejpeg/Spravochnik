@@ -1,15 +1,18 @@
-// editor.js v2.0 - исправлен race condition, добавлен drag-and-drop
+// editor.js v3.0 - исправлен race condition, добавлен drag-and-drop, фолбэк для инициализации
 
-// НЕ делаем отдельный fetch - слушаем событие от main.js
+// Слушаем событие от main.js
 window.addEventListener('authReady', function(e) {
     const { isRop } = e.detail;
+    console.log('Editor.js: authReady received, isRop:', isRop);
     setupEditButtons(isRop);
 });
 
 // На случай если editor.js загружен позже чем authReady сработал
 document.addEventListener('DOMContentLoaded', function() {
-    // Если main.js уже закончил (маловероятно, но на всякий случай)
-    if (window._authLoaded) {
+    console.log('Editor.js: DOMContentLoaded, checking auth state');
+    // Если main.js уже закончил и установил флаг
+    if (window._authLoaded === true) {
+        console.log('Editor.js: auth already loaded, isRop:', window.isRopGlobal);
         setupEditButtons(window.isRopGlobal);
     }
     // Иначе ждём события authReady (уже подписаны выше)
@@ -18,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ========== НАСТРОЙКА КНОПОК ==========
 function setupEditButtons(isRop) {
     const editBtns = document.querySelectorAll('.btn-edit-content');
-    console.log('Editor.js v2: Found edit buttons:', editBtns.length, '| isRop:', isRop);
+    console.log('Editor.js v3: Found edit buttons:', editBtns.length, '| isRop:', isRop);
     editBtns.forEach(btn => {
         btn.removeEventListener('click', handleEditClick);
         btn.addEventListener('click', handleEditClick);
@@ -58,6 +61,7 @@ function openVisualEditor(page, section) {
     const contentDiv = document.getElementById(`${section}-content`);
     if (!contentDiv) {
         console.error('Content div not found:', `${section}-content`);
+        alert('Не удалось найти контент для редактирования. Возможно, раздел не поддерживает редактирование.');
         return;
     }
     const existingModal = document.getElementById('visualEditorModal');
@@ -146,7 +150,8 @@ function openVisualEditor(page, section) {
                 closeModal();
                 if (typeof initAccordionsToDetails === 'function') initAccordionsToDetails();
             } else {
-                alert('❌ Ошибка сохранения');
+                const error = await response.json();
+                alert('❌ Ошибка сохранения: ' + (error.error || 'Неизвестная ошибка'));
             }
         } catch (error) {
             alert('❌ Ошибка: ' + error.message);
@@ -161,8 +166,10 @@ function setupDragAndDrop(editorArea) {
 
     function onDragStart(e) {
         draggedItem = e.currentTarget.closest('.editor-item');
-        draggedItem.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
+        if (draggedItem) {
+            draggedItem.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
     }
     function onDragEnd(e) {
         if (draggedItem) draggedItem.classList.remove('dragging');
@@ -624,7 +631,7 @@ function initTableEditor(container) {
             html += `<td style="border:1px solid var(--border); padding:6px;">
                 <input type="text" class="table-cell" value="${escapeHtml(rows[i][j]||'')}" placeholder="Значение"
                     style="width:100%; background:transparent; border:none; padding:2px; color:var(--text);">
-            </td>`;
+                </td>`;
         }
         html += `<td style="border:1px solid var(--border); text-align:center; padding:4px;">
             <button class="remove-table-row" style="background:rgba(252,92,124,0.15); border:none; border-radius:4px; padding:3px 7px; cursor:pointer; color:var(--accent2);">🗑</button>
@@ -800,7 +807,7 @@ function convertEditorToHtml(editorArea) {
                 updateTableData(item.querySelector('.table-editor'));
                 const rows = JSON.parse(item.querySelector('.table-editor')?.dataset.rows || '[]');
                 if (rows.length > 1) {
-                    html += `<table class="ref-table"><thead><tr>${rows[0].map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>`;
+                    html += `<table class="ref-table"><thead> <tr>${rows[0].map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr> </thead><tbody>`;
                     for (let i = 1; i < rows.length; i++) {
                         html += `<tr>${rows[i].map(c => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`;
                     }
