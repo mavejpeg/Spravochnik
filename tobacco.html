@@ -45,19 +45,11 @@
     strong: { name: 'Крепкий (7-10)', color: '#fc5c7c', bg: 'rgba(252,92,124,0.2)' }
   };
 
-  async function checkPermissions() {
-    const response = await fetch('/api/check-auth', { credentials: 'include' });
-    const data = await response.json();
-    if (data.authenticated) {
-      isRop = (data.user.role === 'rop' || data.user.role === 'root');
-      window.isRopGlobal = isRop;
-      document.getElementById('userName').textContent = data.user.full_name;
-      document.getElementById('ropBtn').style.display = isRop ? 'block' : 'none';
-      document.getElementById('btnAddManufacturer').style.display = isRop ? 'flex' : 'none';
-    } else {
-      window.location.href = '/login.html';
-    }
-  }
+  window.onAuthReady = function(ropStatus, user) {
+    isRop = ropStatus;
+    loadManufacturers();
+  };
+  window.loadManufacturers = function() { loadManufacturers(); };
 
   // Модальное окно для производителя
   function openManufacturerModal(editData = null) {
@@ -625,7 +617,7 @@
     }
   };
 
-  checkPermissions().then(() => loadManufacturers());
+  // main.js вызовет onAuthReady который вызовет loadManufacturers
 </script>
 
 <style>
