@@ -1,4 +1,4 @@
-// server.js - исправленная версия с debug логированием
+// server.js - финальная версия с правильной сессией для Railway
 const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
@@ -10,11 +10,14 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// На Railway всегда HTTPS, но иногда прокси может быть
 const isProduction = process.env.NODE_ENV === 'production';
+const isRailway = !!process.env.RAILWAY_ENVIRONMENT;
 
 console.log('\n🚀 STARTING SERVER...\n');
 console.log(`📡 Mode: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-console.log(`🔗 DATABASE_URL: ${process.env.DATABASE_URL ? 'SET' : 'NOT SET'}`);
+console.log(`🚂 Railway: ${isRailway ? 'YES' : 'NO'}`);
 
 // ========== PostgreSQL connection ==========
 let pool = null;
@@ -43,6 +46,27 @@ async function initDatabase() {
         const client = await pool.connect();
         console.log('✅ Database connected');
 
+        // Users table (создаем первой, так как нужна для сессии)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                full_name VARCHAR(255) NOT NULL,
+                role VARCHAR(20) DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Session table для connect-pg-simple
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS session (
+                sid VARCHAR(255) PRIMARY KEY,
+                sess JSON NOT NULL,
+                expire TIMESTAMP NOT NULL
+            )
+        `);
+
         // Products table
         await client.query(`
             CREATE TABLE IF NOT EXISTS products (
@@ -56,27 +80,6 @@ async function initDatabase() {
                 description TEXT,
                 photo_url TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Users table
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                full_name VARCHAR(255) NOT NULL,
-                role VARCHAR(20) DEFAULT 'user',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Session table
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS session (
-                sid VARCHAR(255) PRIMARY KEY,
-                sess JSON NOT NULL,
-                expire TIMESTAMP NOT NULL
             )
         `);
 
@@ -250,26 +253,42 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
-// ========== SESSION MIDDLEWARE (исправлено для Railway) ==========
-app.use(session({
+// ========== SESSION MIDDLEWARE - исправлено для Railway ==========
+const sessionConfig = {
     secret: process.env.SESSION_SECRET || 'spravochnik_secret_key_2024',
     resave: false,
     saveUninitialized: false,
+    name: 'spravochnik.sid',
     cookie: {
-        secure: true,  // всегда true на Railway (HTTPS)
+        // На Railway всегда HTTPS, но secure нужно ставить true только если приложение действительно на HTTPS
+        secure: isRailway ? true : false,
         httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000,
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
         sameSite: 'lax',
-        domain: process.env.COOKIE_DOMAIN || undefined  // опционально: укажите домен
-    },
-    name: 'spravochnik.sid'
-}));
+        // Важно: domain не указываем, если не уверены
+    }
+};
+
+// Добавляем store для production
+if (isRailway && pool) {
+    const pgSession = require('connect-pg-simple')(session);
+    sessionConfig.store = new pgSession({
+        pool: pool,
+        tableName: 'session',
+        createTableIfMissing: false, // таблица уже создана
+    });
+    console.log('✅ PostgreSQL session store configured');
+}
+
+app.use(session(sessionConfig));
 
 // DEBUG: логирование сессии
 app.use((req, res, next) => {
-    if (req.path.startsWith('/api/')) {
-        console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Session: ${req.session?.user?.username || 'none'}`);
-    }
+    const originalSend = res.send;
+    res.send = function(data) {
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Session: ${req.session?.user?.username || 'none'}, SessionID: ${req.sessionID?.substring(0, 10)}...`);
+        return originalSend.call(this, data);
+    };
     next();
 });
 
@@ -346,15 +365,29 @@ app.post('/api/simple-login', async (req, res) => {
         
         const user = result.rows[0];
         
-        req.session.user = {
-            id: user.id,
-            username: user.username,
-            full_name: user.full_name,
-            role: user.role
-        };
-        
-        console.log(`✅ User logged in: ${user.username} (${user.role})`);
-        res.json({ success: true, user: req.session.user });
+        req.session.regenerate((err) => {
+            if (err) {
+                console.error('Session regenerate error:', err);
+                return res.status(500).json({ error: 'Ошибка сессии' });
+            }
+            
+            req.session.user = {
+                id: user.id,
+                username: user.username,
+                full_name: user.full_name,
+                role: user.role
+            };
+            
+            req.session.save((err) => {
+                if (err) {
+                    console.error('Session save error:', err);
+                    return res.status(500).json({ error: 'Ошибка сохранения сессии' });
+                }
+                
+                console.log(`✅ User logged in: ${user.username} (${user.role})`);
+                res.json({ success: true, user: req.session.user });
+            });
+        });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -376,15 +409,29 @@ app.post('/api/login', async (req, res) => {
         
         const user = result.rows[0];
         
-        req.session.user = {
-            id: user.id,
-            username: user.username,
-            full_name: user.full_name,
-            role: user.role
-        };
-        
-        console.log(`✅ User logged in: ${user.username} (${user.role})`);
-        res.json({ success: true, user: req.session.user });
+        req.session.regenerate((err) => {
+            if (err) {
+                console.error('Session regenerate error:', err);
+                return res.status(500).json({ error: 'Ошибка сессии' });
+            }
+            
+            req.session.user = {
+                id: user.id,
+                username: user.username,
+                full_name: user.full_name,
+                role: user.role
+            };
+            
+            req.session.save((err) => {
+                if (err) {
+                    console.error('Session save error:', err);
+                    return res.status(500).json({ error: 'Ошибка сохранения сессии' });
+                }
+                
+                console.log(`✅ User logged in: ${user.username} (${user.role})`);
+                res.json({ success: true, user: req.session.user });
+            });
+        });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ error: 'Ошибка сервера' });
@@ -393,7 +440,8 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/logout', (req, res) => {
     const username = req.session?.user?.username;
-    req.session.destroy(() => {
+    req.session.destroy((err) => {
+        if (err) console.error('Logout error:', err);
         console.log(`👋 User logged out: ${username || 'unknown'}`);
         res.json({ success: true });
     });
@@ -1205,7 +1253,8 @@ async function startServer() {
     app.listen(PORT, () => {
         console.log(`\n✅ Server running on port ${PORT}`);
         console.log(`📦 Database: ${dbReady ? 'CONNECTED' : 'NOT CONNECTED'}`);
-        console.log(`🔐 Auth: Enabled (secure: true)`);
+        console.log(`🔐 Session store: ${isRailway ? 'PostgreSQL' : 'Memory'}`);
+        console.log(`🍪 Cookie secure: ${sessionConfig.cookie.secure}`);
         console.log(`\n📋 Данные для входа:`);
         console.log(`   👤 Обычный пользователь: пароль 1111`);
         console.log(`   👑 РОП: rop / 1234`);
