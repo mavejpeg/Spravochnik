@@ -3049,3 +3049,71 @@ details details summary {
     padding: 10px 14px;
     font-size: 13px;
 }
+
+/* ========== АККОРДЕОНЫ (РАБОТАЮЩАЯ ВЕРСИЯ) ========== */
+.accordion {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.acc-header {
+    padding: 16px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    transition: background 0.2s;
+}
+
+.acc-header:hover {
+    background: var(--surface2);
+}
+
+.acc-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--strong);
+}
+
+.acc-arrow {
+    color: var(--muted);
+    transition: transform 0.3s;
+    font-size: 13px;
+}
+
+.accordion.open .acc-arrow {
+    transform: rotate(180deg);
+}
+
+.acc-body {
+    display: none;
+    padding: 4px 20px 18px;
+    border-top: 1px solid var(--border);
+}
+
+.accordion.open .acc-body {
+    display: block;
+}
+
+.acc-body p {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.7;
+    margin-top: 12px;
+}
+
+.acc-body ul {
+    margin: 8px 0;
+    padding-left: 24px;
+}
+
+.acc-body li {
+    margin: 6px 0;
+    color: var(--text);
+    line-height: 1.5;
+}
