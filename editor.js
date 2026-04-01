@@ -1,4 +1,4 @@
-// editor.js - полная версия с визуальным редактором
+// editor.js - полная версия для всех страниц
 
 let isRop = false;
 
@@ -133,7 +133,7 @@ function openVisualEditor(page, section) {
                 contentDiv.innerHTML = newContent;
                 alert('✅ Сохранено успешно!');
                 closeModal();
-                // Переинициализируем аккордеоны
+                // Переинициализируем аккордеоны если функция есть
                 if (typeof initAccordionsToDetails === 'function') {
                     initAccordionsToDetails();
                 }
@@ -431,7 +431,7 @@ function addElementToEditor(editorArea, type) {
                                 <button class="format-btn" data-format="underline"><u>U</u></button>
                                 <button class="format-btn" data-format="h3">H3</button>
                                 <button class="format-btn" data-format="insertUnorderedList">• Список</button>
-                                <button class="format-btn" data-format="insertOrderedList">1. Nумер.</button>
+                                <button class="format-btn" data-format="insertOrderedList">1. Нумер.</button>
                             </div>
                             <div class="rich-editor" contenteditable="true"></div>
                         </div>
@@ -757,14 +757,14 @@ function initTableEditor(container) {
     }
     html += '<th style="width:40px;"></th>   </thead><tbody>';
     for (let i = 1; i < rows.length; i++) {
-        html += '    <tr>';
+        html += '     <tr>';
         for (let j = 0; j < rows[i].length; j++) {
             html += `<td style="border: 1px solid var(--border); padding: 8px;"><input type="text" class="table-cell" value="${escapeHtml(rows[i][j] || '')}" placeholder="Значение" style="width:100%; background: transparent; border: none; padding: 4px;"></td>`;
         }
         html += `<td style="border: 1px solid var(--border); text-align: center;"><button class="remove-table-row" style="background: rgba(252,92,124,0.2); border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer;">🗑</button></td>`;
-        html += '   </tr>';
+        html += '    </tr>';
     }
-    html += '</tbody>   </table>';
+    html += '</tbody></table>';
     container.innerHTML = html;
     
     container.querySelectorAll('.remove-table-row').forEach(btn => {
@@ -839,7 +839,7 @@ function convertEditorToHtml(editorArea) {
             case 'table':
                 const tableData = JSON.parse(item.querySelector('.table-editor')?.dataset.rows || '[]');
                 if (tableData.length > 1) {
-                    let tableHtml = '<table class="ref-table"><thead>    <tr>';
+                    let tableHtml = '<table class="ref-table"><thead>     <tr>';
                     tableData[0].forEach(cell => tableHtml += `<th>${escapeHtml(cell)}</th>`);
                     tableHtml += '    </tr></thead><tbody>';
                     for (let i = 1; i < tableData.length; i++) {
