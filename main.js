@@ -1,12 +1,12 @@
-// main.js v3.3 - исправлены выпадающие списки
+// main.js v3.4 - работающие аккордеоны
 window.isRop = false;
 window.isRopGlobal = false;
 window._authLoaded = false;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Main.js v3.3 loaded');
+    console.log('Main.js v3.4 loaded');
     initTabs();
-    initAccordionsToDetails();
+    initAccordions();
     initSearch();
     loadUserInfo();
     setupLogout();
@@ -31,75 +31,23 @@ function handleTabClick(e) {
     if (sec) sec.classList.add('active');
 }
 
-// ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ВЫПАДАЮЩИХ СПИСКОВ ==========
-function initAccordionsToDetails() {
-    // Находим все аккордеоны и преобразуем их в details
+// ========== ПРОСТЫЕ РАБОТАЮЩИЕ АККОРДЕОНЫ ==========
+function initAccordions() {
     const accordions = document.querySelectorAll('.accordion');
-    accordions.forEach(acc => {
-        if (!acc.classList.contains('converted')) {
-            const header = acc.querySelector('.acc-header');
-            const body = acc.querySelector('.acc-body');
-            if (header && body) {
-                const title = header.querySelector('.acc-title')?.innerHTML || '';
-                
-                // Создаем details элемент
-                const details = document.createElement('details');
-                
-                // Создаем summary
-                const summary = document.createElement('summary');
-                summary.innerHTML = title;
-                
-                // Клонируем содержимое body
-                const contentDiv = document.createElement('div');
-                contentDiv.innerHTML = body.innerHTML;
-                contentDiv.className = 'acc-body';
-                
-                details.appendChild(summary);
-                details.appendChild(contentDiv);
-                
-                // Копируем состояние open
-                if (acc.classList.contains('open')) {
-                    details.open = true;
-                }
-                
-                // Заменяем аккордеон на details
-                acc.parentNode.replaceChild(details, acc);
-            }
+    console.log('Found accordions:', accordions.length);
+    
+    accordions.forEach(accordion => {
+        const header = accordion.querySelector('.acc-header');
+        if (header && !accordion.hasAttribute('data-initialized')) {
+            header.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                accordion.classList.toggle('open');
+                console.log('Accordion toggled:', accordion.classList.contains('open'));
+            });
+            accordion.setAttribute('data-initialized', 'true');
         }
     });
-    
-    // Добавляем обработчики для всех details
-    initDetailsHandlers();
-}
-
-// ========== НОВАЯ ФУНКЦИЯ ДЛЯ ОБРАБОТКИ DETAILS ==========
-function initDetailsHandlers() {
-    const details = document.querySelectorAll('details');
-    console.log('Found details elements:', details.length);
-    
-    details.forEach(detail => {
-        // Убираем старый обработчик, если есть
-        const summary = detail.querySelector('summary');
-        if (summary && !detail.hasAttribute('data-handler-initialized')) {
-            // Удаляем старый обработчик и добавляем новый
-            summary.removeEventListener('click', handleDetailsClick);
-            summary.addEventListener('click', handleDetailsClick);
-            detail.setAttribute('data-handler-initialized', 'true');
-            
-            // Добавляем стиль курсора
-            summary.style.cursor = 'pointer';
-            summary.style.userSelect = 'none';
-        }
-    });
-}
-
-function handleDetailsClick(e) {
-    e.preventDefault();
-    const detail = e.currentTarget.closest('details');
-    if (detail) {
-        detail.open = !detail.open;
-        console.log('Details toggled:', detail.open);
-    }
 }
 
 function initSearch() {
@@ -181,9 +129,9 @@ async function loadUserInfo() {
                 }
             }, 100);
             
-            // Повторная инициализация details (на случай, если контент загрузился позже)
+            // Повторная инициализация аккордеонов (на случай динамического контента)
             setTimeout(function() {
-                initDetailsHandlers();
+                initAccordions();
             }, 500);
 
         } else {
@@ -355,6 +303,5 @@ function escapeHtml(str) {
 
 window.openRopPanel = openRopPanel;
 window.initTabs = initTabs;
-window.initAccordionsToDetails = initAccordionsToDetails;
-window.initDetailsHandlers = initDetailsHandlers;
+window.initAccordions = initAccordions;
 window.loadUserInfo = loadUserInfo;
