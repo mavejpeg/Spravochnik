@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>Табак для кальяна — Справочник</title>
-<link rel="stylesheet" href="style.css?v=33">
+<title>Одноразки — Справочник</title>
+<link rel="stylesheet" href="style.css?v=35">
 </head>
 <body>
 
@@ -20,32 +20,52 @@
   </div>
 </header>
 
-<main style="max-width: 1200px; margin: 0 auto; padding: 28px 24px;">
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-manufacturers">🏭 Производители</button>
+  <button class="tab-btn" data-tab="tab-guide">📖 Гид по брендам</button>
+</nav>
 
-  <div class="sec-header">
-    <span class="sec-title">🌿 Табак для кальяна</span>
-    <button class="btn-add" id="btnAddManufacturer" style="display: none;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
-      Добавить производителя
-    </button>
+<main>
+
+  <!-- ПРОИЗВОДИТЕЛИ -->
+  <div class="section active" id="tab-manufacturers">
+    <div class="sec-header">
+      <span class="sec-title">⚡ Производители одноразок</span>
+      <button class="btn-add" id="btnAddManufacturer" style="display: none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+        Добавить производителя
+      </button>
+    </div>
+    <div class="manufacturers-grid" id="manufacturersGrid"></div>
   </div>
 
-  <div class="manufacturers-grid" id="manufacturersGrid"></div>
+  <!-- ГИД ПО БРЕНДАМ -->
+  <div class="section" id="tab-guide">
+    <div class="sec-header">
+      <span class="sec-title">Гид по брендам</span>
+      <button class="btn-edit-content" data-page="disposables" data-section="guide" style="display: none;">✏️ Редактировать</button>
+    </div>
+    <div id="guide-content">
+      <div class="accordion open"><div class="acc-header"><span class="acc-title">🔥 Крепкие бренды (7-10)</span><span class="acc-arrow">▼</span></div><div class="acc-body"><ul><li><strong>Husky</strong> — все модели крепкие, со льдом</li><li><strong>Iceberg</strong> — 6000 затяжек</li><li><strong>GENG</strong> — 8000/12000 затяжек</li><li><strong>Вака</strong> — 20000 затяжек, самая крепкая</li><li><strong>Fumo</strong> — 22000 затяжек</li><li><strong>Vozol Vista</strong> — 20000 затяжек</li></ul></div></div>
+      <div class="accordion"><div class="acc-header"><span class="acc-title">💨 Лёгкие бренды (1-3)</span><span class="acc-arrow">▼</span></div><div class="acc-body"><ul><li><strong>Plonk</strong> — премиальные лёгкие</li><li><strong>Ignite</strong> — натуральные ароматы</li><li><strong>Lost Mary</strong> — 4000-30000 затяжек</li><li><strong>Soak</strong> — 9000 затяжек</li><li><strong>Daft</strong> — 7000 затяжек, кальянная тяга</li></ul></div></div>
+      <div class="accordion"><div class="acc-header"><span class="acc-title">⚖️ Средние бренды (4-6)</span><span class="acc-arrow">▼</span></div><div class="acc-body"><ul><li><strong>KRZ</strong> — 8000 затяжек</li><li><strong>Inflave Strong</strong> — 18000 затяжек</li><li><strong>HQD</strong> — 12000-18000 затяжек</li><li><strong>Funky Lands</strong> — 10000 затяжек</li></ul></div></div>
+    </div>
+  </div>
 
 </main>
 
-<script src="core.js?v=33"></script>
-
+<script src="core.js?v=35"></script>
+<script src="main.js?v=35"></script>
+<script src="editor.js?v=1"></script>
 <script>
   let isRop = false;
 
   const strengthColors = {
-    light: { name: 'Лёгкий (1-3)', color: '#3cffa0', bg: 'rgba(60,255,160,0.2)' },
-    medium: { name: 'Средний (4-6)', color: '#fcb830', bg: 'rgba(252,184,48,0.2)' },
-    strong: { name: 'Крепкий (7-10)', color: '#fc5c7c', bg: 'rgba(252,92,124,0.2)' }
+    light: { name: 'Лёгкий (0-20мг)', color: '#3cffa0', bg: 'rgba(60,255,160,0.2)' },
+    medium: { name: 'Средний (20-50мг)', color: '#fcb830', bg: 'rgba(252,184,48,0.2)' },
+    strong: { name: 'Крепкий (50+мг)', color: '#fc5c7c', bg: 'rgba(252,92,124,0.2)' }
   };
 
-  // ========== СОРТИРОВКА ==========
   function sortManufacturersByClass(manufacturers) {
     const order = { premium: 1, medium: 2, economy: 3 };
     return manufacturers.sort((a, b) => {
@@ -73,11 +93,6 @@
       document.getElementById('userName').textContent = data.user.full_name;
       document.getElementById('ropBtn').style.display = isRop ? 'block' : 'none';
       document.getElementById('btnAddManufacturer').style.display = isRop ? 'flex' : 'none';
-      
-      const editBtns = document.querySelectorAll('.btn-edit-content');
-      editBtns.forEach(btn => {
-        btn.style.display = isRop ? 'inline-flex' : 'none';
-      });
     } else {
       window.location.href = '/login.html';
     }
@@ -108,7 +123,7 @@
           </div>
           <div class="field">
             <label>📝 Название *</label>
-            <input type="text" id="manufacturerName" value="${escapeHtml(editData?.name || '')}" placeholder="Например: Darkside">
+            <input type="text" id="manufacturerName" value="${escapeHtml(editData?.name || '')}" placeholder="Например: Husky">
           </div>
           <div class="field">
             <label>🏷️ Класс производителя</label>
@@ -186,10 +201,10 @@
         logo: photoData
       };
       
-      let url = '/api/manufacturers';
+      let url = '/api/disposables-manufacturers';
       let method = 'POST';
       if (isEdit) {
-        url = `/api/manufacturers/${editData.id}`;
+        url = `/api/disposables-manufacturers/${editData.id}`;
         method = 'PUT';
       }
       
@@ -223,22 +238,22 @@
         <div class="modal-body">
           <div class="field">
             <label>📝 Название линейки *</label>
-            <input type="text" id="lineName" value="${escapeHtml(editData?.name || '')}" placeholder="Например: Base, Needles, Supernova">
+            <input type="text" id="lineName" value="${escapeHtml(editData?.name || '')}" placeholder="Например: Ice, Fruit, Classic">
           </div>
           <div class="field">
             <label>🎨 Цветовая градация (крепость)</label>
             <div class="strength-color-options">
               <label class="strength-color-option light">
                 <input type="radio" name="strengthColor" value="light" ${editData?.strength_color === 'light' || (!editData && !editData?.strength_color) ? 'checked' : ''}>
-                <div class="option-content"><span class="color-dot"></span><span class="option-text">🟢 Лёгкий (1-3)</span></div>
+                <div class="option-content"><span class="color-dot"></span><span class="option-text">🟢 Лёгкий (0-20мг)</span></div>
               </label>
               <label class="strength-color-option medium">
                 <input type="radio" name="strengthColor" value="medium" ${editData?.strength_color === 'medium' ? 'checked' : ''}>
-                <div class="option-content"><span class="color-dot"></span><span class="option-text">🟡 Средний (4-6)</span></div>
+                <div class="option-content"><span class="color-dot"></span><span class="option-text">🟡 Средний (20-50мг)</span></div>
               </label>
               <label class="strength-color-option strong">
                 <input type="radio" name="strengthColor" value="strong" ${editData?.strength_color === 'strong' ? 'checked' : ''}>
-                <div class="option-content"><span class="color-dot"></span><span class="option-text">🔴 Крепкий (7-10)</span></div>
+                <div class="option-content"><span class="color-dot"></span><span class="option-text">🔴 Крепкий (50+мг)</span></div>
               </label>
             </div>
           </div>
@@ -304,10 +319,10 @@
         strength_color: strengthColor
       };
       
-      let url = '/api/lines';
+      let url = '/api/disposables-lines';
       let method = 'POST';
       if (isEdit) {
-        url = `/api/lines/${editData.id}`;
+        url = `/api/disposables-lines/${editData.id}`;
         method = 'PUT';
       }
       
@@ -335,7 +350,7 @@
   }
 
   async function loadManufacturers() {
-    const response = await fetch('/api/manufacturers', { credentials: 'include' });
+    const response = await fetch('/api/disposables-manufacturers', { credentials: 'include' });
     let manufacturers = await response.json();
     manufacturers = sortManufacturersByClass(manufacturers);
     
@@ -383,7 +398,7 @@
       return;
     }
     
-    const response = await fetch(`/api/manufacturers/${manufacturerId}`, { credentials: 'include' });
+    const response = await fetch(`/api/disposables-manufacturers/${manufacturerId}`, { credentials: 'include' });
     const data = await response.json();
     let lines = data.lines || [];
     lines = sortLinesByStrength(lines);
@@ -416,27 +431,27 @@
   }
 
   async function editLine(lineId, manufacturerId) {
-    const response = await fetch(`/api/lines/${lineId}`, { credentials: 'include' });
+    const response = await fetch(`/api/disposables-lines/${lineId}`, { credentials: 'include' });
     const data = await response.json();
     openLineModal(manufacturerId, data);
   }
   
   async function deleteLine(id) {
     if (confirm('Удалить линейку?')) {
-      await fetch(`/api/lines/${id}`, { method: 'DELETE', credentials: 'include' });
+      await fetch(`/api/disposables-lines/${id}`, { method: 'DELETE', credentials: 'include' });
       loadManufacturers();
     }
   }
   
   window.editManufacturer = (id) => {
-    fetch(`/api/manufacturers/${id}`, { credentials: 'include' })
+    fetch(`/api/disposables-manufacturers/${id}`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => openManufacturerModal(data));
   };
   
   async function deleteManufacturer(id) {
     if (confirm('Удалить производителя и все его линейки?')) {
-      await fetch(`/api/manufacturers/${id}`, { method: 'DELETE', credentials: 'include' });
+      await fetch(`/api/disposables-manufacturers/${id}`, { method: 'DELETE', credentials: 'include' });
       loadManufacturers();
     }
   }
@@ -444,6 +459,29 @@
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+  }
+
+  function initTabs() {
+    const btns = document.querySelectorAll('.tab-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const target = this.dataset.tab;
+        btns.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        const sec = document.getElementById(target);
+        if (sec) sec.classList.add('active');
+      });
+    });
+  }
+
+  function initAccordions() {
+    const headers = document.querySelectorAll('.acc-header');
+    headers.forEach(header => {
+      header.addEventListener('click', function() {
+        this.closest('.accordion').classList.toggle('open');
+      });
+    });
   }
 
   document.getElementById('logoutBtn')?.addEventListener('click', async () => {
@@ -576,6 +614,8 @@
     }
   };
 
+  initTabs();
+  initAccordions();
   checkPermissions().then(() => loadManufacturers());
 </script>
 
