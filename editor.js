@@ -1,4 +1,5 @@
-// editor.js v3.0 - исправлен race condition, добавлен drag-and-drop, фолбэк для инициализации
+// editor.js v3.2 - исправлено сохранение
+console.log('Editor.js v3.2 loaded');
 
 // Слушаем событие от main.js
 window.addEventListener('authReady', function(e) {
@@ -10,18 +11,20 @@ window.addEventListener('authReady', function(e) {
 // На случай если editor.js загружен позже чем authReady сработал
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Editor.js: DOMContentLoaded, checking auth state');
-    // Если main.js уже закончил и установил флаг
     if (window._authLoaded === true) {
         console.log('Editor.js: auth already loaded, isRop:', window.isRopGlobal);
         setupEditButtons(window.isRopGlobal);
     }
-    // Иначе ждём события authReady (уже подписаны выше)
+    setTimeout(function() {
+        if (window.isRopGlobal !== undefined) {
+            setupEditButtons(window.isRopGlobal);
+        }
+    }, 1000);
 });
 
-// ========== НАСТРОЙКА КНОПОК ==========
 function setupEditButtons(isRop) {
     const editBtns = document.querySelectorAll('.btn-edit-content');
-    console.log('Editor.js v3: Found edit buttons:', editBtns.length, '| isRop:', isRop);
+    console.log('Editor.js: Found edit buttons:', editBtns.length, '| isRop:', isRop);
     editBtns.forEach(btn => {
         btn.removeEventListener('click', handleEditClick);
         btn.addEventListener('click', handleEditClick);
@@ -30,7 +33,9 @@ function setupEditButtons(isRop) {
 }
 
 window.setupEditButtons = setupEditButtons;
-window.refreshEditButtons = function() { setupEditButtons(window.isRopGlobal); };
+window.refreshEditButtons = function() { 
+    setupEditButtons(window.isRopGlobal); 
+};
 
 function handleEditClick(e) {
     const btn = e.currentTarget;
@@ -40,7 +45,6 @@ function handleEditClick(e) {
     openVisualEditor(page, section);
 }
 
-// ========== TITLE MAP ==========
 function getSectionTitle(section) {
     const titles = {
         'parts': 'Комплектация кальяна', 'bowls': 'Чаши', 'coal': 'Уголь и управление', 'clean': 'Обслуживание и чистка',
@@ -56,18 +60,19 @@ function getSectionTitle(section) {
     return titles[section] || section;
 }
 
-// ========== ВИЗУАЛЬНЫЙ РЕДАКТОР ==========
-function openVisualEditor(page, section) {
+async function openVisualEditor(page, section) {
     const contentDiv = document.getElementById(`${section}-content`);
     if (!contentDiv) {
         console.error('Content div not found:', `${section}-content`);
-        alert('Не удалось найти контент для редактирования. Возможно, раздел не поддерживает редактирование.');
+        alert('Не удалось найти контент для редактирования.');
         return;
     }
+    
     const existingModal = document.getElementById('visualEditorModal');
     if (existingModal) existingModal.remove();
 
     const currentHtml = contentDiv.innerHTML;
+    
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.id = 'visualEditorModal';
@@ -109,10 +114,7 @@ function openVisualEditor(page, section) {
 
     const editorArea = modal.querySelector('#editorArea');
 
-    // Инициализируем таблицы
     editorArea.querySelectorAll('.table-editor').forEach(te => initTableEditor(te));
-
-    // Инициализируем обработчики
     setupRemoveButtons(editorArea);
     setupRichEditors(editorArea);
     setupListEditors(editorArea);
@@ -120,7 +122,6 @@ function openVisualEditor(page, section) {
     setupQuizEditors(editorArea);
     setupDragAndDrop(editorArea);
 
-    // Кнопки тулбара
     modal.querySelectorAll('.tool-btn').forEach(btn => {
         btn.addEventListener('click', () => addElementToEditor(editorArea, btn.dataset.action));
     });
@@ -137,6 +138,10 @@ function openVisualEditor(page, section) {
     modal.querySelector('.btn-save').addEventListener('click', async () => {
         const newContent = convertEditorToHtml(editorArea);
         const url = `/api/content/${page}/${section}`;
+        
+        console.log('Saving content to:', url);
+        console.log('Content length:', newContent.length);
+        
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -144,16 +149,19 @@ function openVisualEditor(page, section) {
                 credentials: 'include',
                 body: JSON.stringify({ content: newContent })
             });
+            
+            const result = await response.json();
+            
             if (response.ok) {
                 contentDiv.innerHTML = newContent;
                 alert('✅ Сохранено успешно!');
                 closeModal();
-                if (typeof initAccordionsToDetails === 'function') initAccordionsToDetails();
+                if (typeof initAccordions === 'function') initAccordions();
             } else {
-                const error = await response.json();
-                alert('❌ Ошибка сохранения: ' + (error.error || 'Неизвестная ошибка'));
+                alert('❌ Ошибка сохранения: ' + (result.error || 'Неизвестная ошибка'));
             }
         } catch (error) {
+            console.error('Save error:', error);
             alert('❌ Ошибка: ' + error.message);
         }
     });
@@ -219,7 +227,6 @@ function setupDragAndDrop(editorArea) {
     }
 
     attachDragHandlers();
-    // Наблюдатель для новых элементов
     const observer = new MutationObserver(attachDragHandlers);
     observer.observe(editorArea, { childList: true });
 }
@@ -271,18 +278,13 @@ function convertElementToEditorItem(el) {
     const tagName = el.tagName.toLowerCase();
 
     if (tagName === 'details') {
-    // Получаем заголовок из summary (убираем стрелку)
         const summaryEl = el.querySelector('summary');
         let title = '';
         if (summaryEl) {
-            // Убираем возможные span со стрелкой
             title = summaryEl.innerHTML.replace(/<span[^>]*>.*?<\/span>/g, '').trim();
         }
-    
-        // Получаем содержимое body (все что не summary)
         const bodyEl = el.querySelector('.acc-body') || el;
         const content = Array.from(bodyEl.children).map(c => c.outerHTML).join('');
-    
         return itemWrapper('📁', 'Выпадающий список', `
             <input type="text" class="dropdown-title" placeholder="Заголовок" value="${escapeHtml(title)}" style="width:100%; margin-bottom:8px;">
             ${richEditorBlock(content || '<ul><li>Пункт списка</li></ul>')}
@@ -372,7 +374,6 @@ function convertElementToEditorItem(el) {
             </div>
         `, 'list');
     }
-    // Default: rich text
     return itemWrapper('📝', 'Текст', richEditorBlock(el.innerHTML), 'text');
 }
 
@@ -391,7 +392,6 @@ function escapeAttr(str) {
     return str.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
 }
 
-// ========== ДОБАВЛЕНИЕ НОВОГО ЭЛЕМЕНТА ==========
 function addElementToEditor(editorArea, action) {
     const emptyMsg = editorArea.querySelector('.editor-empty');
     if (emptyMsg) emptyMsg.remove();
@@ -491,7 +491,6 @@ function addElementToEditor(editorArea, action) {
     }
 }
 
-// ========== RICH EDITORS ==========
 function setupRichEditors(container) {
     container.querySelectorAll('.rich-editor').forEach(editor => {
         const toolbar = editor.closest('.rich-editor-container')?.querySelector('.format-toolbar');
@@ -512,7 +511,6 @@ function setupRichEditors(container) {
     });
 }
 
-// ========== LIST EDITORS ==========
 function setupListEditors(container) {
     container.querySelectorAll('.list-editor').forEach(editor => {
         const addBtn = editor.querySelector('.add-list-item');
@@ -537,7 +535,6 @@ function setupListEditors(container) {
     });
 }
 
-// ========== STEPS EDITORS ==========
 function setupStepsEditors(container) {
     container.querySelectorAll('.steps-editor').forEach(editor => {
         const addBtn = editor.closest('.editor-item-content')?.querySelector('.add-step-btn');
@@ -578,7 +575,6 @@ function updateStepNumbers(editor) {
     });
 }
 
-// ========== REMOVE BUTTONS ==========
 function setupRemoveButtons(container) {
     container.querySelectorAll('.remove-editor-item').forEach(btn => {
         if (!btn._rmInit) {
@@ -595,7 +591,6 @@ function setupRemoveButtons(container) {
         }
     });
 
-    // Table row/col buttons
     container.querySelectorAll('.add-table-row').forEach(btn => {
         if (btn._tableInit) return;
         btn._tableInit = true;
@@ -622,7 +617,6 @@ function setupRemoveButtons(container) {
     });
 }
 
-// ========== TABLE EDITOR ==========
 function initTableEditor(container) {
     let rows = JSON.parse(container.dataset.rows || '[]');
     if (rows.length === 0) rows.push(['Заголовок', ''], ['', '']);
@@ -634,20 +628,20 @@ function initTableEditor(container) {
                 style="width:100%; background:transparent; border:none; padding:2px; color:var(--text); font-weight:600;">
         </th>`;
     }
-    html += `<th style="width:36px; border:1px solid var(--border);"></th></tr></thead><tbody>`;
+    html += `<th style="width:36px; border:1px solid var(--border);"></th> </thead><tbody>`;
     for (let i = 1; i < rows.length; i++) {
-        html += '<tr>';
+        html += '端';
         for (let j = 0; j < rows[i].length; j++) {
             html += `<td style="border:1px solid var(--border); padding:6px;">
                 <input type="text" class="table-cell" value="${escapeHtml(rows[i][j]||'')}" placeholder="Значение"
                     style="width:100%; background:transparent; border:none; padding:2px; color:var(--text);">
-                </td>`;
+             </td>`;
         }
         html += `<td style="border:1px solid var(--border); text-align:center; padding:4px;">
             <button class="remove-table-row" style="background:rgba(252,92,124,0.15); border:none; border-radius:4px; padding:3px 7px; cursor:pointer; color:var(--accent2);">🗑</button>
-        </td></tr>`;
+         </td> </tr>`;
     }
-    html += '</tbody></table>';
+    html += '</tbody> </table>';
     container.innerHTML = html;
 
     container.querySelectorAll('.remove-table-row').forEach(btn => {
@@ -669,7 +663,6 @@ function updateTableData(container) {
     container.dataset.rows = JSON.stringify(rows);
 }
 
-// ========== QUIZ EDITOR ==========
 function setupQuizEditors(container) {
     container.querySelectorAll('.quiz-editor').forEach(editor => {
         initQuizEditor(editor);
@@ -778,7 +771,6 @@ function setupQuestionHandlers(qDiv, qId) {
     });
 }
 
-// ========== HTML → СОХРАНЕНИЕ ==========
 function convertEditorToHtml(editorArea) {
     let html = '';
     editorArea.querySelectorAll('.editor-item').forEach(item => {
@@ -817,11 +809,11 @@ function convertEditorToHtml(editorArea) {
                 updateTableData(item.querySelector('.table-editor'));
                 const rows = JSON.parse(item.querySelector('.table-editor')?.dataset.rows || '[]');
                 if (rows.length > 1) {
-                    html += `<table class="ref-table"><thead> <tr>${rows[0].map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr> </thead><tbody>`;
+                    html += `<table class="ref-table"><thead> <tr>${rows[0].map(c => `<th>${escapeHtml(c)}</th>`).join('')} </tr> </thead><tbody>`;
                     for (let i = 1; i < rows.length; i++) {
                         html += `<tr>${rows[i].map(c => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`;
                     }
-                    html += '</tbody></table>';
+                    html += '</tbody> </table>';
                 }
                 break;
             }
@@ -845,24 +837,20 @@ function convertEditorToHtml(editorArea) {
             }
             case 'dropdown': {
                 const dtitle = item.querySelector('.dropdown-title')?.value || '';
-                    // Получаем контент из rich-editor и преобразуем его в правильную структуру
                 let dcontent = item.querySelector('.rich-editor')?.innerHTML || '';
-    
-                    // Если контент пустой, создаем структуру по умолчанию
-                    if (!dcontent.trim()) {
-                        dcontent = '<ul><li><strong>Пример пункта 1</strong> — описание</li><li><strong>Пример пункта 2</strong> — описание</li><li><strong>Пример пункта 3</strong> — описание</li></ul>';
-                    }
-    
-                    if (dtitle || dcontent) {
-                        html += `<details>
-                            <summary>${escapeHtml(dtitle)}</summary>
-                            <div class="acc-body">
-                                ${dcontent}
-                            </div>
-                        </details>`;
-                    }
-                    break;
+                if (!dcontent.trim()) {
+                    dcontent = '<ul><li><strong>Пример пункта 1</strong> — описание</li><li><strong>Пример пункта 2</strong> — описание</li></ul>';
                 }
+                if (dtitle || dcontent) {
+                    html += `<details>
+                        <summary>${escapeHtml(dtitle)}</summary>
+                        <div class="acc-body">
+                            ${dcontent}
+                        </div>
+                    </details>`;
+                }
+                break;
+            }
             case 'card': {
                 const ctitle = item.querySelector('.card-title')?.value || '';
                 const citems = Array.from(item.querySelectorAll('.list-item input')).map(i => i.value.trim()).filter(Boolean);
@@ -906,7 +894,6 @@ function convertEditorToHtml(editorArea) {
     return html;
 }
 
-// ========== QUIZ RUNTIME ==========
 window.checkQuizInline = function(btn) {
     const quizBlock = btn.closest('.quiz-block');
     let correctCount = 0;
