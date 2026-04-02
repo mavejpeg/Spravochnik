@@ -1,10 +1,10 @@
-// main.js v3.6 - исправлен (убрана ошибка app is not defined)
+// main.js v3.7 - исправлена авторизация при прямых переходах
 window.isRop = false;
 window.isRopGlobal = false;
 window._authLoaded = false;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Main.js v3.6 loaded');
+    console.log('Main.js v3.7 loaded');
     initTabs();
     initAccordions();
     initSearch();
@@ -31,7 +31,6 @@ function handleTabClick(e) {
     if (sec) sec.classList.add('active');
 }
 
-// ========== АККОРДЕОНЫ ==========
 function initAccordions() {
     const accordions = document.querySelectorAll('.accordion');
     accordions.forEach(accordion => {
@@ -62,7 +61,6 @@ function handleSearch(e) {
     });
 }
 
-// ========== ЗАГРУЗКА КОНТЕНТА ИЗ БД ==========
 async function loadContent(page, section) {
     const contentDiv = document.getElementById(`${section}-content`);
     if (!contentDiv) return;
@@ -75,7 +73,6 @@ async function loadContent(page, section) {
             contentDiv.innerHTML = data.content;
         }
         
-        // После загрузки контента - инициализируем аккордеоны
         setTimeout(() => {
             initAccordions();
             initDetailsHandlers();
@@ -86,24 +83,21 @@ async function loadContent(page, section) {
     }
 }
 
-// ========== ЗАГРУЗКА ВСЕГО КОНТЕНТА НА СТРАНИЦЕ ==========
 async function loadAllContent() {
-    // Определяем текущую страницу по URL
     const path = window.location.pathname;
     let page = '';
     
-    if (path.includes('snus.html')) page = 'snus';
-    else if (path.includes('cash.html')) page = 'cash';
-    else if (path.includes('checks.html')) page = 'checks';
-    else if (path.includes('hookah.html')) page = 'hookah';
-    else if (path.includes('sales.html')) page = 'sales';
-    else if (path.includes('training.html')) page = 'training';
-    else if (path.includes('disposables.html')) page = 'disposables';
-    else if (path.includes('tobacco.html')) page = 'tobacco';
-    else if (path.includes('liquids.html')) page = 'liquids';
+    if (path.includes('snus.html') || path.includes('/snus')) page = 'snus';
+    else if (path.includes('cash.html') || path.includes('/cash')) page = 'cash';
+    else if (path.includes('checks.html') || path.includes('/checks')) page = 'checks';
+    else if (path.includes('hookah.html') || path.includes('/hookah')) page = 'hookah';
+    else if (path.includes('sales.html') || path.includes('/sales')) page = 'sales';
+    else if (path.includes('training.html') || path.includes('/training')) page = 'training';
+    else if (path.includes('disposables.html') || path.includes('/disposables')) page = 'disposables';
+    else if (path.includes('tobacco.html') || path.includes('/tobacco')) page = 'tobacco';
+    else if (path.includes('liquids.html') || path.includes('/liquids')) page = 'liquids';
     else return;
     
-    // Находим все секции с контентом на странице
     const contentDivs = document.querySelectorAll('[id$="-content"]');
     const sections = [];
     
@@ -112,7 +106,6 @@ async function loadAllContent() {
         sections.push(section);
     });
     
-    // Загружаем контент для каждой секции
     for (const section of sections) {
         await loadContent(page, section);
     }
@@ -120,7 +113,6 @@ async function loadAllContent() {
     console.log(`Loaded content for ${sections.length} sections on ${page}`);
 }
 
-// ========== ДЛЯ ВЫПАДАЮЩИХ СПИСКОВ ==========
 function initDetailsHandlers() {
     const details = document.querySelectorAll('details');
     details.forEach(detail => {
@@ -136,7 +128,6 @@ function initDetailsHandlers() {
     });
 }
 
-// ========== АВТОРИЗАЦИЯ ==========
 async function loadUserInfo() {
     try {
         console.log('Checking auth...');
@@ -145,7 +136,6 @@ async function loadUserInfo() {
             headers: { 'Cache-Control': 'no-cache' }
         });
         const data = await response.json();
-        console.log('Auth response:', data);
 
         if (data.authenticated) {
             const isRop = (data.user.role === 'rop' || data.user.role === 'root');
@@ -162,41 +152,33 @@ async function loadUserInfo() {
             if (userNameSpan) userNameSpan.textContent = data.user.full_name;
             if (ropBtn) ropBtn.style.display = isRop ? 'block' : 'none';
 
-            // Показываем кнопку добавления производителя
             const addManufBtn = document.getElementById('btnAddManufacturer');
             if (addManufBtn) {
                 addManufBtn.style.display = isRop ? 'flex' : 'none';
             }
 
-            // Все .btn-add кроме btnAddManufacturer
             document.querySelectorAll('.btn-add:not(#btnAddManufacturer)').forEach(btn => {
                 btn.style.display = isRop ? 'flex' : 'none';
             });
 
-            // Кнопки редактирования контента
             document.querySelectorAll('.btn-edit-content').forEach(btn => {
                 btn.style.display = isRop ? 'inline-flex' : 'none';
             });
 
-            // Диспатчим событие для editor.js
             window.dispatchEvent(new CustomEvent('authReady', {
                 detail: { isRop, user: data.user }
             }));
 
-            // Вызываем колбэк страницы
             if (typeof window.onAuthReady === 'function') {
                 window.onAuthReady(isRop, data.user);
             }
 
-            // Для страниц с производителями
             if (typeof window.loadManufacturers === 'function') {
                 window.loadManufacturers();
             }
             
-            // ЗАГРУЖАЕМ КОНТЕНТ ИЗ БД
             await loadAllContent();
             
-            // Инициализация кнопок редактора
             setTimeout(function() {
                 if (typeof window.setupEditButtons === 'function') {
                     window.setupEditButtons(isRop);
@@ -207,11 +189,14 @@ async function loadUserInfo() {
 
         } else {
             console.log('❌ Not authenticated, redirecting to login...');
-            window.location.href = '/login.html';
+            // Сохраняем текущий URL для возврата после входа
+            sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+            window.location.href = '/login';
         }
     } catch (error) {
         console.error('Auth error:', error);
-        window.location.href = '/login.html';
+        sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+        window.location.href = '/login';
     }
 }
 
@@ -240,7 +225,7 @@ function setupLogout() {
 
 async function handleLogout() {
     await fetch('/api/logout', { method: 'POST', credentials: 'include' });
-    window.location.href = '/login.html';
+    window.location.href = '/login';
 }
 
 function setupRopPanel() {
