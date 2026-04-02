@@ -1265,6 +1265,53 @@ app.post('/api/content/:page/:section', requireRop, async (req, res) => {
     }
 });
 
+// Добавьте в server.js после всех app.get для HTML файлов
+
+// ========== КРАСИВЫЕ URL (без .html) ==========
+app.get('/login', (req, res) => {
+    res.redirect('/login.html');
+});
+
+app.get('/', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/tobacco', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'tobacco.html'));
+});
+
+app.get('/liquids', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'liquids.html'));
+});
+
+app.get('/snus', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'snus.html'));
+});
+
+app.get('/hookah', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'hookah.html'));
+});
+
+app.get('/sales', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'sales.html'));
+});
+
+app.get('/checks', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'checks.html'));
+});
+
+app.get('/cash', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'cash.html'));
+});
+
+app.get('/disposables', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'disposables.html'));
+});
+
+app.get('/training', protectPage, (req, res) => {
+    res.sendFile(path.join(__dirname, 'training.html'));
+});
+
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
