@@ -1,645 +1,1093 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход — Справочник</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+// main.js v7.0 - ИСПРАВЛЕНА КНОПКА АДМИНИСТРИРОВАНИЯ
+
+window.isRop = false;
+window.isRopGlobal = false;
+window._authLoaded = false;
+window._ropPanelOpen = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Main.js v7.0 loaded');
+    initTabs();
+    initAccordions();
+    initSearch();
+    loadUserInfo();
+    setupLogout();
+    setupRopPanel();
+});
+
+function initTabs() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.removeEventListener('click', handleTabClick);
+        btn.addEventListener('click', handleTabClick);
+    });
+}
+
+function handleTabClick(e) {
+    const btn = e.currentTarget;
+    const target = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    const sec = document.getElementById(target);
+    if (sec) sec.classList.add('active');
+}
+
+function initAccordions() {
+    const accordions = document.querySelectorAll('.accordion');
+    accordions.forEach(accordion => {
+        const header = accordion.querySelector('.acc-header');
+        if (header && !accordion.hasAttribute('data-initialized')) {
+            header.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                accordion.classList.toggle('open');
+            });
+            accordion.setAttribute('data-initialized', 'true');
+        }
+    });
+}
+
+function initSearch() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.removeEventListener('input', handleSearch);
+        searchInput.addEventListener('input', handleSearch);
+    }
+}
+
+function handleSearch(e) {
+    const val = e.target.value.toLowerCase();
+    document.querySelectorAll('[data-searchable]').forEach(el => {
+        el.classList.toggle('search-hidden', !el.textContent.toLowerCase().includes(val));
+    });
+}
+
+async function loadContent(page, section) {
+    const contentDiv = document.getElementById(`${section}-content`);
+    if (!contentDiv) return;
+    
+    try {
+        const response = await fetch(`/api/content/${page}/${section}`, { credentials: 'include' });
+        const data = await response.json();
+        
+        if (data.content && data.content.trim()) {
+            contentDiv.innerHTML = data.content;
         }
         
-        body {
-            background: linear-gradient(135deg, #09090e 0%, #111118 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Manrope', sans-serif;
-        }
+        setTimeout(() => {
+            initAccordions();
+            initDetailsHandlers();
+        }, 100);
         
-        .login-container {
-            width: 100%;
-            max-width: 420px;
-            padding: 20px;
+    } catch (error) {
+        console.error('Failed to load content:', error);
+    }
+}
+
+async function loadAllContent() {
+    const path = window.location.pathname;
+    let page = '';
+    
+    if (path.includes('snus.html') || path.includes('/snus')) page = 'snus';
+    else if (path.includes('cash.html') || path.includes('/cash')) page = 'cash';
+    else if (path.includes('checks.html') || path.includes('/checks')) page = 'checks';
+    else if (path.includes('hookah.html') || path.includes('/hookah')) page = 'hookah';
+    else if (path.includes('sales.html') || path.includes('/sales')) page = 'sales';
+    else if (path.includes('training.html') || path.includes('/training')) page = 'training';
+    else if (path.includes('disposables.html') || path.includes('/disposables')) page = 'disposables';
+    else if (path.includes('tobacco.html') || path.includes('/tobacco')) page = 'tobacco';
+    else if (path.includes('liquids.html') || path.includes('/liquids')) page = 'liquids';
+    else return;
+    
+    const contentDivs = document.querySelectorAll('[id$="-content"]');
+    const sections = [];
+    
+    contentDivs.forEach(div => {
+        const section = div.id.replace('-content', '');
+        sections.push(section);
+    });
+    
+    for (const section of sections) {
+        await loadContent(page, section);
+    }
+    
+    console.log('Loaded content for', sections.length, 'sections on', page);
+}
+
+function initDetailsHandlers() {
+    const details = document.querySelectorAll('details');
+    details.forEach(detail => {
+        const summary = detail.querySelector('summary');
+        if (summary && !detail.hasAttribute('data-handler-initialized')) {
+            summary.addEventListener('click', function(e) {
+                e.preventDefault();
+                detail.open = !detail.open;
+            });
+            detail.setAttribute('data-handler-initialized', 'true');
+            summary.style.cursor = 'pointer';
         }
-        
-        .login-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 28px;
-            padding: 48px 40px;
-            text-align: center;
-            animation: fadeInUp 0.5s ease;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
+    });
+}
+
+async function loadUserInfo() {
+    try {
+        console.log('Checking auth...');
+        const response = await fetch('/api/check-auth', { 
+            credentials: 'include',
+            headers: { 'Cache-Control': 'no-cache' }
+        });
+        const data = await response.json();
+
+        if (data.authenticated) {
+            const isRop = (data.user.role === 'rop' || data.user.role === 'root');
+
+            window.isRop = isRop;
+            window.isRopGlobal = isRop;
+            window._authLoaded = true;
+            window._currentUser = data.user;
+            
+            console.log('User authenticated:', data.user.full_name, 'ROP:', isRop);
+
+            const userNameSpan = document.getElementById('userName');
+            const ropBtn = document.getElementById('ropBtn');
+            if (userNameSpan) userNameSpan.textContent = data.user.full_name;
+            if (ropBtn) {
+                ropBtn.style.display = isRop ? 'block' : 'none';
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+
+            const addManufBtn = document.getElementById('btnAddManufacturer');
+            if (addManufBtn) {
+                addManufBtn.style.display = isRop ? 'flex' : 'none';
             }
+
+            document.querySelectorAll('.btn-add:not(#btnAddManufacturer)').forEach(btn => {
+                btn.style.display = isRop ? 'flex' : 'none';
+            });
+
+            document.querySelectorAll('.btn-edit-content').forEach(btn => {
+                btn.style.display = isRop ? 'inline-flex' : 'none';
+            });
+
+            window.dispatchEvent(new CustomEvent('authReady', {
+                detail: { isRop, user: data.user }
+            }));
+
+            if (typeof window.onAuthReady === 'function') {
+                window.onAuthReady(isRop, data.user);
+            }
+
+            if (typeof window.loadManufacturers === 'function') {
+                window.loadManufacturers();
+            }
+            
+            await loadAllContent();
+            
+            setTimeout(function() {
+                if (typeof window.setupEditButtons === 'function') {
+                    window.setupEditButtons(isRop);
+                }
+                initAccordions();
+                initDetailsHandlers();
+            }, 200);
+
+        } else {
+            console.log('Not authenticated, redirecting to login...');
+            sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+            window.location.href = '/login';
         }
-        
-        .logo {
-            margin-bottom: 32px;
-        }
-        
-        .logo-icon {
-            font-size: 64px;
-            margin-bottom: 12px;
-            display: inline-block;
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
-        }
-        
-        .logo h1 {
-            font-family: 'Unbounded', sans-serif;
-            font-size: 20px;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-        }
-        
-        .logo p {
-            font-size: 12px;
-            color: var(--muted);
-            margin-top: 8px;
-        }
-        
-        .input-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        
-        .input-group label {
-            display: block;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-        
-        .input-group input {
-            width: 100%;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 14px 16px;
-            color: var(--text);
-            font-size: 14px;
-            font-family: 'Manrope', sans-serif;
-            transition: all 0.2s;
-        }
-        
-        .input-group input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-        
-        .input-group input::placeholder {
-            color: var(--muted);
-            opacity: 0.5;
-        }
-        
-        .login-btn {
-            width: 100%;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            border: none;
-            border-radius: 14px;
-            padding: 14px;
-            color: white;
-            font-size: 14px;
-            font-weight: 700;
-            font-family: 'Manrope', sans-serif;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 8px;
-        }
-        
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(124, 92, 252, 0.3);
-        }
-        
-        .login-btn:active {
-            transform: translateY(0);
-        }
-        
-        .register-link {
-            text-align: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-        }
-        
-        .register-link a {
-            color: var(--accent);
-            text-decoration: none;
-            font-size: 13px;
-            cursor: pointer;
-        }
-        
-        .register-link a:hover {
-            text-decoration: underline;
-        }
-        
-        .error-message {
-            background: rgba(252, 92, 124, 0.1);
-            border: 1px solid var(--accent2);
-            border-radius: 12px;
-            padding: 10px;
-            font-size: 12px;
-            color: var(--accent2);
-            text-align: center;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
-        .error-message.show {
-            display: block;
-            animation: shake 0.3s ease;
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        
-        .info-text {
-            font-size: 11px;
-            color: var(--muted);
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-        }
-        
-        /* Модальные окна регистрации */
-        .register-modal {
-            max-width: 450px;
-        }
-        
-        .register-step {
-            display: none;
-        }
-        
-        .register-step.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .step-indicator {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 24px;
-        }
-        
-        .step-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--border);
-            transition: all 0.3s;
-        }
-        
-        .step-dot.active {
-            background: var(--accent);
-            width: 24px;
-            border-radius: 4px;
-        }
-        
-        .step-dot.completed {
-            background: var(--accent3);
-        }
-        
-        .step-title {
-            text-align: center;
-            margin-bottom: 24px;
-            font-family: 'Unbounded', sans-serif;
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--strong);
-        }
-        
-        .pending-message {
-            text-align: center;
-            padding: 20px;
-        }
-        
-        .pending-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-        
-        .pending-title {
-            font-family: 'Unbounded', sans-serif;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--accent4);
-            margin-bottom: 12px;
-        }
-        
-        .pending-text {
-            color: var(--text2);
-            font-size: 14px;
-            line-height: 1.6;
-            margin-bottom: 24px;
-        }
-        
-        .password-strength {
-            margin-top: 8px;
-            font-size: 11px;
-        }
-        
-        .strength-weak { color: var(--accent2); }
-        .strength-medium { color: var(--accent4); }
-        .strength-strong { color: var(--accent3); }
-        
-        select {
-            width: 100%;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 14px 16px;
-            color: var(--text);
-            font-size: 14px;
-            font-family: 'Manrope', sans-serif;
-            cursor: pointer;
-        }
-        
-        select:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-    </style>
-</head>
-<body>
-    <div class="login-container">
-        <div class="login-card">
-            <div class="logo">
-                <div class="logo-icon">☁</div>
-                <h1>СПРАВОЧНИК</h1>
-                <p>Войдите или зарегистрируйтесь</p>
+    } catch (error) {
+        console.error('Auth error:', error);
+        sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+        window.location.href = '/login';
+    }
+}
+
+window.refreshEditButtons = function() {
+    const isRop = window.isRopGlobal === true;
+    document.querySelectorAll('.btn-edit-content').forEach(btn => {
+        btn.style.display = isRop ? 'inline-flex' : 'none';
+    });
+    const addManufBtn = document.getElementById('btnAddManufacturer');
+    if (addManufBtn) {
+        addManufBtn.style.display = isRop ? 'flex' : 'none';
+    }
+};
+window.setupEditButtons = window.refreshEditButtons;
+
+function setupLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.removeEventListener('click', handleLogout);
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+}
+
+async function handleLogout() {
+    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+    window.location.href = '/login';
+}
+
+function setupRopPanel() {
+    const ropBtn = document.getElementById('ropBtn');
+    if (ropBtn) {
+        console.log('Setting up ROP button listener');
+        ropBtn.removeEventListener('click', handleRopPanel);
+        ropBtn.addEventListener('click', handleRopPanel);
+    }
+}
+
+async function handleRopPanel(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('ROP button clicked, opening panel...');
+    
+    if (window._ropPanelOpen) {
+        console.log('Panel already open, ignoring');
+        return;
+    }
+    
+    await openRopPanel();
+}
+
+// ========== ГЛАВНАЯ ФУНКЦИЯ openRopPanel ==========
+window.openRopPanel = async function() {
+    if (window._ropPanelOpen) {
+        console.log('Panel already open');
+        return;
+    }
+    
+    console.log('openRopPanel called');
+    window._ropPanelOpen = true;
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'ropPanelModal';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 1400px; width: 95%; height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
+            <div class="modal-header">
+                <span class="modal-title">⚙️ Администрирование</span>
+                <button class="modal-close">✕</button>
             </div>
-            
-            <div class="error-message" id="errorMessage">
-                ❌ Ошибка
+            <div style="display: flex; gap: 0; padding: 0 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto;">
+                <button class="admin-tab active" data-panel="users">👥 Пользователи</button>
+                <button class="admin-tab" data-panel="schedule">📅 Графики</button>
+                <button class="admin-tab" data-panel="points">📍 Точки</button>
+                <button class="admin-tab" data-panel="quizzes">📋 Опросники</button>
+                <button class="admin-tab" data-panel="roles">👥 Роли</button>
             </div>
-            
-            <!-- Форма входа -->
-            <form id="loginForm">
-                <div class="input-group">
-                    <label>👤 ЛОГИН</label>
-                    <input type="text" id="loginUsername" placeholder="Введите логин" autofocus>
-                </div>
-                <div class="input-group">
-                    <label>🔐 ПАРОЛЬ</label>
-                    <input type="password" id="loginPassword" placeholder="Введите пароль">
-                </div>
-                <button type="submit" class="login-btn">ВОЙТИ</button>
-            </form>
-            
-            <div class="register-link">
-                <a onclick="openRegisterModal()">📝 Нет аккаунта? Зарегистрироваться</a>
-            </div>
-            
-            <div class="info-text">
-                🔐 Если забыли пароль, обратитесь к руководителю
+            <div style="flex: 1; overflow-y: auto; padding: 20px 24px;">
+                <div id="adminPanel-users" class="admin-panel"></div>
+                <div id="adminPanel-schedule" class="admin-panel" style="display:none;"></div>
+                <div id="adminPanel-points" class="admin-panel" style="display:none;"></div>
+                <div id="adminPanel-quizzes" class="admin-panel" style="display:none;"></div>
+                <div id="adminPanel-roles" class="admin-panel" style="display:none;"></div>
             </div>
         </div>
-    </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+
+    const closeModal = () => { 
+        modal.classList.remove('open'); 
+        setTimeout(() => {
+            modal.remove();
+            window._ropPanelOpen = false;
+        }, 300);
+    };
     
-    <!-- Модальное окно регистрации -->
-    <div id="registerModal" class="modal-overlay" style="display: none;">
-        <div class="modal register-modal" style="max-width: 450px;">
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    // Tab switching
+    modal.querySelectorAll('.admin-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            modal.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            modal.querySelectorAll('.admin-panel').forEach(p => p.style.display = 'none');
+            tab.classList.add('active');
+            const panelId = `adminPanel-${tab.dataset.panel}`;
+            const panel = document.getElementById(panelId);
+            if (panel) panel.style.display = 'block';
+            
+            if (tab.dataset.panel === 'schedule') {
+                setTimeout(() => {
+                    if (typeof window.initScheduleEditor === 'function') {
+                        window.initScheduleEditor();
+                    }
+                }, 100);
+            } else if (tab.dataset.panel === 'quizzes') {
+                setTimeout(() => {
+                    if (typeof window.loadQuizzesAdmin === 'function') {
+                        window.loadQuizzesAdmin();
+                    }
+                }, 100);
+            } else if (tab.dataset.panel === 'roles') {
+                setTimeout(() => {
+                    if (typeof window.renderRolesPanel === 'function') {
+                        window.renderRolesPanel();
+                    }
+                }, 100);
+            }
+        });
+    });
+
+    await renderUsersPanel();
+    renderSchedulePanel();
+    await renderPointsPanel();
+    renderQuizzesPanel();
+    renderRolesPanel();
+};
+
+// ===================== USERS PANEL =====================
+async function renderUsersPanel() {
+    const panel = document.getElementById('adminPanel-users');
+    if (!panel) return;
+    
+    panel.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <div class="admin-panel-label">➕ Новый пользователь</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <input class="admin-panel-input" type="text" id="newUsername" placeholder="Логин" style="flex:1; min-width:90px;">
+                <input class="admin-panel-input" type="text" id="newPassword" placeholder="Пароль (4 цифры)" maxlength="4" style="width:130px;">
+                <input class="admin-panel-input" type="text" id="newFullName" placeholder="ФИО" style="flex:1; min-width:130px;">
+                <select id="newUserRole" class="admin-panel-select" style="width:120px;">
+                    <option value="user">Сотрудник</option>
+                    <option value="rop">РОП</option>
+                </select>
+                <button id="addUserBtn" class="btn-add">Добавить</button>
+            </div>
+        </div>
+        <div class="admin-panel-label">📋 Сотрудники</div>
+        <div id="usersList"></div>
+    `;
+    await loadUsersList();
+    
+    const addBtn = document.getElementById('addUserBtn');
+    if (addBtn) {
+        addBtn.addEventListener('click', async () => {
+            const username = document.getElementById('newUsername').value.trim();
+            const password = document.getElementById('newPassword').value;
+            const full_name = document.getElementById('newFullName').value.trim();
+            const role = document.getElementById('newUserRole').value;
+            
+            if (!username || !password || !full_name) { 
+                alert('Заполните все поля');
+                return; 
+            }
+            if (!/^\d{4}$/.test(password)) { 
+                alert('Пароль — 4 цифры');
+                return; 
+            }
+            
+            const r = await fetch('/api/users', {
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                credentials: 'include',
+                body: JSON.stringify({ username, password, full_name, role })
+            });
+            
+            if (r.ok) {
+                alert('Пользователь добавлен');
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('newFullName').value = '';
+                await loadUsersList();
+            } else { 
+                const e = await r.json(); 
+                alert(e.error || 'Ошибка');
+            }
+        });
+    }
+}
+
+async function loadUsersList() {
+    try {
+        const [usersRes, meRes, pointsRes] = await Promise.all([
+            fetch('/api/users-full', { credentials: 'include' }),
+            fetch('/api/check-auth', { credentials: 'include' }),
+            fetch('/api/points', { credentials: 'include' })
+        ]);
+        const users = await usersRes.json();
+        const me = (await meRes.json()).user;
+        const points = await pointsRes.json();
+        const container = document.getElementById('usersList');
+        if (!container) return;
+
+        if (!users.length) {
+            container.innerHTML = '<div style="color:var(--muted); padding:20px;">Нет пользователей</div>';
+            return;
+        }
+
+        container.innerHTML = users.map(user => {
+            const canChange = me.role === 'root' || (me.role === 'rop' && user.role === 'user');
+            const canDelete = me.role === 'root' && user.username !== 'root' && user.id !== me.id;
+            const roleLabel = user.role === 'root' ? 'ROOT' : user.role === 'rop' ? 'РОП' : 'Сотрудник';
+            const pointOpts = points.map(p =>
+                `<option value="${p.id}" ${user.point_id === p.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`
+            ).join('');
+            
+            return `
+            <div class="admin-user-row" style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; ${canChange ? 'margin-bottom:10px;' : ''}">
+                    <div>
+                        <div style="font-weight:600; color:var(--strong); font-size:14px;">${escapeHtml(user.full_name)}</div>
+                        <div style="font-size:11px; color:var(--muted); margin-top:2px;">${user.username} · ${roleLabel}${user.position ? ' · ' + escapeHtml(user.position) : ''}${user.point_name ? ' · ' + escapeHtml(user.point_name) : ''}</div>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        ${canChange ? `<button onclick="window.changePasswordUser(${user.id},'${escapeHtml(user.full_name)}')" class="btn-edit" style="padding:5px 12px; font-size:12px;">🔑 Пароль</button>` : ''}
+                        ${canDelete ? `<button onclick="window.deleteUserById(${user.id})" class="btn-delete" style="padding:5px 12px; font-size:12px;">🗑</button>` : ''}
+                    </div>
+                </div>
+                ${canChange ? `
+                <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                    <input class="admin-panel-input" type="text" placeholder="Должность" value="${escapeHtml(user.position || '')}" id="pos-${user.id}" style="flex:1; min-width:120px;">
+                    <select class="admin-panel-select" id="point-${user.id}" style="flex:1; min-width:130px;">
+                        <option value="">— Точка —</option>${pointOpts}
+                    </select>
+                    <button onclick="window.saveUserProfile(${user.id})" class="btn-add" style="padding:8px 14px; font-size:12px;">💾 Сохранить</button>
+                </div>` : ''}
+            </div>`;
+        }).join('');
+    } catch (error) {
+        console.error('Failed to load users list:', error);
+    }
+}
+
+window.changePasswordUser = async function(userId, userName) {
+    const newPassword = prompt(`Новый пароль (4 цифры) для ${userName}:`);
+    if (!newPassword) return;
+    if (!/^\d{4}$/.test(newPassword)) { 
+        alert('Пароль — 4 цифры');
+        return; 
+    }
+    const r = await fetch(`/api/users/${userId}/change-password`, {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        credentials: 'include',
+        body: JSON.stringify({ newPassword })
+    });
+    if (r.ok) {
+        alert('Пароль изменён');
+    } else {
+        alert('Ошибка');
+    }
+};
+
+window.deleteUserById = async function(userId) {
+    if (!confirm('Удалить пользователя?')) return;
+    const r = await fetch(`/api/users/${userId}`, { method: 'DELETE', credentials: 'include' });
+    if (r.ok) { 
+        alert('Пользователь удален');
+        await loadUsersList(); 
+    } else { 
+        alert('Ошибка');
+    }
+};
+
+window.saveUserProfile = async function(userId) {
+    const posEl = document.getElementById(`pos-${userId}`);
+    const pointEl = document.getElementById(`point-${userId}`);
+    
+    if (!posEl) return;
+    
+    const r = await fetch(`/api/profile/${userId}`, {
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json' }, 
+        credentials: 'include',
+        body: JSON.stringify({ 
+            position: posEl.value.trim(), 
+            point_id: pointEl?.value || null
+        })
+    });
+    
+    if (r.ok) {
+        posEl.style.borderColor = 'var(--accent3)';
+        if (pointEl) pointEl.style.borderColor = 'var(--accent3)';
+        setTimeout(() => { 
+            posEl.style.borderColor = ''; 
+            if (pointEl) pointEl.style.borderColor = '';
+        }, 1500);
+        alert('Сохранено');
+        await loadUsersList();
+    } else {
+        alert('Ошибка сохранения');
+    }
+};
+
+// ===================== SCHEDULE PANEL =====================
+function renderSchedulePanel() {
+    const panel = document.getElementById('adminPanel-schedule');
+    if (!panel) return;
+    
+    panel.innerHTML = `
+        <div class="schedule-nav">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button id="schedulePrevMonth" class="schedule-nav-btn">←</button>
+                    <span id="scheduleCurrentMonth" class="schedule-current-month"></span>
+                    <button id="scheduleNextMonth" class="schedule-nav-btn">→</button>
+                </div>
+                <div style="min-width: 250px;">
+                    <select id="schedulePointSelect" class="schedule-point-select">
+                        <option value="">— Выберите точку —</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div id="scheduleEditorContainer" style="margin-top: 20px;">
+            <div style="text-align: center; padding: 60px; color: var(--muted);">
+                📅 Выберите точку для редактирования графика
+            </div>
+        </div>
+    `;
+    
+    if (typeof window.initScheduleEditor === 'undefined') {
+        const script = document.createElement('script');
+        script.src = '/schedule-editor.js';
+        script.onload = () => {
+            if (typeof window.initScheduleEditor === 'function') {
+                window.initScheduleEditor();
+            }
+        };
+        document.head.appendChild(script);
+    }
+}
+
+// ===================== POINTS PANEL =====================
+async function renderPointsPanel() {
+    const panel = document.getElementById('adminPanel-points');
+    if (!panel) return;
+    
+    panel.innerHTML = `
+        <div style="margin-bottom:20px;">
+            <div class="admin-panel-label">➕ Новая точка</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <input class="admin-panel-input" type="text" id="newPointName" placeholder="Название точки" style="flex:1; min-width:140px;">
+                <input class="admin-panel-input" type="text" id="newPointAddress" placeholder="Адрес" style="flex:1; min-width:160px;">
+                <button id="addPointBtn" class="btn-add">Добавить</button>
+            </div>
+        </div>
+        <div class="admin-panel-label">📍 Список точек</div>
+        <div id="pointsList"></div>
+    `;
+    await loadPointsList();
+
+    const addBtn = document.getElementById('addPointBtn');
+    if (addBtn) {
+        addBtn.addEventListener('click', async () => {
+            const name = document.getElementById('newPointName').value.trim();
+            const address = document.getElementById('newPointAddress').value.trim();
+            if (!name) { 
+                alert('Введите название точки');
+                return; 
+            }
+            const r = await fetch('/api/points', {
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                credentials: 'include',
+                body: JSON.stringify({ name, address })
+            });
+            if (r.ok) {
+                alert('Точка добавлена');
+                document.getElementById('newPointName').value = '';
+                document.getElementById('newPointAddress').value = '';
+                await loadPointsList();
+            } else {
+                alert('Ошибка');
+            }
+        });
+    }
+}
+
+async function loadPointsList() {
+    try {
+        const pointsRes = await fetch('/api/points', { credentials: 'include' });
+        const points = await pointsRes.json();
+        const list = document.getElementById('pointsList');
+        if (!list) return;
+
+        if (!points.length) { 
+            list.innerHTML = '<div style="color:var(--muted); font-size:13px; padding:8px 0;">Точки не добавлены</div>'; 
+            return; 
+        }
+
+        list.innerHTML = points.map(p => {
+            return `
+            <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <div style="font-weight:600; color:var(--strong); font-size:14px;">📍 ${escapeHtml(p.name)}</div>
+                    <div style="font-size:12px; color:var(--muted); margin-top:3px;">${escapeHtml(p.address || 'Адрес не указан')}</div>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button onclick="window.deletePoint(${p.id})" class="btn-delete" style="padding:5px 12px; font-size:12px;">🗑 Удалить</button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (error) {
+        console.error('Failed to load points:', error);
+    }
+}
+
+window.deletePoint = async function(id) {
+    if (!confirm('Удалить точку? Все сотрудники будут откреплены.')) return;
+    const r = await fetch(`/api/points/${id}`, { method: 'DELETE', credentials: 'include' });
+    if (r.ok) {
+        alert('Точка удалена');
+        await loadPointsList();
+        await loadUsersList();
+    } else {
+        alert('Ошибка');
+    }
+};
+
+// ===================== QUIZZES PANEL =====================
+function renderQuizzesPanel() {
+    const panel = document.getElementById('adminPanel-quizzes');
+    if (!panel) return;
+    
+    panel.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <div class="admin-panel-label">📝 Управление опросниками</div>
+            <button onclick="window.openQuizEditorInAdmin()" class="btn-add" style="margin-bottom: 20px;">➕ Создать новый опросник</button>
+        </div>
+        <div class="admin-panel-label">📋 Список опросников</div>
+        <div id="quizzesAdminList"></div>
+    `;
+    
+    loadQuizzesAdmin();
+}
+
+async function loadQuizzesAdmin() {
+    try {
+        const response = await fetch('/api/quizzes', { credentials: 'include' });
+        const quizzes = await response.json();
+        
+        const container = document.getElementById('quizzesAdminList');
+        if (!container) return;
+        
+        if (!quizzes.length) {
+            container.innerHTML = '<div style="color: var(--muted); padding: 20px; text-align: center;">Нет опросников. Создайте первый.</div>';
+            return;
+        }
+        
+        container.innerHTML = quizzes.map(quiz => `
+            <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--strong); font-size: 14px;">${escapeHtml(quiz.title)}</div>
+                        <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+                            ${quiz.description ? escapeHtml(quiz.description) : '—'}
+                            | Вопросов: ${quiz.questions?.length || 0}
+                            | Статус: ${quiz.is_active ? '🟢 Активен' : '🔴 Неактивен'}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="window.openQuizEditorInAdmin(${quiz.id})" class="btn-edit" style="padding: 5px 12px;">✏️ Редактировать</button>
+                        <button onclick="window.deleteQuizInAdmin(${quiz.id})" class="btn-delete" style="padding: 5px 12px;">🗑 Удалить</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load quizzes:', error);
+    }
+}
+
+window.openQuizEditorInAdmin = function(quizId = null) {
+    if (typeof window.openQuizEditor === 'function') {
+        window.openQuizEditor(quizId);
+    } else {
+        alert('Редактор опросников загружается. Попробуйте еще раз.');
+        const script = document.createElement('script');
+        script.src = '/training.html';
+    }
+};
+
+window.deleteQuizInAdmin = async function(quizId) {
+    if (!confirm('Удалить опросник? Все результаты будут потеряны.')) return;
+    
+    try {
+        const response = await fetch(`/api/quizzes/${quizId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            alert('Опросник удален');
+            loadQuizzesAdmin();
+            if (typeof window.loadQuizzes === 'function') window.loadQuizzes();
+        } else {
+            alert('Ошибка удаления');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+};
+
+// ===================== ROLES PANEL =====================
+function renderRolesPanel() {
+    const panel = document.getElementById('adminPanel-roles');
+    if (!panel) return;
+    
+    panel.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <div class="admin-panel-label">👥 Управление ролями</div>
+            <button onclick="openCreateRoleModal()" class="btn-add" style="margin-bottom: 20px;">➕ Создать новую роль</button>
+        </div>
+        <div class="admin-panel-label">📋 Список ролей</div>
+        <div id="rolesList"></div>
+        <div class="admin-panel-label" style="margin-top: 30px;">👥 Пользователи</div>
+        <div id="usersWithRolesList"></div>
+    `;
+    
+    loadRolesList();
+    loadUsersWithRolesList();
+}
+
+async function loadRolesList() {
+    try {
+        const response = await fetch('/api/roles', { credentials: 'include' });
+        const roles = await response.json();
+        
+        const container = document.getElementById('rolesList');
+        if (!container) return;
+        
+        if (!roles.length) {
+            container.innerHTML = '<div style="color: var(--muted); padding: 20px;">Нет ролей</div>';
+            return;
+        }
+        
+        container.innerHTML = roles.map(role => `
+            <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <div style="font-weight: 600; font-size: 16px; color: var(--accent);">${escapeHtml(role.display_name)}</div>
+                        <div style="font-size: 12px; color: var(--muted);">${escapeHtml(role.name)}</div>
+                        <div style="font-size: 12px; margin-top: 4px;">${escapeHtml(role.description || 'Нет описания')}</div>
+                        <div style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+                            Уровень: ${role.level} | Пользователей: ${role.users_count}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="openEditRoleModal(${role.id})" class="btn-edit" style="padding: 5px 12px;">✏️ Редактировать</button>
+                        ${role.name !== 'root' && role.name !== 'user' ? 
+                            `<button onclick="deleteRole(${role.id})" class="btn-delete" style="padding: 5px 12px;">🗑 Удалить</button>` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load roles:', error);
+    }
+}
+
+async function loadUsersWithRolesList() {
+    try {
+        const response = await fetch('/api/users-with-roles', { credentials: 'include' });
+        const users = await response.json();
+        const rolesResponse = await fetch('/api/roles', { credentials: 'include' });
+        const roles = await rolesResponse.json();
+        
+        const container = document.getElementById('usersWithRolesList');
+        if (!container) return;
+        
+        if (!users.length) {
+            container.innerHTML = '<div style="color: var(--muted); padding: 20px;">Нет пользователей</div>';
+            return;
+        }
+        
+        container.innerHTML = users.map(user => `
+            <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <div style="font-weight: 600;">${escapeHtml(user.full_name)}</div>
+                        <div style="font-size: 12px; color: var(--muted);">${user.username}</div>
+                        <div style="font-size: 11px; margin-top: 4px;">
+                            Текущая роль: <strong>${user.role_display || user.custom_role || user.role || 'Сотрудник'}</strong>
+                        </div>
+                    </div>
+                    <div>
+                        <select id="role-select-${user.id}" class="admin-panel-select" style="width: 200px;">
+                            <option value="">— Выберите роль —</option>
+                            ${roles.map(role => `
+                                <option value="${role.id}" ${user.role_id === role.id ? 'selected' : ''}>
+                                    ${escapeHtml(role.display_name)}
+                                </option>
+                            `).join('')}
+                        </select>
+                        <button onclick="assignUserRole(${user.id})" class="btn-add" style="margin-top: 8px; width: 100%;">Назначить</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load users with roles:', error);
+    }
+}
+
+window.assignUserRole = async function(userId) {
+    const select = document.getElementById(`role-select-${userId}`);
+    const role_id = select.value ? parseInt(select.value) : null;
+    
+    try {
+        const response = await fetch(`/api/users/${userId}/role`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ role_id, custom_role: null })
+        });
+        
+        if (response.ok) {
+            alert('Роль назначена');
+            loadUsersWithRolesList();
+        } else {
+            const error = await response.json();
+            alert(error.error || 'Ошибка');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+};
+
+window.openCreateRoleModal = function() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 500px;">
             <div class="modal-header">
-                <span class="modal-title">📝 Регистрация</span>
-                <button class="modal-close" onclick="closeRegisterModal()">✕</button>
+                <span class="modal-title">➕ Создать новую роль</span>
+                <button class="modal-close">✕</button>
             </div>
             <div class="modal-body">
-                <div class="step-indicator">
-                    <div class="step-dot active" id="step1Dot"></div>
-                    <div class="step-dot" id="step2Dot"></div>
-                    <div class="step-dot" id="step3Dot"></div>
+                <div class="field">
+                    <label>Название (системное)</label>
+                    <input type="text" id="roleName" placeholder="supervisor">
+                    <div style="font-size: 11px; color: var(--muted);">Только латиница, без пробелов</div>
                 </div>
-                
-                <!-- Шаг 1: ФИО -->
-                <div id="step1" class="register-step active">
-                    <div class="step-title">📝 Как вас зовут?</div>
-                    <div class="input-group">
-                        <label>ФАМИЛИЯ И ИМЯ</label>
-                        <input type="text" id="regFullName" placeholder="Иванов Иван" autocomplete="off">
-                    </div>
-                    <button onclick="nextStep()" class="login-btn">ПРОДОЛЖИТЬ →</button>
+                <div class="field">
+                    <label>Отображаемое имя</label>
+                    <input type="text" id="roleDisplayName" placeholder="Супервайзер">
                 </div>
-                
-                <!-- Шаг 2: Логин и пароль -->
-                <div id="step2" class="register-step">
-                    <div class="step-title">🔐 Придумайте логин и пароль</div>
-                    <div class="input-group">
-                        <label>ЛОГИН</label>
-                        <input type="text" id="regUsername" placeholder="ivan.ivanov" autocomplete="off">
-                    </div>
-                    <div class="input-group">
-                        <label>ПАРОЛЬ</label>
-                        <input type="password" id="regPassword" placeholder="Придумайте сложный пароль">
-                        <div id="passwordStrength" class="password-strength"></div>
-                    </div>
-                    <div class="input-group">
-                        <label>ПОВТОРИТЕ ПАРОЛЬ</label>
-                        <input type="password" id="regPasswordConfirm" placeholder="Повторите пароль">
-                    </div>
-                    <div style="display: flex; gap: 12px; margin-top: 16px;">
-                        <button onclick="prevStep()" class="btn-cancel" style="flex: 1;">← НАЗАД</button>
-                        <button onclick="nextStep()" class="login-btn" style="flex: 1;">ПРОДОЛЖИТЬ →</button>
-                    </div>
+                <div class="field">
+                    <label>Описание</label>
+                    <textarea id="roleDescription" rows="3" placeholder="Обязанности и права..."></textarea>
                 </div>
-                
-                <!-- Шаг 3: Выбор точки -->
-                <div id="step3" class="register-step">
-                    <div class="step-title">📍 Выберите точку работы</div>
-                    <div class="input-group">
-                        <label>ТОРГОВАЯ ТОЧКА</label>
-                        <select id="regPointId">
-                            <option value="">-- Выберите точку --</option>
+                <div class="field">
+                    <label>Уровень доступа</label>
+                    <input type="number" id="roleLevel" value="30" min="0" max="100">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel">Отмена</button>
+                <button class="btn-save" id="createRoleBtn">Создать</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    const closeModal = () => {
+        modal.classList.remove('open');
+        setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    modal.querySelector('#createRoleBtn').addEventListener('click', async () => {
+        const name = modal.querySelector('#roleName').value.trim().toLowerCase();
+        const display_name = modal.querySelector('#roleDisplayName').value.trim();
+        const description = modal.querySelector('#roleDescription').value.trim();
+        const level = parseInt(modal.querySelector('#roleLevel').value);
+        
+        if (!name || !display_name) {
+            alert('Заполните название и отображаемое имя');
+            return;
+        }
+        
+        if (!/^[a-z_]+$/.test(name)) {
+            alert('Название может содержать только латинские буквы и подчеркивания');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/roles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ name, display_name, description, level, permissions: [] })
+            });
+            
+            if (response.ok) {
+                alert('Роль создана');
+                closeModal();
+                loadRolesList();
+                loadUsersWithRolesList();
+            } else {
+                const error = await response.json();
+                alert(error.error || 'Ошибка');
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    });
+};
+
+window.openEditRoleModal = async function(roleId) {
+    try {
+        const response = await fetch('/api/roles', { credentials: 'include' });
+        const roles = await response.json();
+        const role = roles.find(r => r.id === roleId);
+        
+        if (!role) {
+            alert('Роль не найдена');
+            return;
+        }
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal" style="max-width: 500px;">
+                <div class="modal-header">
+                    <span class="modal-title">✏️ Редактировать: ${escapeHtml(role.display_name)}</span>
+                    <button class="modal-close">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="field">
+                        <label>Отображаемое имя</label>
+                        <input type="text" id="editRoleDisplayName" value="${escapeHtml(role.display_name)}">
+                    </div>
+                    <div class="field">
+                        <label>Описание</label>
+                        <textarea id="editRoleDescription" rows="3">${escapeHtml(role.description || '')}</textarea>
+                    </div>
+                    <div class="field">
+                        <label>Уровень доступа</label>
+                        <input type="number" id="editRoleLevel" value="${role.level}" min="0" max="100">
+                    </div>
+                    <div class="field">
+                        <label>Активна</label>
+                        <select id="editRoleActive">
+                            <option value="true" ${role.is_active ? 'selected' : ''}>Да</option>
+                            <option value="false" ${!role.is_active ? 'selected' : ''}>Нет</option>
                         </select>
                     </div>
-                    <div style="display: flex; gap: 12px; margin-top: 16px;">
-                        <button onclick="prevStep()" class="btn-cancel" style="flex: 1;">← НАЗАД</button>
-                        <button onclick="submitRegistration()" class="login-btn" style="flex: 1;">ОТПРАВИТЬ ЗАЯВКУ</button>
-                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel">Отмена</button>
+                    <button class="btn-save" id="saveRoleBtn">Сохранить</button>
                 </div>
             </div>
-        </div>
-    </div>
-    
-    <!-- Модальное окно ожидания -->
-    <div id="pendingModal" class="modal-overlay" style="display: none;">
-        <div class="modal register-modal" style="max-width: 400px;">
-            <div class="pending-message">
-                <div class="pending-icon">⏳</div>
-                <div class="pending-title">Заявка отправлена</div>
-                <div class="pending-text">
-                    Ваша заявка на регистрацию отправлена руководителю.<br>
-                    Доступ к системе будет открыт после подтверждения.<br>
-                    Ожидайте уведомление.
-                </div>
-                <button onclick="closePendingModal()" class="login-btn">ПОНЯТНО</button>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-        let currentStep = 1;
-        let pointsList = [];
+        `;
         
-        // Проверка авторизации
-        fetch('/api/check-auth', { credentials: 'include' })
-            .then(res => res.json())
-            .then(data => {
-                if (data.authenticated) {
-                    window.location.href = '/';
-                }
-            })
-            .catch(err => console.error('Auth check error:', err));
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('open'), 10);
         
-        // Загрузка точек для регистрации
-        async function loadPoints() {
-            try {
-                const response = await fetch('/api/points-public');
-                const points = await response.json();
-                pointsList = points;
-                const select = document.getElementById('regPointId');
-                select.innerHTML = '<option value="">-- Выберите точку --</option>' +
-                    points.map(p => `<option value="${p.id}">📍 ${p.name}${p.address ? ' — ' + p.address : ''}</option>`).join('');
-            } catch (error) {
-                console.error('Failed to load points:', error);
-            }
-        }
-        
-        // Проверка сложности пароля
-        function checkPasswordStrength(password) {
-            let strength = 0;
-            if (password.length >= 8) strength++;
-            if (password.match(/[a-z]/)) strength++;
-            if (password.match(/[A-Z]/)) strength++;
-            if (password.match(/[0-9]/)) strength++;
-            if (password.match(/[^a-zA-Z0-9]/)) strength++;
-            
-            if (strength <= 2) return { level: 'weak', text: 'Слабый пароль', class: 'strength-weak' };
-            if (strength <= 4) return { level: 'medium', text: 'Средний пароль', class: 'strength-medium' };
-            return { level: 'strong', text: 'Сложный пароль ✓', class: 'strength-strong' };
-        }
-        
-        // Обработчик ввода пароля
-        document.getElementById('regPassword')?.addEventListener('input', function(e) {
-            const strength = checkPasswordStrength(e.target.value);
-            const div = document.getElementById('passwordStrength');
-            div.innerHTML = `<span class="${strength.class}">${strength.text}</span>`;
-        });
-        
-        function openRegisterModal() {
-            document.getElementById('registerModal').style.display = 'flex';
-            setTimeout(() => document.getElementById('registerModal').classList.add('open'), 10);
-            loadPoints();
-            currentStep = 1;
-            updateSteps();
-        }
-        
-        function closeRegisterModal() {
-            const modal = document.getElementById('registerModal');
+        const closeModal = () => {
             modal.classList.remove('open');
-            setTimeout(() => modal.style.display = 'none', 300);
-            // Очистка формы
-            document.getElementById('regFullName').value = '';
-            document.getElementById('regUsername').value = '';
-            document.getElementById('regPassword').value = '';
-            document.getElementById('regPasswordConfirm').value = '';
-            document.getElementById('passwordStrength').innerHTML = '';
-        }
+            setTimeout(() => modal.remove(), 300);
+        };
         
-        function updateSteps() {
-            // Обновляем видимость шагов
-            document.getElementById('step1').classList.remove('active');
-            document.getElementById('step2').classList.remove('active');
-            document.getElementById('step3').classList.remove('active');
-            document.getElementById(`step${currentStep}`).classList.add('active');
+        modal.querySelector('.modal-close').addEventListener('click', closeModal);
+        modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+        
+        modal.querySelector('#saveRoleBtn').addEventListener('click', async () => {
+            const display_name = modal.querySelector('#editRoleDisplayName').value.trim();
+            const description = modal.querySelector('#editRoleDescription').value.trim();
+            const level = parseInt(modal.querySelector('#editRoleLevel').value);
+            const is_active = modal.querySelector('#editRoleActive').value === 'true';
             
-            // Обновляем индикаторы
-            for (let i = 1; i <= 3; i++) {
-                const dot = document.getElementById(`step${i}Dot`);
-                if (i < currentStep) {
-                    dot.classList.add('completed');
-                    dot.classList.remove('active');
-                } else if (i === currentStep) {
-                    dot.classList.add('active');
-                    dot.classList.remove('completed');
-                } else {
-                    dot.classList.remove('active', 'completed');
-                }
-            }
-        }
-        
-        function nextStep() {
-            if (currentStep === 1) {
-                const fullName = document.getElementById('regFullName').value.trim();
-                if (!fullName) {
-                    showError('Введите фамилию и имя');
-                    return;
-                }
-                if (fullName.split(' ').length < 2) {
-                    showError('Введите фамилию и имя через пробел');
-                    return;
-                }
-                currentStep = 2;
-                updateSteps();
-            } else if (currentStep === 2) {
-                const username = document.getElementById('regUsername').value.trim();
-                const password = document.getElementById('regPassword').value;
-                const confirm = document.getElementById('regPasswordConfirm').value;
-                
-                if (!username) {
-                    showError('Введите логин');
-                    return;
-                }
-                if (username.length < 3) {
-                    showError('Логин должен быть не менее 3 символов');
-                    return;
-                }
-                if (!password) {
-                    showError('Введите пароль');
-                    return;
-                }
-                const strength = checkPasswordStrength(password);
-                if (strength.level === 'weak') {
-                    showError('Придумайте более сложный пароль (минимум 8 символов, буквы и цифры)');
-                    return;
-                }
-                if (password !== confirm) {
-                    showError('Пароли не совпадают');
-                    return;
-                }
-                currentStep = 3;
-                updateSteps();
-            }
-        }
-        
-        function prevStep() {
-            if (currentStep > 1) {
-                currentStep--;
-                updateSteps();
-            }
-        }
-        
-        async function submitRegistration() {
-            const pointId = document.getElementById('regPointId').value;
-            if (!pointId) {
-                showError('Выберите точку работы');
-                return;
-            }
-            
-            const fullName = document.getElementById('regFullName').value.trim();
-            const username = document.getElementById('regUsername').value.trim();
-            const password = document.getElementById('regPassword').value;
-            
-            try {
-                const response = await fetch('/api/register-request', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        full_name: fullName,
-                        username: username,
-                        password: password,
-                        point_id: parseInt(pointId)
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    closeRegisterModal();
-                    document.getElementById('pendingModal').style.display = 'flex';
-                    setTimeout(() => document.getElementById('pendingModal').classList.add('open'), 10);
-                } else {
-                    showError(data.error || 'Ошибка регистрации');
-                }
-            } catch (error) {
-                showError('Ошибка соединения');
-            }
-        }
-        
-        function closePendingModal() {
-            const modal = document.getElementById('pendingModal');
-            modal.classList.remove('open');
-            setTimeout(() => modal.style.display = 'none', 300);
-        }
-        
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = `❌ ${message}`;
-            errorDiv.classList.add('show');
-            setTimeout(() => {
-                errorDiv.classList.remove('show');
-            }, 3000);
-        }
-        
-        // Вход в систему
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            
-            if (!username || !password) {
-                showError('Введите логин и пароль');
+            if (!display_name) {
+                alert('Введите отображаемое имя');
                 return;
             }
             
             try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
+                const updateResponse = await fetch(`/api/roles/${roleId}`, {
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ display_name, description, level, is_active })
                 });
                 
-                const data = await response.json();
-                
-                if (response.ok) {
-                    window.location.href = '/';
+                if (updateResponse.ok) {
+                    alert('Сохранено');
+                    closeModal();
+                    loadRolesList();
+                    loadUsersWithRolesList();
                 } else {
-                    showError(data.error || 'Неверный логин или пароль');
+                    const error = await updateResponse.json();
+                    alert(error.error || 'Ошибка');
                 }
             } catch (error) {
-                showError('Ошибка соединения');
+                alert('Ошибка: ' + error.message);
             }
+        });
+    } catch (error) {
+        alert('Ошибка загрузки роли');
+    }
+};
+
+window.deleteRole = async function(roleId) {
+    if (!confirm('Удалить роль? Пользователи с этой ролью останутся, но роль будет сброшена.')) return;
+    
+    try {
+        const response = await fetch(`/api/roles/${roleId}`, {
+            method: 'DELETE',
+            credentials: 'include'
         });
         
-        // Enter key submit
-        document.getElementById('loginPassword').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-            }
-        });
-    </script>
-</body>
-</html>
+        if (response.ok) {
+            alert('Роль удалена');
+            loadRolesList();
+            loadUsersWithRolesList();
+        } else {
+            const error = await response.json();
+            alert(error.error || 'Ошибка');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+};
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+}
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--surface2);
+        border-left: 3px solid ${type === 'success' ? 'var(--accent3)' : 'var(--accent2)'};
+        padding: 12px 20px;
+        border-radius: 8px;
+        z-index: 10001;
+        animation: slideInRight 0.3s ease;
+        font-size: 13px;
+    `;
+    toast.innerHTML = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// Экспорт
+window.openRopPanel = openRopPanel;
+window.renderUsersPanel = renderUsersPanel;
+window.renderSchedulePanel = renderSchedulePanel;
+window.renderPointsPanel = renderPointsPanel;
+window.renderQuizzesPanel = renderQuizzesPanel;
+window.renderRolesPanel = renderRolesPanel;
+window.loadUsersList = loadUsersList;
+window.loadPointsList = loadPointsList;
+window.loadQuizzesAdmin = loadQuizzesAdmin;
+window.loadRolesList = loadRolesList;
+window.loadUsersWithRolesList = loadUsersWithRolesList;
+
+console.log('main.js loaded, openRopPanel available:', typeof window.openRopPanel);
