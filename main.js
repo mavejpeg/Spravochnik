@@ -2,6 +2,7 @@
 
 window.isRop = false;
 window.isRopGlobal = false;
+window._currentUser = null;
 window._authLoaded = false;
 window._ropPanelOpen = false;
 
