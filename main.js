@@ -276,12 +276,14 @@ window.openRopPanel = async function() {
                 <button class="admin-tab" data-panel="schedule">📅 Графики</button>
                 <button class="admin-tab" data-panel="points">📍 Точки</button>
                 <button class="admin-tab" data-panel="quizzes">📋 Опросники</button>
+                <button class="admin-tab" data-panel="requests">📝 Заявки</button>
             </div>
             <div style="flex: 1; overflow-y: auto; padding: 20px 24px;">
                 <div id="adminPanel-users" class="admin-panel"></div>
                 <div id="adminPanel-schedule" class="admin-panel" style="display:none;"></div>
                 <div id="adminPanel-points" class="admin-panel" style="display:none;"></div>
                 <div id="adminPanel-quizzes" class="admin-panel" style="display:none;"></div>
+                <div id="adminPanel-requests" class="admin-panel" style="display:none;"></div>
             </div>
         </div>
     `;
@@ -331,6 +333,9 @@ window.openRopPanel = async function() {
                         window.loadQuizzesAdmin();
                     }
                 }, 100);
+            }
+            else if (tab.dataset.panel === 'requests') {
+                renderRequestsPanel();
             }
         });
     });
@@ -831,6 +836,62 @@ function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
 }
+
+async function renderRequestsPanel() {
+    const panel = document.getElementById('adminPanel-requests');
+    if (!panel) return;
+    
+    panel.innerHTML = '<div style="text-align: center; padding: 40px;">⏳ Загрузка заявок...</div>';
+    
+    try {
+        const response = await fetch('/api/registration-requests', { credentials: 'include' });
+        const requests = await response.json();
+        
+        if (requests.length === 0) {
+            panel.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);">📭 Нет новых заявок на регистрацию</div>';
+            return;
+        }
+        
+        panel.innerHTML = requests.map(req => `
+            <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <div style="font-weight: 600; font-size: 14px;">${escapeHtml(req.full_name)}</div>
+                        <div style="font-size: 12px; color: var(--muted);">Логин: ${escapeHtml(req.username)}</div>
+                        <div style="font-size: 12px; color: var(--muted);">Точка: ${escapeHtml(req.point_name || '—')}</div>
+                        <div style="font-size: 11px; color: var(--muted);">Дата: ${new Date(req.created_at).toLocaleString()}</div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="processRequest(${req.id}, 'approve')" class="btn-add" style="background: var(--accent3);">✅ Одобрить</button>
+                        <button onclick="processRequest(${req.id}, 'reject')" class="btn-delete">❌ Отклонить</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        panel.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--accent2);">❌ Ошибка загрузки</div>';
+    }
+}
+
+window.processRequest = async function(id, action) {
+    if (!confirm(action === 'approve' ? 'Одобрить регистрацию?' : 'Отклонить заявку?')) return;
+    
+    try {
+        const response = await fetch(`/api/registration-requests/${id}/${action}`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            alert(action === 'approve' ? 'Пользователь создан' : 'Заявка отклонена');
+            renderRequestsPanel();
+        } else {
+            alert('Ошибка');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+};
 
 // Экспорт
 window.openRopPanel = openRopPanel;
