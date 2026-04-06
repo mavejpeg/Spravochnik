@@ -277,6 +277,7 @@ window.openRopPanel = async function() {
                 <button class="admin-tab" data-panel="points">📍 Точки</button>
                 <button class="admin-tab" data-panel="quizzes">📋 Опросники</button>
                 <button class="admin-tab" data-panel="requests">📝 Заявки</button>
+                <button class="admin-tab" data-panel="substitutions">🔄 Подмены</button>
             </div>
             <div style="flex: 1; overflow-y: auto; padding: 20px 24px;">
                 <div id="adminPanel-users" class="admin-panel"></div>
@@ -284,6 +285,7 @@ window.openRopPanel = async function() {
                 <div id="adminPanel-points" class="admin-panel" style="display:none;"></div>
                 <div id="adminPanel-quizzes" class="admin-panel" style="display:none;"></div>
                 <div id="adminPanel-requests" class="admin-panel" style="display:none;"></div>
+                <div id="adminPanel-substitutions" class="admin-panel" style="display:none;"></div>
             </div>
         </div>
     `;
@@ -336,6 +338,9 @@ window.openRopPanel = async function() {
             }
             else if (tab.dataset.panel === 'requests') {
                 renderRequestsPanel();
+            }
+            else if (tab.dataset.panel === 'substitutions') {
+                renderSubstitutionsPanel();
             }
         });
     });
@@ -872,6 +877,137 @@ async function renderRequestsPanel() {
         panel.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--accent2);">❌ Ошибка загрузки</div>';
     }
 }
+
+async function renderSubstitutionsPanel() {
+    const panel = document.getElementById('adminPanel-substitutions');
+    if (!panel) return;
+    
+    panel.innerHTML = `
+        <div class="admin-panel-label">➕ Создать подмену</div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+            <select id="subOriginalUser" class="admin-panel-select" style="flex:1;">
+                <option value="">— Кого заменяем —</option>
+            </select>
+            <select id="subSubstituteUser" class="admin-panel-select" style="flex:1;">
+                <option value="">— Кто заменяет —</option>
+            </select>
+            <select id="subPoint" class="admin-panel-select" style="flex:1;">
+                <option value="">— Точка подмены —</option>
+            </select>
+            <input type="date" id="subDate" class="admin-panel-input" style="width: 140px;">
+            <button id="createSubstitutionBtn" class="btn-add">➕ Создать</button>
+        </div>
+        <div class="admin-panel-label">📋 Активные подмены</div>
+        <div id="substitutionsList"></div>
+    `;
+    
+    // Загружаем пользователей и точки
+    const [usersRes, pointsRes, subsRes] = await Promise.all([
+        fetch('/api/users-full', { credentials: 'include' }),
+        fetch('/api/points', { credentials: 'include' }),
+        fetch('/api/substitutions/all', { credentials: 'include' })
+    ]);
+    
+    const users = await usersRes.json();
+    const points = await pointsRes.json();
+    const substitutions = await subsRes.json();
+    
+    const userSelect = document.getElementById('subOriginalUser');
+    const subSelect = document.getElementById('subSubstituteUser');
+    const pointSelect = document.getElementById('subPoint');
+    
+    userSelect.innerHTML = '<option value="">— Кого заменяем —</option>' + 
+        users.map(u => `<option value="${u.id}">${escapeHtml(u.full_name)} (${u.point_name || 'нет точки'})</option>`).join('');
+    
+    subSelect.innerHTML = '<option value="">— Кто заменяет —</option>' + 
+        users.map(u => `<option value="${u.id}">${escapeHtml(u.full_name)} (${u.point_name || 'нет точки'})</option>`).join('');
+    
+    pointSelect.innerHTML = '<option value="">— Точка подмены —</option>' + 
+        points.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+    
+    // Список подмен
+    const listDiv = document.getElementById('substitutionsList');
+    if (substitutions.length === 0) {
+        listDiv.innerHTML = '<div style="color: var(--muted); padding: 20px;">Нет активных подмен</div>';
+    } else {
+        listDiv.innerHTML = substitutions.map(sub => `
+            <div class="substitution-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
+                <div>
+                    <div><strong>${escapeHtml(sub.original_name)}</strong> → <strong>${escapeHtml(sub.substitute_name || 'ищется')}</strong></div>
+                    <div class="substitution-info">📅 ${new Date(sub.date).toLocaleDateString('ru-RU')}</div>
+                    <div class="substitution-info">📍 ${sub.point_name || '—'}</div>
+                    ${sub.note ? `<div class="substitution-info">📝 ${escapeHtml(sub.note)}</div>` : ''}
+                </div>
+                <button onclick="deleteSubstitution(${sub.id})" class="btn-delete" style="padding: 5px 12px;">🗑 Отменить</button>
+            </div>
+        `).join('');
+    }
+    
+    document.getElementById('createSubstitutionBtn').addEventListener('click', async () => {
+        const original_user_id = document.getElementById('subOriginalUser').value;
+        const substitute_user_id = document.getElementById('subSubstituteUser').value;
+        const substitute_point_id = document.getElementById('subPoint').value;
+        const date = document.getElementById('subDate').value;
+        
+        if (!original_user_id || !substitute_user_id || !date) {
+            alert('Заполните все поля');
+            return;
+        }
+        
+        const response = await fetch('/api/substitutions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                original_user_id: parseInt(original_user_id),
+                substitute_user_id: parseInt(substitute_user_id),
+                substitute_point_id: substitute_point_id ? parseInt(substitute_point_id) : null,
+                date: date,
+                note: 'Создана руководителем'
+            })
+        });
+        
+        if (response.ok) {
+            alert('Подмена создана');
+            renderSubstitutionsPanel();
+        } else {
+            const error = await response.json();
+            alert(error.error || 'Ошибка');
+        }
+    });
+}
+
+window.deleteSubstitution = async function(id) {
+    if (!confirm('Отменить подмену?')) return;
+    const response = await fetch(`/api/substitutions/${id}`, { method: 'DELETE', credentials: 'include' });
+    if (response.ok) {
+        alert('Подмена отменена');
+        renderSubstitutionsPanel();
+    } else {
+        alert('Ошибка');
+    }
+};
+
+// Добавьте эндпоинт для получения всех подмен
+app.get('/api/substitutions/all', requireRop, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT s.*, 
+                   u.full_name as original_name,
+                   sub.full_name as substitute_name,
+                   p.name as point_name
+            FROM substitutions s
+            LEFT JOIN users u ON s.original_user_id = u.id
+            LEFT JOIN users sub ON s.substitute_user_id = sub.id
+            LEFT JOIN points p ON s.substitute_point_id = p.id
+            WHERE s.status = 'approved' AND s.date >= CURRENT_DATE
+            ORDER BY s.date ASC
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get substitutions' });
+    }
+});
 
 window.processRequest = async function(id, action) {
     if (!confirm(action === 'approve' ? 'Одобрить регистрацию?' : 'Отклонить заявку?')) return;
