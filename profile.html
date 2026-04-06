@@ -118,6 +118,12 @@
     align-items: center;
     justify-content: center;
     font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .month-nav button:hover {
+    background: var(--surface3);
+    border-color: var(--accent);
   }
 
   .month-label {
@@ -187,6 +193,22 @@
     outline-offset: 1px;
   }
 
+  /* Индикатор сменщика */
+  .cal-day.partner-work {
+    position: relative;
+  }
+
+  .cal-day.partner-work::after {
+    content: '●';
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: var(--accent5);
+    opacity: 0.8;
+  }
+
   .cal-day .day-icon {
     font-size: 9px;
     margin-top: 1px;
@@ -219,8 +241,10 @@
   .legend-dot.work { background: rgba(60,255,160,0.4); border: 1px solid rgba(60,255,160,0.5); }
   .legend-dot.day-off { background: var(--surface2); border: 1px solid var(--border); }
   .legend-dot.cleaning { background: rgba(124,92,252,0.3); border: 1px solid rgba(124,92,252,0.5); }
+  .legend-dot.partner { background: transparent; border: 1px solid var(--accent5); position: relative; }
+  .legend-dot.partner::after { content: '●'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8px; color: var(--accent5); }
 
-  /* Partner block */
+  /* Partner card */
   .partner-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -303,6 +327,50 @@
   .badge.rop { background: rgba(252,184,48,0.15); color: var(--accent4); }
   .badge.root { background: rgba(252,92,124,0.15); color: var(--accent2); }
   .badge.user { background: rgba(60,255,160,0.1); color: var(--accent3); }
+
+  /* Learning progress in profile */
+  .learning-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px 28px;
+    margin-top: 24px;
+  }
+
+  .learning-progress-bar-container {
+    background: var(--border);
+    border-radius: 20px;
+    height: 8px;
+    overflow: hidden;
+    margin: 12px 0;
+  }
+
+  .learning-progress-fill {
+    background: linear-gradient(90deg, var(--accent3), var(--accent));
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s;
+    border-radius: 20px;
+  }
+
+  .learning-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  /* Retake warning */
+  .retake-warning {
+    background: rgba(252, 184, 48, 0.15);
+    border-left: 3px solid var(--accent4);
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--accent4);
+  }
 </style>
 </head>
 <body>
@@ -361,6 +429,21 @@
             </div>
           </div>
         </div>
+
+        <!-- Learning progress -->
+        <div class="learning-section">
+          <div class="section-title">📚 Прогресс обучения</div>
+          <div class="learning-progress-bar-container">
+            <div class="learning-progress-fill" id="profileLearningBar"></div>
+          </div>
+          <div class="learning-stats">
+            <span id="profileLearningText">0% завершено</span>
+            <span id="profileLearningPages">0/6 страниц</span>
+          </div>
+          <div id="profileRetakeWarning" class="retake-warning" style="display: none;">
+            ⚠️ Внимание! Требуется повторная аттестация. Пройдите опросники в разделе "Обучение".
+          </div>
+        </div>
       </div>
 
       <!-- Right: schedule -->
@@ -406,6 +489,7 @@
             <div class="legend-item"><div class="legend-dot work"></div>Рабочий день</div>
             <div class="legend-item"><div class="legend-dot day-off"></div>Выходной</div>
             <div class="legend-item"><div class="legend-dot cleaning"></div>Уборка (Вс)</div>
+            <div class="legend-item"><div class="legend-dot partner"></div>Сменщик работает</div>
           </div>
         </div>
       </div>
@@ -413,9 +497,13 @@
   </div>
 </main>
 
-<script src="main.js"></script>
+<script src="utils.js?v=2"></script>
+<script src="core.js?v=38"></script>
+<script src="main.js?v=38"></script>
+
 <script>
 let currentYear, currentMonth, currentUserId, scheduleData = null;
+let partnerDays = [];
 
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь',
                      'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -428,6 +516,8 @@ function initPage(user) {
   updateMonthLabel();
   loadProfile();
   loadSchedule();
+  loadLearningProgress();
+  checkRetakeStatus();
 }
 
 function updateMonthLabel() {
@@ -450,25 +540,70 @@ async function loadProfile() {
   document.getElementById('profileRoleBadge').innerHTML = `<span class="badge ${cls}">${label}</span>`;
 }
 
+async function loadLearningProgress() {
+  try {
+    const response = await fetch('/api/learning/progress', { credentials: 'include' });
+    const data = await response.json();
+    
+    const bar = document.getElementById('profileLearningBar');
+    const text = document.getElementById('profileLearningText');
+    const pages = document.getElementById('profileLearningPages');
+    
+    if (bar) bar.style.width = `${data.progress}%`;
+    if (text) text.textContent = `${data.progress}% завершено`;
+    if (pages) pages.textContent = `${data.completedPages}/${data.totalPages} страниц`;
+  } catch (error) {
+    console.error('Failed to load learning progress:', error);
+  }
+}
+
+async function checkRetakeStatus() {
+  try {
+    const response = await fetch('/api/quizzes/retake-status', { credentials: 'include' });
+    if (!response.ok) return;
+    
+    const status = await response.json();
+    const needsRetake = Object.values(status).some(s => s && s.needsRetake);
+    const warningDiv = document.getElementById('profileRetakeWarning');
+    
+    if (warningDiv) {
+      warningDiv.style.display = needsRetake ? 'block' : 'none';
+    }
+  } catch (error) {
+    console.error('Failed to check retake status:', error);
+  }
+}
+
 async function loadSchedule() {
   const res = await fetch(`/api/schedule/${currentUserId}/${currentYear}/${currentMonth}`, { credentials: 'include' });
   scheduleData = await res.json();
 
-  // Update partner
+  // Update partner card
   const partnerCard = document.getElementById('partnerCard');
   if (scheduleData && scheduleData.partner_name) {
     partnerCard.style.display = 'block';
     document.getElementById('partnerName').textContent = scheduleData.partner_name;
+    
     // Load partner profile for position
     try {
       const pr = await fetch(`/api/profile/${scheduleData.partner_id}`, { credentials: 'include' });
       const partner = await pr.json();
       document.getElementById('partnerPosition').textContent = partner.position || '';
     } catch(e) {}
+    
+    // Load partner schedule for display
+    try {
+      const partnerRes = await fetch(`/api/schedule/${scheduleData.partner_id}/${currentYear}/${currentMonth}`, { credentials: 'include' });
+      const partnerSchedule = await partnerRes.json();
+      partnerDays = partnerSchedule?.days || [];
+    } catch(e) {
+      partnerDays = [];
+    }
   } else {
     partnerCard.style.display = 'none';
+    partnerDays = [];
   }
-
+  
   renderCalendar();
 }
 
@@ -491,9 +626,9 @@ function renderCalendar() {
   noSched.style.display = 'none';
   statsRow.style.display = 'grid';
 
-  const days = scheduleData.days; // array of 'work'|'off' per day 1..N
-  const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay(); // 0=Sun
-  const offset = firstDay === 0 ? 6 : firstDay - 1; // Mon=0
+  const days = scheduleData.days;
+  const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+  const offset = firstDay === 0 ? 6 : firstDay - 1;
   const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
   const today = new Date();
   const isThisMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth;
@@ -512,13 +647,24 @@ function renderCalendar() {
     const weekday = new Date(currentYear, currentMonth - 1, d).getDay();
     const isSunday = weekday === 0;
     const isCleaning = isSunday && dayType === 'work';
+    const partnerWorking = partnerDays && partnerDays[d - 1] === 'work';
 
     const el = document.createElement('div');
     let cls = 'cal-day';
-    if (dayType === 'work') { cls += ' work'; workCount++; }
-    else { cls += ' day-off'; offCount++; }
-    if (isCleaning) { cls += ' cleaning'; cleanCount++; }
+    if (dayType === 'work') { 
+      cls += ' work'; 
+      workCount++; 
+    } else { 
+      cls += ' day-off'; 
+      offCount++; 
+    }
+    if (isCleaning) { 
+      cls += ' cleaning'; 
+      cleanCount++; 
+    }
     if (isThisMonth && d === today.getDate()) cls += ' today';
+    if (partnerWorking) cls += ' partner-work';
+    
     el.className = cls;
     el.innerHTML = `<span>${d}</span><span class="day-icon">${isCleaning ? '🧹' : (dayType === 'work' ? '✓' : '')}</span>`;
     cal.appendChild(el);
@@ -529,16 +675,23 @@ function renderCalendar() {
   document.getElementById('statClean').textContent = cleanCount;
 }
 
+// Navigation
 document.getElementById('prevMonth').addEventListener('click', () => {
   currentMonth--;
-  if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+  if (currentMonth < 1) { 
+    currentMonth = 12; 
+    currentYear--; 
+  }
   updateMonthLabel();
   loadSchedule();
 });
 
 document.getElementById('nextMonth').addEventListener('click', () => {
   currentMonth++;
-  if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+  if (currentMonth > 12) { 
+    currentMonth = 1; 
+    currentYear++; 
+  }
   updateMonthLabel();
   loadSchedule();
 });
@@ -547,6 +700,12 @@ document.getElementById('nextMonth').addEventListener('click', () => {
 window.onAuthReady = function(isRop, user) {
   initPage(user);
 };
+
+// Также обрабатываем событие от main.js
+window.addEventListener('authReady', function(e) {
+  const { isRop, user } = e.detail;
+  initPage(user);
+});
 </script>
 </body>
 </html>
