@@ -1,4 +1,4 @@
-// schedule-editor.js - Редактор графиков для всех точек
+// schedule-editor.js - Полноценный редактор графиков
 
 let currentPointId = null;
 let currentYear = null;
@@ -7,23 +7,25 @@ let currentUsers = [];
 let currentSchedules = {};
 let daysInMonth = 0;
 let pointsList = [];
+let allUsersList = [];
+let selectedCell = null;
 
-// Инициализация редактора
+// Инициализация
 async function initScheduleEditor() {
-    // Загружаем список точек
+    console.log('Schedule editor initializing...');
     await loadPoints();
     
-    // Устанавливаем текущий месяц
     const now = new Date();
     currentYear = now.getFullYear();
     currentMonth = now.getMonth() + 1;
-    
-    // Обновляем отображение месяца
     updateMonthDisplay();
     
-    // Если есть точки, загружаем первую
-    if (pointsList.length > 0) {
+    setupMonthNavigation();
+    
+    if (pointsList.length > 0 && !currentPointId) {
         currentPointId = pointsList[0].id;
+        const pointSelect = document.getElementById('schedulePointSelect');
+        if (pointSelect) pointSelect.value = currentPointId;
         await loadPointSchedule();
     }
 }
@@ -34,15 +36,18 @@ async function loadPoints() {
         const response = await fetch('/api/points', { credentials: 'include' });
         pointsList = await response.json();
         
-        const pointSelect = document.getElementById('pointSelect');
+        const pointSelect = document.getElementById('schedulePointSelect');
         if (pointSelect) {
-            pointSelect.innerHTML = pointsList.map(p => 
-                `<option value="${p.id}">📍 ${escapeHtml(p.name)}${p.address ? ' — ' + escapeHtml(p.address) : ''}</option>`
-            ).join('');
+            pointSelect.innerHTML = '<option value="">— Выберите точку —</option>' +
+                pointsList.map(p => `<option value="${p.id}">📍 ${escapeHtml(p.name)}${p.address ? ' — ' + escapeHtml(p.address) : ''}</option>`).join('');
             
             pointSelect.addEventListener('change', async (e) => {
                 currentPointId = parseInt(e.target.value);
-                await loadPointSchedule();
+                if (currentPointId) {
+                    await loadPointSchedule();
+                } else {
+                    document.getElementById('scheduleEditorContainer').innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);">Выберите точку</div>';
+                }
             });
         }
     } catch (error) {
@@ -56,6 +61,8 @@ async function loadPointSchedule() {
     if (!currentPointId || !currentYear || !currentMonth) return;
     
     const container = document.getElementById('scheduleEditorContainer');
+    if (!container) return;
+    
     container.innerHTML = '<div style="text-align: center; padding: 40px;">⏳ Загрузка графика...</div>';
     
     try {
@@ -64,9 +71,10 @@ async function loadPointSchedule() {
         });
         
         const data = await response.json();
-        currentUsers = data.users;
-        currentSchedules = data.schedules;
-        daysInMonth = data.daysInMonth;
+        currentUsers = data.users || [];
+        currentSchedules = data.schedules || {};
+        daysInMonth = data.daysInMonth || new Date(currentYear, currentMonth, 0).getDate();
+        allUsersList = data.allUsers || [];
         
         renderScheduleEditor();
     } catch (error) {
@@ -80,23 +88,50 @@ function renderScheduleEditor() {
     const container = document.getElementById('scheduleEditorContainer');
     if (!container) return;
     
-    // Получаем информацию о точке
     const point = pointsList.find(p => p.id === currentPointId);
-    const pointName = point?.name || 'Точка';
-    const pointAddress = point?.address || '';
+    
+    if (!currentUsers.length) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 60px; color: var(--muted);">
+                👥 Нет сотрудников на этой точке<br>
+                <small>Сначала назначьте сотрудников на точку в разделе "Пользователи"</small>
+            </div>
+        `;
+        return;
+    }
     
     let html = `
         <div class="schedule-point-header">
-            <div class="schedule-point-name">📍 ${escapeHtml(pointName)}</div>
-            ${pointAddress ? `<div class="schedule-point-address">${escapeHtml(pointAddress)}</div>` : ''}
+            <div class="schedule-point-name">📍 ${escapeHtml(point?.name || 'Точка')}</div>
+            ${point?.address ? `<div class="schedule-point-address">${escapeHtml(point.address)}</div>` : ''}
+        </div>
+        
+        <div class="schedule-toolbar">
+            <div class="toolbar-group">
+                <button class="toolbar-btn" onclick="window.copyFromPreviousMonth()" title="Скопировать график с прошлого месяца">📋 Копировать с прошлого</button>
+                <button class="toolbar-btn" onclick="window.clearAllSchedules()" title="Очистить все графики">🗑 Очистить все</button>
+            </div>
+            <div class="toolbar-group">
+                <span class="toolbar-label">Быстрые действия:</span>
+                <button class="toolbar-btn small" onclick="window.bulkSetDays('work')">✓ Все рабочие</button>
+                <button class="toolbar-btn small" onclick="window.bulkSetDays('off')">✗ Все выходные</button>
+                <button class="toolbar-btn small" onclick="window.bulkAlternate()">🔄 Чередование 3/3</button>
+                <button class="toolbar-btn small" onclick="window.bulkWeekendsOnly()">📅 Только выходные (Сб+Вс)</button>
+            </div>
         </div>
         
         <div class="schedule-table-wrapper">
-            <table class="schedule-editor-table">
+            <table class="schedule-editor-table" id="scheduleTable">
                 <thead>
                     <tr>
                         <th class="col-employee">Сотрудник</th>
-                        ${Array(daysInMonth).fill().map((_, i) => `<th class="col-day">${i + 1}</th>`).join('')}
+                        <th class="col-partner">Сменщик</th>
+                        ${Array(daysInMonth).fill().map((_, i) => {
+                            const date = new Date(currentYear, currentMonth - 1, i + 1);
+                            const weekday = date.toLocaleDateString('ru-RU', { weekday: 'short' });
+                            const isSunday = date.getDay() === 0;
+                            return `<th class="col-day ${isSunday ? 'sunday' : ''}">${i + 1}<br><span class="weekday">${weekday}</span></th>`;
+                        }).join('')}
                     </tr>
                 </thead>
                 <tbody>
@@ -106,26 +141,39 @@ function renderScheduleEditor() {
         const schedule = currentSchedules[user.id] || { days: Array(daysInMonth).fill('off') };
         const days = schedule.days;
         
+        // Находим имя сменщика
+        const partner = allUsersList.find(u => u.id === schedule.partner_id);
+        
         html += `
-            <tr class="schedule-row" data-user-id="${user.id}" data-user-name="${escapeHtml(user.full_name)}">
+            <tr class="schedule-row" data-user-id="${user.id}">
                 <td class="col-employee">
                     <div class="employee-info">
                         <strong>${escapeHtml(user.full_name)}</strong>
                         ${user.position ? `<span class="employee-position">${escapeHtml(user.position)}</span>` : ''}
                     </div>
                 </td>
+                <td class="col-partner">
+                    <select class="partner-select" data-user="${user.id}" onchange="window.updatePartner(${user.id}, this.value)">
+                        <option value="">— Нет сменщика —</option>
+                        ${allUsersList.filter(u => u.id !== user.id).map(u => 
+                            `<option value="${u.id}" ${schedule.partner_id === u.id ? 'selected' : ''}>${escapeHtml(u.full_name)}</option>`
+                        ).join('')}
+                    </select>
+                </td>
         `;
         
         for (let d = 0; d < daysInMonth; d++) {
             const dayType = days[d] || 'off';
-            const isSunday = new Date(currentYear, currentMonth - 1, d + 1).getDay() === 0;
+            const date = new Date(currentYear, currentMonth - 1, d + 1);
+            const isSunday = date.getDay() === 0;
+            const isSaturday = date.getDay() === 6;
             
             html += `
                 <td class="col-day">
-                    <button class="day-toggle ${dayType} ${isSunday ? 'sunday' : ''}" 
+                    <button class="day-toggle ${dayType} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''}" 
                             data-user="${user.id}" 
                             data-day="${d}"
-                            onclick="toggleDay(${user.id}, ${d})">
+                            onclick="window.toggleDay(${user.id}, ${d})">
                         ${dayType === 'work' ? (isSunday ? '🧹' : '✓') : '✗'}
                     </button>
                 </td>
@@ -144,17 +192,11 @@ function renderScheduleEditor() {
             <div class="legend-item"><span class="legend-dot work"></span> Рабочий день</div>
             <div class="legend-item"><span class="legend-dot off"></span> Выходной</div>
             <div class="legend-item"><span class="legend-dot work-sunday"></span> Рабочий + уборка (воскресенье)</div>
-        </div>
-        
-        <div class="schedule-bulk-actions">
-            <button onclick="bulkSetDays('work')" class="bulk-btn work">✓ Все рабочие</button>
-            <button onclick="bulkSetDays('off')" class="bulk-btn off">✗ Все выходные</button>
-            <button onclick="bulkAlternate()" class="bulk-btn alternate">🔄 Чередование 3/3</button>
-            <button onclick="copyPreviousMonth()" class="bulk-btn copy">📋 Скопировать с прошлого месяца</button>
+            <div class="legend-item"><span class="legend-dot saturday"></span> Суббота</div>
         </div>
         
         <div class="schedule-actions">
-            <button onclick="saveAllSchedules()" class="save-all-btn">💾 Сохранить все графики</button>
+            <button class="save-all-btn" onclick="window.saveAllSchedules()">💾 Сохранить все графики</button>
         </div>
     `;
     
@@ -163,23 +205,36 @@ function renderScheduleEditor() {
 
 // Переключение дня
 window.toggleDay = function(userId, dayIndex) {
-    const schedule = currentSchedules[userId];
-    if (!schedule) {
+    if (!currentSchedules[userId]) {
         currentSchedules[userId] = { days: Array(daysInMonth).fill('off') };
     }
     
-    const currentSched = currentSchedules[userId];
-    const currentValue = currentSched.days[dayIndex];
-    currentSched.days[dayIndex] = currentValue === 'work' ? 'off' : 'work';
+    const currentValue = currentSchedules[userId].days[dayIndex];
+    currentSchedules[userId].days[dayIndex] = currentValue === 'work' ? 'off' : 'work';
     
     // Обновляем кнопку
     const btn = document.querySelector(`.day-toggle[data-user="${userId}"][data-day="${dayIndex}"]`);
     if (btn) {
-        const newValue = currentSched.days[dayIndex];
-        const isSunday = new Date(currentYear, currentMonth - 1, dayIndex + 1).getDay() === 0;
-        btn.className = `day-toggle ${newValue} ${isSunday ? 'sunday' : ''}`;
+        const newValue = currentSchedules[userId].days[dayIndex];
+        const date = new Date(currentYear, currentMonth - 1, dayIndex + 1);
+        const isSunday = date.getDay() === 0;
+        const isSaturday = date.getDay() === 6;
+        btn.className = `day-toggle ${newValue} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''}`;
         btn.innerHTML = newValue === 'work' ? (isSunday ? '🧹' : '✓') : '✗';
+        
+        // Анимация
+        btn.style.transform = 'scale(0.95)';
+        setTimeout(() => { btn.style.transform = ''; }, 150);
     }
+};
+
+// Обновление сменщика
+window.updatePartner = function(userId, partnerId) {
+    if (!currentSchedules[userId]) {
+        currentSchedules[userId] = { days: Array(daysInMonth).fill('off') };
+    }
+    currentSchedules[userId].partner_id = partnerId ? parseInt(partnerId) : null;
+    showToast('Сменщик назначен', 'success');
 };
 
 // Массовая установка дней для ВСЕХ сотрудников
@@ -197,13 +252,42 @@ window.bulkSetDays = function(value) {
     showToast(`Все дни установлены как ${value === 'work' ? 'рабочие' : 'выходные'}`, 'success');
 };
 
-// Чередование 3/3 для выбранного сотрудника (или для всех)
+// Только выходные (суббота и воскресенье рабочие, остальные выходные)
+window.bulkWeekendsOnly = function() {
+    if (!confirm('Установить рабочими только субботу и воскресенье?')) return;
+    
+    for (const user of currentUsers) {
+        if (!currentSchedules[user.id]) {
+            currentSchedules[user.id] = { days: Array(daysInMonth).fill('off') };
+        }
+        
+        for (let d = 0; d < daysInMonth; d++) {
+            const date = new Date(currentYear, currentMonth - 1, d + 1);
+            const isWeekend = date.getDay() === 6 || date.getDay() === 0; // Сб или Вс
+            currentSchedules[user.id].days[d] = isWeekend ? 'work' : 'off';
+        }
+    }
+    
+    renderScheduleEditor();
+    showToast('Рабочие дни установлены: Суббота и Воскресенье', 'success');
+};
+
+// Чередование 3/3 для выбранного сотрудника
 window.bulkAlternate = function() {
-    const userId = prompt('Введите ID сотрудника (оставьте пустым для всех):');
+    const userId = prompt('Введите ID сотрудника (оставьте пустым для всех):\n\nID можно увидеть в консоли или в списке пользователей');
     
     const startDay = parseInt(prompt('С какого дня начать чередование? (1-31)', '1'));
     if (isNaN(startDay) || startDay < 1 || startDay > daysInMonth) {
-        alert('Некорректный день');
+        showToast('Некорректный день', 'error');
+        return;
+    }
+    
+    const pattern = prompt('Введите паттерн чередования (например: 3/3 или 2/2 или 5/2):', '3/3');
+    if (!pattern) return;
+    
+    const [workDays, offDays] = pattern.split('/').map(Number);
+    if (isNaN(workDays) || isNaN(offDays)) {
+        showToast('Неверный формат. Используйте например: 3/3', 'error');
         return;
     }
     
@@ -215,73 +299,72 @@ window.bulkAlternate = function() {
         }
         
         const days = currentSchedules[user.id].days;
-        let toggle = true; // true = work, false = off
-        let workCount = 0;
+        let isWork = true;
+        let counter = 0;
         
         for (let i = startDay - 1; i < daysInMonth; i++) {
-            if (toggle) {
-                days[i] = 'work';
-                workCount++;
-                if (workCount === 3) {
-                    toggle = false;
-                    workCount = 0;
-                }
-            } else {
-                days[i] = 'off';
-                workCount++;
-                if (workCount === 3) {
-                    toggle = true;
-                    workCount = 0;
-                }
+            days[i] = isWork ? 'work' : 'off';
+            counter++;
+            if ((isWork && counter === workDays) || (!isWork && counter === offDays)) {
+                isWork = !isWork;
+                counter = 0;
             }
         }
     }
     
     renderScheduleEditor();
-    showToast(`Чередование 3/3 применено`, 'success');
+    showToast(`Чередование ${pattern} применено`, 'success');
 };
 
 // Копирование с прошлого месяца
-window.copyPreviousMonth = async function() {
-    let prevYear = currentYear;
-    let prevMonth = currentMonth - 1;
-    if (prevMonth < 1) {
-        prevMonth = 12;
-        prevYear--;
-    }
+window.copyFromPreviousMonth = async function() {
+    if (!currentPointId) return;
+    
+    if (!confirm('Скопировать график с прошлого месяца?')) return;
     
     try {
-        const response = await fetch(`/api/schedule/point/${currentPointId}/${prevYear}/${prevMonth}`, {
-            credentials: 'include'
+        const response = await fetch(`/api/schedule/copy/${currentPointId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ year: currentYear, month: currentMonth })
         });
         
         const data = await response.json();
         
-        if (data.schedules && Object.keys(data.schedules).length > 0) {
+        if (data.schedules) {
             for (const [userId, schedule] of Object.entries(data.schedules)) {
                 if (currentSchedules[userId]) {
-                    // Копируем дни, но обрезаем/дополняем до нужного количества
-                    const oldDays = schedule.days;
-                    const newDays = [...oldDays];
-                    if (newDays.length > daysInMonth) {
-                        newDays.length = daysInMonth;
-                    } else if (newDays.length < daysInMonth) {
-                        while (newDays.length < daysInMonth) {
-                            newDays.push('off');
-                        }
+                    currentSchedules[userId].days = schedule.days;
+                    if (schedule.partner_id) {
+                        currentSchedules[userId].partner_id = schedule.partner_id;
                     }
-                    currentSchedules[userId].days = newDays;
                 }
             }
             renderScheduleEditor();
             showToast('График скопирован с прошлого месяца', 'success');
         } else {
-            alert('Нет данных за прошлый месяц');
+            showToast('Нет данных за прошлый месяц', 'error');
         }
     } catch (error) {
         console.error('Failed to copy schedule:', error);
-        alert('Ошибка при копировании');
+        showToast('Ошибка при копировании', 'error');
     }
+};
+
+// Очистка всех графиков
+window.clearAllSchedules = function() {
+    if (!confirm('Очистить все графики для всех сотрудников на этой точке?')) return;
+    
+    for (const user of currentUsers) {
+        if (!currentSchedules[user.id]) {
+            currentSchedules[user.id] = { days: Array(daysInMonth).fill('off') };
+        }
+        currentSchedules[user.id].days = Array(daysInMonth).fill('off');
+    }
+    
+    renderScheduleEditor();
+    showToast('Все графики очищены', 'success');
 };
 
 // Сохранение всех графиков
@@ -318,52 +401,64 @@ window.saveAllSchedules = async function() {
         
         if (response.ok) {
             showToast('✅ Все графики сохранены!', 'success');
+            saveBtn.innerHTML = '✅ Сохранено!';
+            setTimeout(() => { saveBtn.innerHTML = originalText; }, 2000);
         } else {
             const error = await response.json();
             showToast('❌ Ошибка: ' + (error.error || 'Неизвестная ошибка'), 'error');
+            saveBtn.innerHTML = originalText;
         }
     } catch (error) {
         console.error('Save error:', error);
         showToast('❌ Ошибка соединения', 'error');
-    } finally {
         saveBtn.innerHTML = originalText;
+    } finally {
         saveBtn.disabled = false;
     }
 };
 
 // Навигация по месяцам
-function previousMonth() {
-    currentMonth--;
-    if (currentMonth < 1) {
-        currentMonth = 12;
-        currentYear--;
+function setupMonthNavigation() {
+    const prevBtn = document.getElementById('schedulePrevMonth');
+    const nextBtn = document.getElementById('scheduleNextMonth');
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            currentMonth--;
+            if (currentMonth < 1) {
+                currentMonth = 12;
+                currentYear--;
+            }
+            updateMonthDisplay();
+            loadPointSchedule();
+        });
     }
-    updateMonthDisplay();
-    loadPointSchedule();
-}
-
-function nextMonth() {
-    currentMonth++;
-    if (currentMonth > 12) {
-        currentMonth = 1;
-        currentYear++;
+    
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            currentMonth++;
+            if (currentMonth > 12) {
+                currentMonth = 1;
+                currentYear++;
+            }
+            updateMonthDisplay();
+            loadPointSchedule();
+        });
     }
-    updateMonthDisplay();
-    loadPointSchedule();
 }
 
 function updateMonthDisplay() {
     const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
                         'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-    const monthLabel = document.getElementById('currentMonthLabel');
-    if (monthLabel) {
-        monthLabel.textContent = `${monthNames[currentMonth - 1]} ${currentYear}`;
+    const label = document.getElementById('scheduleCurrentMonth');
+    if (label) {
+        label.textContent = `${monthNames[currentMonth - 1]} ${currentYear}`;
     }
 }
 
 function showToast(message, type) {
     const toast = document.createElement('div');
-    toast.className = `toast-notification ${type}`;
+    toast.className = `schedule-toast ${type}`;
     toast.style.cssText = `
         position: fixed;
         bottom: 20px;
@@ -373,272 +468,28 @@ function showToast(message, type) {
         padding: 12px 20px;
         border-radius: 8px;
         z-index: 10000;
-        animation: slideIn 0.3s ease;
+        animation: slideInRight 0.3s ease;
+        font-size: 13px;
     `;
     toast.innerHTML = message;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
 
-// Инициализация
-document.addEventListener('DOMContentLoaded', () => {
-    initScheduleEditor();
-});
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+}
 
-// Добавляем стили в head
-const style = document.createElement('style');
-style.textContent = `
-    .schedule-point-header {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 16px 20px;
-        margin-bottom: 20px;
-    }
-    
-    .schedule-point-name {
-        font-family: 'Unbounded', sans-serif;
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--accent);
-    }
-    
-    .schedule-point-address {
-        font-size: 12px;
-        color: var(--muted);
-        margin-top: 4px;
-    }
-    
-    .schedule-table-wrapper {
-        overflow-x: auto;
-        margin-bottom: 20px;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-    }
-    
-    .schedule-editor-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12px;
-        min-width: 600px;
-    }
-    
-    .schedule-editor-table th {
-        background: var(--surface2);
-        padding: 10px 6px;
-        text-align: center;
-        font-weight: 600;
-        color: var(--muted);
-        border-bottom: 1px solid var(--border);
-        position: sticky;
-        top: 0;
-    }
-    
-    .schedule-editor-table td {
-        padding: 8px 4px;
-        text-align: center;
-        border-bottom: 1px solid var(--border);
-    }
-    
-    .col-employee {
-        text-align: left !important;
-        background: var(--surface2);
-        position: sticky;
-        left: 0;
-        min-width: 180px;
-    }
-    
-    .col-day {
-        min-width: 44px;
-    }
-    
-    .employee-info {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-    
-    .employee-info strong {
-        font-size: 13px;
-        color: var(--strong);
-    }
-    
-    .employee-position {
-        font-size: 10px;
-        color: var(--muted);
-    }
-    
-    .day-toggle {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        border: none;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.15s;
-        background: var(--surface);
-    }
-    
-    .day-toggle.work {
-        background: rgba(60, 255, 160, 0.2);
-        color: var(--accent3);
-        border: 1px solid rgba(60, 255, 160, 0.4);
-    }
-    
-    .day-toggle.off {
-        background: var(--surface2);
-        color: var(--muted);
-        border: 1px solid var(--border);
-    }
-    
-    .day-toggle.work.sunday {
-        background: rgba(124, 92, 252, 0.2);
-        border-color: rgba(124, 92, 252, 0.4);
-    }
-    
-    .day-toggle:hover {
-        transform: scale(1.05);
-    }
-    
-    .schedule-legend {
-        display: flex;
-        gap: 20px;
-        flex-wrap: wrap;
-        padding: 12px 16px;
-        background: var(--surface2);
-        border-radius: 12px;
-        margin-bottom: 20px;
-    }
-    
-    .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 11px;
-        color: var(--text2);
-    }
-    
-    .legend-dot {
-        width: 20px;
-        height: 20px;
-        border-radius: 6px;
-    }
-    
-    .legend-dot.work {
-        background: rgba(60, 255, 160, 0.2);
-        border: 1px solid rgba(60, 255, 160, 0.4);
-    }
-    
-    .legend-dot.off {
-        background: var(--surface2);
-        border: 1px solid var(--border);
-    }
-    
-    .legend-dot.work-sunday {
-        background: rgba(124, 92, 252, 0.2);
-        border: 1px solid rgba(124, 92, 252, 0.4);
-    }
-    
-    .schedule-bulk-actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-bottom: 20px;
-    }
-    
-    .bulk-btn {
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 8px 16px;
-        font-size: 12px;
-        cursor: pointer;
-        transition: all 0.2s;
-        color: var(--text);
-    }
-    
-    .bulk-btn.work {
-        background: rgba(60, 255, 160, 0.1);
-        border-color: rgba(60, 255, 160, 0.3);
-        color: var(--accent3);
-    }
-    
-    .bulk-btn.off {
-        background: rgba(252, 92, 124, 0.1);
-        border-color: rgba(252, 92, 124, 0.3);
-        color: var(--accent2);
-    }
-    
-    .bulk-btn.alternate {
-        background: rgba(124, 92, 252, 0.1);
-        border-color: rgba(124, 92, 252, 0.3);
-        color: var(--accent);
-    }
-    
-    .bulk-btn.copy {
-        background: rgba(60, 186, 252, 0.1);
-        border-color: rgba(60, 186, 252, 0.3);
-        color: var(--accent5);
-    }
-    
-    .bulk-btn:hover {
-        transform: translateY(-1px);
-    }
-    
-    .schedule-actions {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 20px;
-    }
-    
-    .save-all-btn {
-        background: var(--accent);
-        border: none;
-        border-radius: 12px;
-        padding: 12px 24px;
-        color: white;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .save-all-btn:hover {
-        background: #8e6ffe;
-        transform: translateY(-2px);
-    }
-    
-    .month-navigation {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 20px;
-    }
-    
-    .month-nav-btn {
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 8px 16px;
-        cursor: pointer;
-        font-size: 14px;
-    }
-    
-    .current-month {
-        font-family: 'Unbounded', sans-serif;
-        font-size: 14px;
-        font-weight: 600;
-    }
-    
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateX(100px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-`;
-document.head.appendChild(style);
+// Экспорт в глобальный объект
+window.initScheduleEditor = initScheduleEditor;
+window.toggleDay = toggleDay;
+window.updatePartner = updatePartner;
+window.bulkSetDays = bulkSetDays;
+window.bulkAlternate = bulkAlternate;
+window.bulkWeekendsOnly = bulkWeekendsOnly;
+window.copyFromPreviousMonth = copyFromPreviousMonth;
+window.clearAllSchedules = clearAllSchedules;
+window.saveAllSchedules = saveAllSchedules;
+
+console.log('Schedule editor loaded');
