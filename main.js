@@ -1,17 +1,18 @@
-// main.js v4.0 - ИСПРАВЛЕНА КНОПКА АДМИНИСТРИРОВАНИЯ
+// main.js v5.0 - ИСПРАВЛЕНА ВСЯ АДМИН-ПАНЕЛЬ
 
 window.isRop = false;
 window.isRopGlobal = false;
 window._authLoaded = false;
+window._ropPanelOpen = false; // Флаг для предотвращения двойного открытия
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Main.js v4.0 loaded');
+    console.log('Main.js v5.0 loaded');
     initTabs();
     initAccordions();
     initSearch();
     loadUserInfo();
     setupLogout();
-    setupRopPanel(); // <- ЭТО ВАЖНО!
+    setupRopPanel();
 });
 
 function initTabs() {
@@ -155,7 +156,6 @@ async function loadUserInfo() {
                 ropBtn.style.display = isRop ? 'block' : 'none';
                 console.log('ROP button display set to:', isRop ? 'block' : 'none');
             }
-            if (ropBtn) ropBtn.textContent = '⚙️ Администрирование';
 
             const addManufBtn = document.getElementById('btnAddManufacturer');
             if (addManufBtn) {
@@ -170,7 +170,6 @@ async function loadUserInfo() {
                 btn.style.display = isRop ? 'inline-flex' : 'none';
             });
 
-            // ВАЖНО: отправляем событие для других страниц
             window.dispatchEvent(new CustomEvent('authReady', {
                 detail: { isRop, user: data.user }
             }));
@@ -239,10 +238,6 @@ function setupRopPanel() {
         console.log('Setting up ROP button listener');
         ropBtn.removeEventListener('click', handleRopPanel);
         ropBtn.addEventListener('click', handleRopPanel);
-    } else {
-        console.log('ROP button not found in DOM yet, will retry');
-        // Если кнопки еще нет, пробуем позже
-        setTimeout(setupRopPanel, 500);
     }
 }
 
@@ -250,16 +245,30 @@ async function handleRopPanel(e) {
     e.preventDefault();
     e.stopPropagation();
     console.log('ROP button clicked, opening panel...');
+    
+    // Предотвращаем двойное открытие
+    if (window._ropPanelOpen) {
+        console.log('Panel already open, ignoring');
+        return;
+    }
+    
     await openRopPanel();
 }
 
-// ========== ГЛОБАЛЬНАЯ ФУНКЦИЯ openRopPanel ==========
-// Объявляем ДО того, как она будет использоваться
+// ========== ГЛАВНАЯ ФУНКЦИЯ openRopPanel ==========
 window.openRopPanel = async function() {
+    // Предотвращаем двойное открытие
+    if (window._ropPanelOpen) {
+        console.log('Panel already open');
+        return;
+    }
+    
     console.log('openRopPanel called');
+    window._ropPanelOpen = true;
     
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
+    modal.id = 'ropPanelModal';
     modal.innerHTML = `
         <div class="modal" style="max-width: 1400px; width: 95%; height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
             <div class="modal-header">
@@ -285,8 +294,12 @@ window.openRopPanel = async function() {
 
     const closeModal = () => { 
         modal.classList.remove('open'); 
-        setTimeout(() => modal.remove(), 300); 
+        setTimeout(() => {
+            modal.remove();
+            window._ropPanelOpen = false;
+        }, 300);
     };
+    
     modal.querySelector('.modal-close').addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
@@ -296,262 +309,29 @@ window.openRopPanel = async function() {
             modal.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
             modal.querySelectorAll('.admin-panel').forEach(p => p.style.display = 'none');
             tab.classList.add('active');
-            const panel = document.getElementById(`adminPanel-${tab.dataset.panel}`);
+            const panelId = `adminPanel-${tab.dataset.panel}`;
+            const panel = document.getElementById(panelId);
             if (panel) panel.style.display = 'block';
             
-            if (tab.dataset.panel === 'schedule' && typeof window.initScheduleEditor === 'function') {
-                setTimeout(() => window.initScheduleEditor(), 100);
-            } else if (tab.dataset.panel === 'quizzes' && typeof window.loadQuizzesAdmin === 'function') {
-                window.loadQuizzesAdmin();
+            // Обновляем данные при переключении
+            if (tab.dataset.panel === 'schedule') {
+                if (typeof window.initScheduleEditor === 'function') {
+                    setTimeout(() => window.initScheduleEditor(), 100);
+                }
+            } else if (tab.dataset.panel === 'quizzes') {
+                if (typeof window.loadQuizzesAdmin === 'function') {
+                    window.loadQuizzesAdmin();
+                }
             }
         });
     });
 
+    // Рендерим все панели
     await renderUsersPanel();
-    renderSchedulePanelSimple();
+    await renderSchedulePanel();
     await renderPointsPanel();
-    renderQuizzesPanelSimple();
+    await renderQuizzesPanel();
 };
-
-// Простая версия для графика (без сложного редактора)
-function renderSchedulePanel() {
-    const panel = document.getElementById('adminPanel-schedule');
-    if (!panel) return;
-    
-    panel.innerHTML = `
-        <div class="schedule-nav">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <button id="schedulePrevMonth" class="schedule-nav-btn">←</button>
-                    <span id="scheduleCurrentMonth" class="schedule-current-month"></span>
-                    <button id="scheduleNextMonth" class="schedule-nav-btn">→</button>
-                </div>
-                <div style="min-width: 250px;">
-                    <select id="schedulePointSelect" class="schedule-point-select">
-                        <option value="">— Выберите точку —</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-        <div id="scheduleEditorContainer" style="margin-top: 20px;">
-            <div style="text-align: center; padding: 60px; color: var(--muted);">
-                📅 Выберите точку для редактирования графика
-            </div>
-        </div>
-    `;
-    
-    // Загружаем schedule-editor.js если еще не загружен
-    if (typeof window.initScheduleEditor === 'undefined') {
-        const script = document.createElement('script');
-        script.src = '/schedule-editor.js';
-        script.onload = () => {
-            if (typeof window.initScheduleEditor === 'function') {
-                window.initScheduleEditor();
-            }
-        };
-        document.head.appendChild(script);
-    } else {
-        window.initScheduleEditor();
-    }
-}
-
-// ===================== QUIZZES PANEL (полноценный) =====================
-function renderQuizzesPanel() {
-    const panel = document.getElementById('adminPanel-quizzes');
-    if (!panel) return;
-    
-    panel.innerHTML = `
-        <div style="margin-bottom: 20px;">
-            <div class="admin-panel-label">📝 Управление опросниками</div>
-            <button onclick="window.openQuizEditorInAdmin()" class="btn-add" style="margin-bottom: 20px;">➕ Создать новый опросник</button>
-        </div>
-        <div class="admin-panel-label">📋 Список опросников</div>
-        <div id="quizzesAdminList"></div>
-    `;
-    
-    loadQuizzesAdmin();
-}
-
-async function loadQuizzesAdmin() {
-    try {
-        const response = await fetch('/api/quizzes', { credentials: 'include' });
-        const quizzes = await response.json();
-        
-        const container = document.getElementById('quizzesAdminList');
-        if (!container) return;
-        
-        if (quizzes.length === 0) {
-            container.innerHTML = '<div style="color: var(--muted); padding: 20px; text-align: center;">Нет опросников. Создайте первый.</div>';
-            return;
-        }
-        
-        container.innerHTML = quizzes.map(quiz => `
-            <div class="admin-quiz-row" style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; color: var(--strong); font-size: 14px;">${escapeHtml(quiz.title)}</div>
-                        <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
-                            ${quiz.description ? escapeHtml(quiz.description) : '—'}
-                            | Вопросов: ${quiz.questions?.length || 0}
-                            | Статус: ${quiz.is_active ? '🟢 Активен' : '🔴 Неактивен'}
-                            | Создан: ${new Date(quiz.created_at).toLocaleDateString('ru-RU')}
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button onclick="window.openQuizEditorInAdmin(${quiz.id})" class="btn-edit" style="padding: 5px 12px;">✏️ Редактировать</button>
-                        <button onclick="window.deleteQuizInAdmin(${quiz.id})" class="btn-delete" style="padding: 5px 12px;">🗑 Удалить</button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error('Failed to load quizzes:', error);
-        const container = document.getElementById('quizzesAdminList');
-        if (container) container.innerHTML = '<div style="color: var(--accent2); padding: 20px;">❌ Ошибка загрузки опросников</div>';
-    }
-}
-
-// Функции для админ-панели
-window.openQuizEditorInAdmin = async function(quizId = null) {
-    // Используем ту же функцию что и на странице обучения
-    if (typeof openQuizEditor === 'function') {
-        openQuizEditor(quizId);
-    } else {
-        // Если функция не определена, показываем простой редактор
-        showSimpleQuizEditor(quizId);
-    }
-};
-
-window.deleteQuizInAdmin = async function(quizId) {
-    if (!confirm('Удалить опросник? Все результаты будут потеряны.')) return;
-    
-    try {
-        const response = await fetch(`/api/quizzes/${quizId}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-        
-        if (response.ok) {
-            showToast('Опросник удален', 'success');
-            loadQuizzesAdmin();
-            if (typeof loadQuizzes === 'function') loadQuizzes();
-        } else {
-            showToast('Ошибка удаления', 'error');
-        }
-    } catch (error) {
-        showToast('Ошибка: ' + error.message, 'error');
-    }
-};
-
-// Простой редактор на случай если основная функция не загружена
-function showSimpleQuizEditor(quizId = null) {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal" style="max-width: 700px;">
-            <div class="modal-header">
-                <span class="modal-title">${quizId ? '✏️ Редактировать' : '📝 Создать'} опросник</span>
-                <button class="modal-close">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="field">
-                    <label>Название</label>
-                    <input type="text" id="simpleQuizTitle" placeholder="Название опросника">
-                </div>
-                <div class="field">
-                    <label>Описание</label>
-                    <textarea id="simpleQuizDesc" rows="2" placeholder="Описание..."></textarea>
-                </div>
-                <div class="field">
-                    <label>Вопросы (JSON формат)</label>
-                    <textarea id="simpleQuizQuestions" rows="10" placeholder='[
-  {
-    "text": "Пример вопроса?",
-    "options": ["Вариант 1", "Вариант 2", "Вариант 3"],
-    "correct": 0,
-    "explanation": "Пояснение"
-  }
-]'></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-cancel">Отмена</button>
-                <button class="btn-save" id="saveSimpleQuizBtn">💾 Сохранить</button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    const closeModal = () => {
-        modal.classList.remove('open');
-        setTimeout(() => modal.remove(), 300);
-    };
-    
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
-    // Если редактируем, загружаем данные
-    if (quizId) {
-        fetch(`/api/quizzes/${quizId}`, { credentials: 'include' })
-            .then(res => res.json())
-            .then(quiz => {
-                document.getElementById('simpleQuizTitle').value = quiz.title;
-                document.getElementById('simpleQuizDesc').value = quiz.description || '';
-                document.getElementById('simpleQuizQuestions').value = JSON.stringify(quiz.questions, null, 2);
-            })
-            .catch(console.error);
-    }
-    
-    modal.querySelector('#saveSimpleQuizBtn').addEventListener('click', async () => {
-        const title = document.getElementById('simpleQuizTitle').value.trim();
-        const description = document.getElementById('simpleQuizDesc').value.trim();
-        let questions;
-        
-        try {
-            questions = JSON.parse(document.getElementById('simpleQuizQuestions').value);
-        } catch (e) {
-            showToast('Неверный формат JSON', 'error');
-            return;
-        }
-        
-        if (!title) {
-            showToast('Введите название', 'error');
-            return;
-        }
-        
-        try {
-            let response;
-            if (quizId) {
-                response = await fetch(`/api/quizzes/${quizId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ title, description, questions, is_active: true })
-                });
-            } else {
-                response = await fetch('/api/quizzes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ title, description, questions })
-                });
-            }
-            
-            if (response.ok) {
-                showToast('Сохранено', 'success');
-                closeModal();
-                loadQuizzesAdmin();
-                if (typeof loadQuizzes === 'function') loadQuizzes();
-            } else {
-                showToast('Ошибка', 'error');
-            }
-        } catch (error) {
-            showToast('Ошибка: ' + error.message, 'error');
-        }
-    });
-}
 
 // ===================== USERS PANEL =====================
 async function renderUsersPanel() {
@@ -668,7 +448,6 @@ async function loadUsersList() {
     }
 }
 
-// Глобальные функции для работы с пользователями
 window.changePasswordUser = async function(userId, userName) {
     const newPassword = prompt(`Новый пароль (4 цифры) для ${userName}:`);
     if (!newPassword) return;
@@ -730,6 +509,48 @@ window.saveUserProfile = async function(userId) {
     }
 };
 
+// ===================== SCHEDULE PANEL =====================
+async function renderSchedulePanel() {
+    const panel = document.getElementById('adminPanel-schedule');
+    if (!panel) return;
+    
+    panel.innerHTML = `
+        <div class="schedule-nav">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button id="schedulePrevMonth" class="schedule-nav-btn">←</button>
+                    <span id="scheduleCurrentMonth" class="schedule-current-month"></span>
+                    <button id="scheduleNextMonth" class="schedule-nav-btn">→</button>
+                </div>
+                <div style="min-width: 250px;">
+                    <select id="schedulePointSelect" class="schedule-point-select">
+                        <option value="">— Выберите точку —</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div id="scheduleEditorContainer" style="margin-top: 20px;">
+            <div style="text-align: center; padding: 60px; color: var(--muted);">
+                📅 Выберите точку для редактирования графика
+            </div>
+        </div>
+    `;
+    
+    // Загружаем schedule-editor.js если еще не загружен
+    if (typeof window.initScheduleEditor === 'undefined') {
+        const script = document.createElement('script');
+        script.src = '/schedule-editor.js';
+        script.onload = () => {
+            if (typeof window.initScheduleEditor === 'function') {
+                window.initScheduleEditor();
+            }
+        };
+        document.head.appendChild(script);
+    } else {
+        window.initScheduleEditor();
+    }
+}
+
 // ===================== POINTS PANEL =====================
 async function renderPointsPanel() {
     const panel = document.getElementById('adminPanel-points');
@@ -769,6 +590,10 @@ async function renderPointsPanel() {
                 document.getElementById('newPointName').value = '';
                 document.getElementById('newPointAddress').value = '';
                 await loadPointsList();
+                // Обновляем список точек в редакторе графиков
+                if (typeof window.loadPointsListForSchedule === 'function') {
+                    window.loadPointsListForSchedule();
+                }
             } else {
                 alert('Ошибка');
             }
@@ -817,9 +642,207 @@ window.deletePoint = async function(id) {
     }
 };
 
+// ===================== QUIZZES PANEL =====================
+async function renderQuizzesPanel() {
+    const panel = document.getElementById('adminPanel-quizzes');
+    if (!panel) return;
+    
+    panel.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <div class="admin-panel-label">📝 Управление опросниками</div>
+            <button onclick="window.openQuizEditorInAdmin()" class="btn-add" style="margin-bottom: 20px;">➕ Создать новый опросник</button>
+        </div>
+        <div class="admin-panel-label">📋 Список опросников</div>
+        <div id="quizzesAdminList"></div>
+    `;
+    
+    await loadQuizzesAdmin();
+}
+
+async function loadQuizzesAdmin() {
+    try {
+        const response = await fetch('/api/quizzes', { credentials: 'include' });
+        const quizzes = await response.json();
+        
+        const container = document.getElementById('quizzesAdminList');
+        if (!container) return;
+        
+        if (!quizzes.length) {
+            container.innerHTML = '<div style="color: var(--muted); padding: 20px; text-align: center;">Нет опросников. Создайте первый.</div>';
+            return;
+        }
+        
+        container.innerHTML = quizzes.map(quiz => `
+            <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--strong); font-size: 14px;">${escapeHtml(quiz.title)}</div>
+                        <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+                            ${quiz.description ? escapeHtml(quiz.description) : '—'}
+                            | Вопросов: ${quiz.questions?.length || 0}
+                            | Статус: ${quiz.is_active ? '🟢 Активен' : '🔴 Неактивен'}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="window.openQuizEditorInAdmin(${quiz.id})" class="btn-edit" style="padding: 5px 12px;">✏️ Редактировать</button>
+                        <button onclick="window.deleteQuizInAdmin(${quiz.id})" class="btn-delete" style="padding: 5px 12px;">🗑 Удалить</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load quizzes:', error);
+    }
+}
+
+window.openQuizEditorInAdmin = async function(quizId = null) {
+    // Используем функцию из training.html если доступна
+    if (typeof window.openQuizEditor === 'function') {
+        window.openQuizEditor(quizId);
+    } else {
+        // Простой редактор
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal" style="max-width: 700px;">
+                <div class="modal-header">
+                    <span class="modal-title">${quizId ? '✏️ Редактировать' : '📝 Создать'} опросник</span>
+                    <button class="modal-close">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="field">
+                        <label>Название</label>
+                        <input type="text" id="simpleQuizTitle" placeholder="Название опросника">
+                    </div>
+                    <div class="field">
+                        <label>Описание</label>
+                        <textarea id="simpleQuizDesc" rows="2" placeholder="Описание..."></textarea>
+                    </div>
+                    <div class="field">
+                        <label>Вопросы (JSON формат)</label>
+                        <textarea id="simpleQuizQuestions" rows="10" placeholder='[\n  {\n    "text": "Вопрос?",\n    "options": ["Вариант 1", "Вариант 2"],\n    "correct": 0,\n    "explanation": "Пояснение"\n  }\n]'></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel">Отмена</button>
+                    <button class="btn-save" id="saveSimpleQuizBtn">💾 Сохранить</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('open'), 10);
+        
+        const closeModal = () => {
+            modal.classList.remove('open');
+            setTimeout(() => modal.remove(), 300);
+        };
+        
+        modal.querySelector('.modal-close').addEventListener('click', closeModal);
+        modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+        
+        if (quizId) {
+            try {
+                const res = await fetch(`/api/quizzes/${quizId}`, { credentials: 'include' });
+                const quiz = await res.json();
+                document.getElementById('simpleQuizTitle').value = quiz.title;
+                document.getElementById('simpleQuizDesc').value = quiz.description || '';
+                document.getElementById('simpleQuizQuestions').value = JSON.stringify(quiz.questions, null, 2);
+            } catch(e) {}
+        }
+        
+        modal.querySelector('#saveSimpleQuizBtn').addEventListener('click', async () => {
+            const title = document.getElementById('simpleQuizTitle').value.trim();
+            const description = document.getElementById('simpleQuizDesc').value.trim();
+            let questions;
+            try {
+                questions = JSON.parse(document.getElementById('simpleQuizQuestions').value);
+            } catch(e) {
+                alert('Неверный формат JSON');
+                return;
+            }
+            if (!title) {
+                alert('Введите название');
+                return;
+            }
+            
+            try {
+                let response;
+                if (quizId) {
+                    response = await fetch(`/api/quizzes/${quizId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ title, description, questions, is_active: true })
+                    });
+                } else {
+                    response = await fetch('/api/quizzes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ title, description, questions })
+                    });
+                }
+                if (response.ok) {
+                    alert('Сохранено');
+                    closeModal();
+                    await loadQuizzesAdmin();
+                    if (typeof window.loadQuizzes === 'function') window.loadQuizzes();
+                } else {
+                    alert('Ошибка');
+                }
+            } catch(e) {
+                alert('Ошибка: ' + e.message);
+            }
+        });
+    }
+};
+
+window.deleteQuizInAdmin = async function(quizId) {
+    if (!confirm('Удалить опросник? Все результаты будут потеряны.')) return;
+    
+    try {
+        const response = await fetch(`/api/quizzes/${quizId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            alert('Опросник удален');
+            await loadQuizzesAdmin();
+            if (typeof window.loadQuizzes === 'function') window.loadQuizzes();
+        } else {
+            alert('Ошибка удаления');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+};
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+}
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--surface2);
+        border-left: 3px solid ${type === 'success' ? 'var(--accent3)' : 'var(--accent2)'};
+        padding: 12px 20px;
+        border-radius: 8px;
+        z-index: 10001;
+        animation: slideInRight 0.3s ease;
+        font-size: 13px;
+    `;
+    toast.innerHTML = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
 
 // Экспортируем всё в window
@@ -830,5 +853,12 @@ window.loadUserInfo = loadUserInfo;
 window.loadAllContent = loadAllContent;
 window.loadContent = loadContent;
 window.initDetailsHandlers = initDetailsHandlers;
+window.renderUsersPanel = renderUsersPanel;
+window.renderSchedulePanel = renderSchedulePanel;
+window.renderPointsPanel = renderPointsPanel;
+window.renderQuizzesPanel = renderQuizzesPanel;
+window.loadUsersList = loadUsersList;
+window.loadPointsList = loadPointsList;
+window.loadQuizzesAdmin = loadQuizzesAdmin;
 
 console.log('main.js loaded, openRopPanel available:', typeof window.openRopPanel);
