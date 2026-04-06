@@ -272,36 +272,13 @@ async function initDatabase() {
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS point_id INTEGER`).catch(e => {});
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(255)`).catch(e => {});
 
-        // Insert default users
-        await client.query(`
-            INSERT INTO users (username, password, full_name, role) 
-            VALUES ('user', '1111', 'Обычный пользователь', 'user')
-            ON CONFLICT (username) DO NOTHING
-        `);
-        
-        await client.query(`
-            INSERT INTO users (username, password, full_name, role) 
-            VALUES ('rop', '1234', 'Руководитель отдела продаж', 'rop')
-            ON CONFLICT (username) DO NOTHING
-        `);
-        
-        await client.query(`
-            INSERT INTO users (username, password, full_name, role) 
-            VALUES ('root', 'root123', 'Главный администратор', 'root')
-            ON CONFLICT (username) DO NOTHING
-        `);
-
-        // Insert default point if none exists
-        const pointCheck = await client.query(`SELECT id FROM points LIMIT 1`);
-        if (pointCheck.rows.length === 0) {
-            await client.query(`
-                INSERT INTO points (name, address) VALUES ('Основная точка', 'Адрес не указан')
-            `);
-            console.log('✅ Default point created');
-        }
+        // ========== НЕ СОЗДАЕМ ПОЛЬЗОВАТЕЛЕЙ И ТОЧКИ АВТОМАТИЧЕСКИ ==========
+        // Пользователи и точки добавляются только через админ-панель
+        console.log('✅ All tables created');
+        console.log('ℹ️ No default users or points created - add them via admin panel');
 
         client.release();
-        console.log('✅ Database tables ready');
+        console.log('✅ Database initialization complete');
         return true;
     } catch (error) {
         console.error('❌ Database init error:', error.message);
