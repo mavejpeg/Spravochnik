@@ -3626,36 +3626,70 @@ button,
   -webkit-user-select: none;
 }
 
-/* ========== МЯГКИЙ ГРАДИЕНТ ========== */
+/* ========== ЭЛЕГАНТНЫЙ ГРАДИЕНТ С ДВИЖЕНИЕМ ========== */
 body {
-  background: linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%);
+  background: linear-gradient(135deg, #0a0a0f 0%, #12121a 30%, #0d0d15 70%, #0a0a0f 100%);
   background-attachment: fixed;
   position: relative;
 }
 
+/* Основное свечение */
 body::before {
   content: '';
   position: fixed;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at 30% 40%, rgba(124, 92, 252, 0.12), transparent 40%),
-              radial-gradient(circle at 80% 70%, rgba(60, 255, 160, 0.08), transparent 40%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 40%, rgba(124, 92, 252, 0.1), transparent 50%),
+              radial-gradient(circle at 80% 70%, rgba(60, 255, 160, 0.07), transparent 50%),
+              radial-gradient(circle at 50% 20%, rgba(252, 92, 124, 0.05), transparent 50%);
   pointer-events: none;
   z-index: 0;
-  animation: slowRotate 20s ease-in-out infinite;
+  animation: slowBreathing 12s ease-in-out infinite;
 }
 
-@keyframes slowRotate {
-  0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.6; }
-  50% { transform: rotate(5deg) scale(1.05); opacity: 1; }
+/* Дополнительное свечение снизу */
+body::after {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 40%;
+  background: linear-gradient(0deg, rgba(124, 92, 252, 0.06), transparent);
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(30px);
+  animation: bottomGlow 8s ease-in-out infinite;
 }
 
+@keyframes slowBreathing {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes bottomGlow {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Контент поверх */
 .site-header,
 .tab-nav,
 main,
-.section {
+.section,
+.modal-overlay {
   position: relative;
   z-index: 1;
 }
