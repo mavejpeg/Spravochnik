@@ -523,8 +523,8 @@ function renderSchedulePanel() {
     if (!panel) return;
     
     panel.innerHTML = `
-        <div class="schedule-nav">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div class="schedule-nav">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <button id="schedulePrevMonth" class="schedule-nav-btn">←</button>
                     <span id="scheduleCurrentMonth" class="schedule-current-month"></span>
@@ -536,7 +536,11 @@ function renderSchedulePanel() {
                     </select>
                 </div>
             </div>
+            <div>
+                <button onclick="fixScheduleUsers()" class="btn-add" style="background: var(--accent4);">🔧 Исправить сотрудников</button>
+            </div>
         </div>
+        <div id="scheduleDebugInfo" style="margin-bottom: 16px; padding: 12px; background: var(--surface2); border-radius: 8px; font-size: 12px; display: none;"></div>
         <div id="scheduleEditorContainer" style="margin-top: 20px;">
             <div style="text-align: center; padding: 60px; color: var(--muted);">
                 📅 Выберите точку для редактирования графика
@@ -544,6 +548,105 @@ function renderSchedulePanel() {
         </div>
     `;
 }
+
+// Добавьте эту функцию в main.js
+window.fixScheduleUsers = async function() {
+    const debugDiv = document.getElementById('scheduleDebugInfo');
+    debugDiv.style.display = 'block';
+    debugDiv.innerHTML = '<div style="text-align: center;">⏳ Проверка состояния...</div>';
+    
+    try {
+        // 1. Проверяем текущее состояние
+        const statusRes = await fetch('/api/debug/users-status', { credentials: 'include' });
+        const status = await statusRes.json();
+        
+        console.log('Users status:', status);
+        
+        if (status.usersWithoutPointCount === 0) {
+            debugDiv.innerHTML = `
+                <div style="color: var(--accent3);">
+                    ✅ Все сотрудники уже назначены на точки!
+                    <br>Сотрудников без точки: 0
+                    <br>Всего сотрудников: ${status.users.filter(u => u.role === 'user').length}
+                    <br><button onclick="document.getElementById('scheduleDebugInfo').style.display='none'" class="btn-cancel" style="margin-top: 8px;">Закрыть</button>
+                </div>
+            `;
+            // Перезагружаем график
+            if (typeof window.initScheduleEditor === 'function') {
+                window.initScheduleEditor();
+            }
+            return;
+        }
+        
+        // 2. Проверяем есть ли точки
+        if (status.points.length === 0) {
+            debugDiv.innerHTML = `
+                <div style="color: var(--accent4);">
+                    ⚠️ Нет ни одной точки! Создаю...
+                </div>
+            `;
+            
+            const createRes = await fetch('/api/debug/create-default-point', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            const createData = await createRes.json();
+            
+            if (createData.success) {
+                debugDiv.innerHTML = `
+                    <div style="color: var(--accent3);">
+                        ✅ Создана точка ID: ${createData.pointId}
+                        <br>Теперь назначаю сотрудников...
+                    </div>
+                `;
+                
+                // Пауза
+                await new Promise(r => setTimeout(r, 1000));
+            }
+        }
+        
+        // 3. Назначаем сотрудников на первую точку
+        const assignRes = await fetch('/api/debug/assign-users-to-first-point', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        const assignData = await assignRes.json();
+        
+        if (assignData.success) {
+            debugDiv.innerHTML = `
+                <div style="color: var(--accent3);">
+                    ✅ ${assignData.message}
+                    <br>Назначенные сотрудники: ${assignData.assignedUsers.map(u => u.full_name).join(', ') || 'нет'}
+                    <br><br>
+                    <button onclick="document.getElementById('scheduleDebugInfo').style.display='none'" class="btn-cancel" style="margin-top: 8px;">Закрыть</button>
+                </div>
+            `;
+            
+            // Перезагружаем график
+            setTimeout(() => {
+                if (typeof window.initScheduleEditor === 'function') {
+                    window.initScheduleEditor();
+                }
+            }, 1000);
+        } else {
+            debugDiv.innerHTML = `
+                <div style="color: var(--accent2);">
+                    ❌ Ошибка: ${assignData.error}
+                    <br><button onclick="document.getElementById('scheduleDebugInfo').style.display='none'" class="btn-cancel" style="margin-top: 8px;">Закрыть</button>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Fix error:', error);
+        debugDiv.innerHTML = `
+            <div style="color: var(--accent2);">
+                ❌ Ошибка: ${error.message}
+                <br><button onclick="document.getElementById('scheduleDebugInfo').style.display='none'" class="btn-cancel" style="margin-top: 8px;">Закрыть</button>
+            </div>
+        `;
+    }
+};
 
 // ===================== POINTS PANEL =====================
 async function renderPointsPanel() {
