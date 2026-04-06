@@ -72,6 +72,12 @@ function getStrengthBadgeClass(category, strength) {
   }
 }
 
+function addNoteToCard(card, productType, productId, productName) {
+    if (typeof window.addNoteButtonToCard === 'function') {
+        window.addNoteButtonToCard(card, productType, productId, productName);
+    }
+}
+
 // ========== API FUNCTIONS ==========
 async function getCategory(category) {
   try {
@@ -267,6 +273,10 @@ function renderProductCard(item, category, onDelete, onEdit) {
       };
       if (onEdit) onEdit(editItem);
     });
+  }
+
+  if (typeof window.addNoteToCard === 'function') {
+    window.addNoteToCard(div, category, productId, item.name);
   }
   
   return div;
@@ -481,3 +491,4 @@ window.getStrengthLabel = getStrengthLabel;
 window.getStrengthBadgeClass = getStrengthBadgeClass;
 window.escapeHtml = escapeHtml;
 window.isRopGlobal = false;
+window.addNoteToCard = addNoteToCard;
