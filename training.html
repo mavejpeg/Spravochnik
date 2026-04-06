@@ -67,7 +67,7 @@
     cursor: pointer;
   }
   
-  .quiz-option label {
+  .quiz-option span {
     cursor: pointer;
     flex: 1;
     color: var(--text2);
@@ -149,7 +149,7 @@
     margin-bottom: 16px;
   }
   
-  /* Стили для details (выпадающие списки) - они должны работать */
+  /* Стили для details (выпадающие списки) */
   details {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -175,6 +175,10 @@
     background: var(--surface3);
   }
   
+  details summary::-webkit-details-marker {
+    display: none;
+  }
+  
   details summary::after {
     content: "▼";
     font-size: 12px;
@@ -195,6 +199,45 @@
     flex-direction: column;
     gap: 16px;
   }
+  
+  /* Прогресс-бар */
+  .learning-progress-container {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 24px;
+    position: sticky;
+    top: 60px;
+    z-index: 199;
+    backdrop-filter: blur(10px);
+  }
+  
+  /* Админские кнопки для управления опросниками */
+  .admin-quiz-btn {
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: var(--accent);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .admin-quiz-btn:hover {
+    background: var(--accent);
+    color: white;
+  }
+  
+  .quiz-editor-modal textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: monospace;
+    font-size: 12px;
+  }
 </style>
 </head>
 <body>
@@ -208,22 +251,23 @@
     <button id="ropBtn" class="rop-btn" style="display: none;">👑 Управление</button>
     <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
   </div>
-  <!-- Прогресс-бар обучения -->
-  <div class="learning-progress-container" style="background: var(--surface2); border-bottom: 1px solid var(--border); padding: 8px 24px;">
-      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-          <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-              <span style="font-size: 12px; color: var(--muted);">📚 Прогресс обучения:</span>
-              <div style="flex: 1; max-width: 300px; background: var(--border); border-radius: 20px; height: 8px; overflow: hidden;">
-                  <div id="learningProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent3), var(--accent)); transition: width 0.3s;"></div>
-              </div>
-              <span id="learningProgressText" style="font-size: 11px; color: var(--muted);">0%</span>
-          </div>
-          <div id="retakeWarning" style="display: none; background: rgba(252, 184, 48, 0.15); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: var(--accent4);">
-            ⚠️ Требуется повторная аттестация
-          </div>
-      </div>
-  </div>
 </header>
+
+<!-- Прогресс-бар обучения -->
+<div class="learning-progress-container">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+      <span style="font-size: 12px; color: var(--muted);">📚 Прогресс обучения:</span>
+      <div style="flex: 1; max-width: 300px; background: var(--border); border-radius: 20px; height: 8px; overflow: hidden;">
+        <div id="learningProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent3), var(--accent)); transition: width 0.3s;"></div>
+      </div>
+      <span id="learningProgressText" style="font-size: 11px; color: var(--muted);">0%</span>
+    </div>
+    <div id="retakeWarning" style="display: none; background: rgba(252, 184, 48, 0.15); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: var(--accent4);">
+      ⚠️ Требуется повторная аттестация
+    </div>
+  </div>
+</div>
 
 <nav class="tab-nav">
   <button class="tab-btn active" data-tab="tab-day1">📅 День 1</button>
@@ -329,18 +373,12 @@
         </ul>
       </div>
 
-      <!-- ОПРОСНИК ДЕНЬ 1 -->
-      <div class="quiz-block" id="quiz-day1-block">
-        <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 1)</div>
-        <div id="quiz-day1-questions"></div>
-        <button class="quiz-btn" onclick="checkQuiz('day1')">✅ Проверить ответы</button>
-        <button class="quiz-btn quiz-reset" onclick="resetQuiz('day1')">🔄 Сбросить</button>
-        <div id="quiz-day1-result" class="quiz-result"></div>
-      </div>
+      <!-- Контейнер для динамических опросников День 1 -->
+      <div id="quiz-day1-container"></div>
     </div>
   </div>
 
-  <!-- ДЕНЬ 2 (аналогично, с details вместо accordion) -->
+  <!-- ДЕНЬ 2 -->
   <div class="section" id="tab-day2">
     <div class="sec-header">
       <span class="sec-title">📅 День 2: Кальянная тематика</span>
@@ -422,13 +460,7 @@
         </ul>
       </div>
 
-      <div class="quiz-block" id="quiz-day2-block">
-        <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 2)</div>
-        <div id="quiz-day2-questions"></div>
-        <button class="quiz-btn" onclick="checkQuiz('day2')">✅ Проверить ответы</button>
-        <button class="quiz-btn quiz-reset" onclick="resetQuiz('day2')">🔄 Сбросить</button>
-        <div id="quiz-day2-result" class="quiz-result"></div>
-      </div>
+      <div id="quiz-day2-container"></div>
     </div>
   </div>
 
@@ -487,13 +519,7 @@
         </div>
       </details>
 
-      <div class="quiz-block" id="quiz-day3-block">
-        <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 3)</div>
-        <div id="quiz-day3-questions"></div>
-        <button class="quiz-btn" onclick="checkQuiz('day3')">✅ Проверить ответы</button>
-        <button class="quiz-btn quiz-reset" onclick="resetQuiz('day3')">🔄 Сбросить</button>
-        <div id="quiz-day3-result" class="quiz-result"></div>
-      </div>
+      <div id="quiz-day3-container"></div>
     </div>
   </div>
 
@@ -526,13 +552,7 @@
         <ul><li>Как предлагать комбо, не называя скидку</li><li>«У нас сейчас проходит комбо»</li><li>«Программа сама рассчитает»</li><li>После комбо предлагать испаритель</li></ul>
       </div>
 
-      <div class="quiz-block" id="quiz-day4-block">
-        <div class="quiz-title">📋 Опросник: проверка усвоения материала (День 4)</div>
-        <div id="quiz-day4-questions"></div>
-        <button class="quiz-btn" onclick="checkQuiz('day4')">✅ Проверить ответы</button>
-        <button class="quiz-btn quiz-reset" onclick="resetQuiz('day4')">🔄 Сбросить</button>
-        <div id="quiz-day4-result" class="quiz-result"></div>
-      </div>
+      <div id="quiz-day4-container"></div>
     </div>
   </div>
 
@@ -543,10 +563,31 @@
       <button class="btn-edit-content" data-page="training" data-section="scripts" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="scripts-content" class="section-content">
-      <details><summary>🎯 Стандарты общения</summary><div class="acc-body"><ul><li>Поздороваться, подняться со стула</li><li>Общаться доброжелательно</li><li>Быть активным</li></ul></div></details>
-      <details><summary>💧 Скрипт: жидкости</summary><div class="acc-body"><div class="hl ok">«Здравствуйте, что по вкусу вы хотели? И какая крепость?»</div></div></details>
-      <details><summary>💨 Скрипт: одноразки</summary><div class="acc-body"><div class="hl ok">«На какое количество тяг? Крепкую или легкую?»</div></div></details>
-      <details><summary>🏺 Скрипт: табак</summary><div class="acc-body"><div class="hl ok">«Какую крепость предпочитаете? По вкусу: фруктовые, ягодные?»</div></div></details>
+      <details>
+        <summary>🎯 Стандарты общения</summary>
+        <div class="acc-body">
+          <ul><li>Поздороваться, подняться со стула</li><li>Общаться доброжелательно</li><li>Быть активным</li></ul>
+        </div>
+      </details>
+      <details>
+        <summary>💧 Скрипт: жидкости</summary>
+        <div class="acc-body">
+          <div class="hl ok">«Здравствуйте, что по вкусу вы хотели? И какая крепость?»</div>
+        </div>
+      </details>
+      <details>
+        <summary>💨 Скрипт: одноразки</summary>
+        <div class="acc-body">
+          <div class="hl ok">«На какое количество тяг? Крепкую или легкую?»</div>
+        </div>
+      </details>
+      <details>
+        <summary>🏺 Скрипт: табак</summary>
+        <div class="acc-body">
+          <div class="hl ok">«Какую крепость предпочитаете? По вкусу: фруктовые, ягодные?»</div>
+        </div>
+      </details>
+      <div id="quiz-scripts-container"></div>
     </div>
   </div>
 
@@ -557,212 +598,55 @@
       <button class="btn-edit-content" data-page="training" data-section="security" style="display: none;">✏️ Редактировать</button>
     </div>
     <div id="security-content" class="section-content">
-      <div class="info-card"><h3>💰 Правила работы с деньгами</h3><ul><li>Сначала деньги, потом товар</li><li>Проверка купюр</li><li>Стойте в полоборота</li></ul></div>
-      <div class="info-card"><h3>🏛️ Работа с гос.органами</h3><ul><li>Знать юр.лицо</li><li>Запоминать ФИО проверяющих</li><li>Ничего не подписывать не читая</li></ul></div>
+      <div class="info-card">
+        <h3>💰 Правила работы с деньгами</h3>
+        <ul><li>Сначала деньги, потом товар</li><li>Проверка купюр</li><li>Стойте в полоборота</li></ul>
+      </div>
+      <div class="info-card">
+        <h3>🏛️ Работа с гос.органами</h3>
+        <ul><li>Знать юр.лицо</li><li>Запоминать ФИО проверяющих</li><li>Ничего не подписывать не читая</li></ul>
+      </div>
+      <div id="quiz-security-container"></div>
     </div>
   </div>
 
 </main>
 
-<script src="core.js?v=25"></script>
-<script src="main.js?v=25"></script>
-<script>
-// Инициализация табов
-function initTabs() {
-  const btns = document.querySelectorAll('.tab-btn');
-  btns.forEach(btn => {
-    btn.addEventListener('click', function() {
-      const target = this.dataset.tab;
-      btns.forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      const sec = document.getElementById(target);
-      if (sec) sec.classList.add('active');
-    });
-  });
-}
-
-// Данные для опросников
-const quizzes = {
-  day1: {
-    questions: [
-      { text: "Чем отличается солевой никотин от щелочного?", 
-        options: ["Солевой быстрее накуривает, мягче", "Щелочной быстрее накуривает", "Нет разницы", "Солевой только для больших устройств"],
-        correct: 0,
-        explanation: "Солевой никотин быстрее накуривает и мягче при затяжке" },
-      { text: "Какие одноразки относятся к крепким?", 
-        options: ["Plonk, Ignite", "Vozol 20k, Fumo 18k, GENG", "Lost Mary, Soak", "Все перечисленные"],
-        correct: 1,
-        explanation: "К крепким: Vozol 20k, Fumo 18k, GENG, HQD, Bubble Moon" },
-      { text: "Какое сопротивление для солевых жидкостей?", 
-        options: ["0.2-0.4 Ом", "0.6-0.8 Ом", "1.2-1.6 Ом", "Любое"],
-        correct: 1,
-        explanation: "Для солевых жидкостей лучше 0.6-0.8 Ом" }
-    ]
-  },
-  day2: {
-    questions: [
-      { text: "Какой табак считается самым крепким?", 
-        options: ["Darkside", "Мастях", "Siberia", "HiPrime"],
-        correct: 2,
-        explanation: "Siberia — очень крепкий табак" },
-      { text: "Какая чаша лучше раскрывает вкус?", 
-        options: ["Турка", "Убивашка", "Фанол / Фаннель", "Мелассоуловитель"],
-        correct: 2,
-        explanation: "Фанол / Фаннель максимально раскрывает вкус" },
-      { text: "Для чего нужен мелассоуловитель?", 
-        options: ["Усиление крепости", "Сбор лишнего сиропа", "Охлаждение дыма", "Розжиг углей"],
-        correct: 1,
-        explanation: "Мелассоуловитель собирает лишний сироп" }
-    ]
-  },
-  day3: {
-    questions: [
-      { text: "Как принимать поставку?", 
-        options: ["Частями", "Одна накладная — одна приемка", "Отложить на неделю", "Без проверки"],
-        correct: 1,
-        explanation: "ОДНА НАКЛАДНАЯ — ОДНА ПРИЕМКА" },
-      { text: "Что делать, если не успели принять товар?", 
-        options: ["Ничего", "Написать в закуп", "Отложить", "Принять без проверки"],
-        correct: 1,
-        explanation: "Написать в закуп" },
-      { text: "Как вести себя с мошенниками?", 
-        options: ["Сначала отдать товар", "Сначала взять деньги", "Не проверять купюры", "Отдавать сдачу не считая"],
-        correct: 1,
-        explanation: "Сначала взять деньги, потом отдать товар" }
-    ]
-  },
-  day4: {
-    questions: [
-      { text: "Как предлагать комбо?", 
-        options: ["Назвать скидку", "Сказать 'программа сама рассчитает'", "Не предлагать", "Предложить один товар"],
-        correct: 1,
-        explanation: "Скидку называть не нужно" },
-      { text: "Что предложить после комбо?", 
-        options: ["Скидку", "Испаритель", "Чек", "Пакет"],
-        correct: 1,
-        explanation: "Предложить испаритель или картридж" },
-      { text: "Что знать перед началом дня?", 
-        options: ["Погоду", "На каком юр.лице работаешь", "Курс валют", "Новости"],
-        correct: 1,
-        explanation: "Знать на каком юр.лице работаешь" }
-    ]
-  }
-};
-
-// Инициализация опросников
-function initQuizzes() {
-  for (const [day, quiz] of Object.entries(quizzes)) {
-    const container = document.getElementById(`quiz-${day}-questions`);
-    if (!container) continue;
-    
-    let html = '';
-    quiz.questions.forEach((q, idx) => {
-      html += `
-        <div class="quiz-question">
-          <div class="quiz-question-text">${idx + 1}. ${q.text}</div>
-          <div class="quiz-options">
-            ${q.options.map((opt, optIdx) => `
-              <label class="quiz-option">
-                <input type="radio" name="q${day}_${idx}" value="${optIdx}">
-                <span>${opt}</span>
-              </label>
-            `).join('')}
-          </div>
-          <div class="quiz-answer" id="quiz-${day}-answer-${idx}"></div>
-        </div>
-      `;
-    });
-    container.innerHTML = html;
-  }
-}
-
-// Проверка опросника
-function checkQuiz(day) {
-  const quiz = quizzes[day];
-  if (!quiz) return;
-  
-  let correctCount = 0;
-  const total = quiz.questions.length;
-  
-  quiz.questions.forEach((q, idx) => {
-    const selected = document.querySelector(`input[name="q${day}_${idx}"]:checked`);
-    const answerDiv = document.getElementById(`quiz-${day}-answer-${idx}`);
-    const isCorrect = selected && parseInt(selected.value) === q.correct;
-    
-    if (isCorrect) correctCount++;
-    
-    answerDiv.innerHTML = isCorrect ? `✅ ${q.explanation}` : `❌ ${q.explanation}`;
-    answerDiv.className = `quiz-answer show ${isCorrect ? 'correct' : 'incorrect'}`;
-  });
-  
-  const resultDiv = document.getElementById(`quiz-${day}-result`);
-  const percentage = Math.round((correctCount / total) * 100);
-  
-  resultDiv.innerHTML = `Результат: ${correctCount} из ${total} (${percentage}%)`;
-  resultDiv.className = `quiz-result show ${percentage >= 70 ? 'success' : 'fail'}`;
-  
-  if (percentage >= 70) {
-    resultDiv.innerHTML += `<br>🎉 Отлично! Материал усвоен.`;
-  } else {
-    resultDiv.innerHTML += `<br>📚 Рекомендуется повторить материал.`;
-  }
-}
-
-// Сброс опросника
-function resetQuiz(day) {
-  const quiz = quizzes[day];
-  if (!quiz) return;
-  
-  quiz.questions.forEach((_, idx) => {
-    const radios = document.querySelectorAll(`input[name="q${day}_${idx}"]`);
-    radios.forEach(radio => radio.checked = false);
-    const answerDiv = document.getElementById(`quiz-${day}-answer-${idx}`);
-    answerDiv.innerHTML = '';
-    answerDiv.classList.remove('show', 'correct', 'incorrect');
-  });
-  
-  const resultDiv = document.getElementById(`quiz-${day}-result`);
-  resultDiv.innerHTML = '';
-  resultDiv.classList.remove('show', 'success', 'fail');
-}
-
-// Инициализация
-document.addEventListener('DOMContentLoaded', () => {
-  initTabs();
-  initQuizzes();
-  console.log('Training page loaded');
-});
-
-// Глобальные функции
-window.checkQuiz = checkQuiz;
-window.resetQuiz = resetQuiz;
-
+<script src="utils.js?v=2"></script>
 <script src="core.js?v=38"></script>
 <script src="main.js?v=38"></script>
 <script src="editor.js?v=2"></script>
-</script>
-// Динамические опросники
-let currentQuizzes = {};
 
+<script>
+// ========== ДИНАМИЧЕСКИЕ ОПРОСНИКИ ==========
+let currentQuizzes = {};
+let isRop = false;
+
+// Функции для работы с опросниками
 async function loadQuizzes() {
     try {
         const response = await fetch('/api/quizzes', { credentials: 'include' });
+        if (!response.ok) {
+            console.log('No quizzes endpoint yet, using default');
+            return;
+        }
         const quizzes = await response.json();
         
         // Группируем опросники по дням (по названию)
         for (const quiz of quizzes) {
-            const dayMatch = quiz.title.match(/День\s+(\d+)/i);
-            if (dayMatch) {
-                const day = `day${dayMatch[1]}`;
-                if (!currentQuizzes[day]) currentQuizzes[day] = [];
-                currentQuizzes[day].push(quiz);
-            } else if (quiz.title.toLowerCase().includes('скрипт')) {
-                if (!currentQuizzes.scripts) currentQuizzes.scripts = [];
-                currentQuizzes.scripts.push(quiz);
-            } else if (quiz.title.toLowerCase().includes('безопасность')) {
-                if (!currentQuizzes.security) currentQuizzes.security = [];
-                currentQuizzes.security.push(quiz);
+            const title = quiz.title.toLowerCase();
+            let category = null;
+            
+            if (title.includes('день 1') || title.includes('day1')) category = 'day1';
+            else if (title.includes('день 2') || title.includes('day2')) category = 'day2';
+            else if (title.includes('день 3') || title.includes('day3')) category = 'day3';
+            else if (title.includes('день 4') || title.includes('day4')) category = 'day4';
+            else if (title.includes('скрипт')) category = 'scripts';
+            else if (title.includes('безопасность') || title.includes('security')) category = 'security';
+            
+            if (category) {
+                if (!currentQuizzes[category]) currentQuizzes[category] = [];
+                currentQuizzes[category].push(quiz);
             }
         }
         
@@ -778,17 +662,55 @@ async function loadQuizzes() {
 }
 
 function renderQuizzes() {
-    for (const [day, quizzes] of Object.entries(currentQuizzes)) {
-        const container = document.getElementById(`quiz-${day}-container`);
+    const categories = ['day1', 'day2', 'day3', 'day4', 'scripts', 'security'];
+    
+    for (const category of categories) {
+        const container = document.getElementById(`quiz-${category}-container`);
         if (!container) continue;
         
         container.innerHTML = '';
+        
+        const quizzes = currentQuizzes[category] || [];
+        if (quizzes.length === 0) {
+            // Показываем заглушку, если нет опросников
+            container.innerHTML = `
+                <div class="quiz-block" style="text-align: center; padding: 30px;">
+                    <div style="font-size: 32px; margin-bottom: 12px;">📋</div>
+                    <div style="font-size: 13px; color: var(--muted);">Опросник пока не добавлен</div>
+                    ${window.isRopGlobal ? `
+                        <button onclick="openCreateQuizModal('${category}')" class="admin-quiz-btn" style="margin-top: 12px;">➕ Создать опросник</button>
+                    ` : ''}
+                </div>
+            `;
+            continue;
+        }
         
         for (const quiz of quizzes) {
             const quizDiv = createQuizElement(quiz);
             container.appendChild(quizDiv);
         }
+        
+        // Кнопка добавления для РОПа
+        if (window.isRopGlobal) {
+            const addBtn = document.createElement('div');
+            addBtn.style.marginTop = '16px';
+            addBtn.style.textAlign = 'center';
+            addBtn.innerHTML = `<button onclick="openCreateQuizModal('${category}')" class="admin-quiz-btn">➕ Добавить опросник в ${getCategoryName(category)}</button>`;
+            container.appendChild(addBtn);
+        }
     }
+}
+
+function getCategoryName(category) {
+    const names = {
+        day1: 'День 1',
+        day2: 'День 2',
+        day3: 'День 3',
+        day4: 'День 4',
+        scripts: 'Скрипты',
+        security: 'Безопасность'
+    };
+    return names[category] || category;
 }
 
 function createQuizElement(quiz) {
@@ -798,7 +720,15 @@ function createQuizElement(quiz) {
     div.className = 'quiz-block';
     div.dataset.quizId = quiz.id;
     div.innerHTML = `
-        <div class="quiz-title">📋 ${escapeHtml(quiz.title)}</div>
+        <div class="quiz-title">
+            📋 ${escapeHtml(quiz.title)}
+            ${window.isRopGlobal ? `
+                <div style="margin-left: auto; display: flex; gap: 8px;">
+                    <button onclick="editQuiz(${quiz.id})" class="admin-quiz-btn" style="font-size: 10px;">✏️</button>
+                    <button onclick="deleteQuiz(${quiz.id})" class="admin-quiz-btn" style="font-size: 10px; color: var(--accent2);">🗑</button>
+                </div>
+            ` : ''}
+        </div>
         ${quiz.description ? `<div style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">${escapeHtml(quiz.description)}</div>` : ''}
         <div id="quiz-questions-${quiz.id}"></div>
         <div style="display: flex; gap: 12px; margin-top: 16px;">
@@ -837,7 +767,15 @@ function createQuizElement(quiz) {
 }
 
 async function submitQuiz(quizId) {
-    const quiz = findQuizById(quizId);
+    // Находим опросник
+    let quiz = null;
+    for (const cat of Object.values(currentQuizzes)) {
+        const found = cat.find(q => q.id === quizId);
+        if (found) {
+            quiz = found;
+            break;
+        }
+    }
     if (!quiz) return;
     
     const answers = [];
@@ -858,6 +796,8 @@ async function submitQuiz(quizId) {
             credentials: 'include',
             body: JSON.stringify({ answers })
         });
+        
+        if (!response.ok) throw new Error('Failed to submit');
         
         const result = await response.json();
         
@@ -882,19 +822,36 @@ async function submitQuiz(quizId) {
             resultDiv.innerHTML += `<br>📚 Рекомендуется повторить материал и пройти тест заново.`;
         }
         
-        showToast(`Результат: ${percentage}%`, percentage >= 70 ? 'success' : 'error');
+        if (typeof showToast === 'function') {
+            showToast(`Результат: ${percentage}%`, percentage >= 70 ? 'success' : 'error');
+        } else {
+            alert(`Результат: ${percentage}%`);
+        }
         
         // Обновляем историю
         loadQuizHistory(quizId);
         checkRetakeStatus();
         
     } catch (error) {
-        showToast('Ошибка при проверке: ' + error.message, 'error');
+        console.error('Submit error:', error);
+        if (typeof showToast === 'function') {
+            showToast('Ошибка при проверке: ' + error.message, 'error');
+        } else {
+            alert('Ошибка при проверке: ' + error.message);
+        }
     }
 }
 
 function resetQuizForm(quizId) {
-    const quiz = findQuizById(quizId);
+    // Находим опросник
+    let quiz = null;
+    for (const cat of Object.values(currentQuizzes)) {
+        const found = cat.find(q => q.id === quizId);
+        if (found) {
+            quiz = found;
+            break;
+        }
+    }
     if (!quiz) return;
     
     for (let i = 0; i < quiz.questions.length; i++) {
@@ -917,13 +874,16 @@ function resetQuizForm(quizId) {
 async function loadQuizHistory(quizId) {
     try {
         const response = await fetch(`/api/quizzes/${quizId}/results`, { credentials: 'include' });
+        if (!response.ok) return;
+        
         const results = await response.json();
         
         const historyDiv = document.getElementById(`quiz-history-${quizId}`);
         if (historyDiv && results.length > 0) {
             const lastResult = results[0];
+            const date = new Date(lastResult.completed_at).toLocaleDateString('ru-RU');
             historyDiv.innerHTML = `
-                📊 Последний результат: ${lastResult.score}% (${formatRelativeDate(lastResult.completed_at)})
+                📊 Последний результат: ${lastResult.score}% (${date})
                 ${lastResult.score < 70 ? ' ⚠️ Требуется пересдача' : ' ✅ Зачтено'}
             `;
         }
@@ -935,45 +895,312 @@ async function loadQuizHistory(quizId) {
 async function checkRetakeStatus() {
     try {
         const response = await fetch('/api/quizzes/retake-status', { credentials: 'include' });
+        if (!response.ok) return;
+        
         const status = await response.json();
         
-        const needsRetake = Object.values(status).some(s => s.needsRetake);
+        const needsRetake = Object.values(status).some(s => s && s.needsRetake);
         const warningDiv = document.getElementById('retakeWarning');
         
         if (warningDiv) {
-            warningDiv.style.display = needsRetake ? 'block' : 'none';
+            warningDiv.style.display = needsRetake ? 'flex' : 'none';
         }
     } catch (error) {
         console.error('Failed to check retake status:', error);
     }
 }
 
-function findQuizById(quizId) {
-    for (const dayQuizzes of Object.values(currentQuizzes)) {
-        const found = dayQuizzes.find(q => q.id === quizId);
-        if (found) return found;
-    }
-    return null;
+// Админские функции для управления опросниками
+function openCreateQuizModal(category) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 700px; max-height: 85vh; overflow-y: auto;">
+            <div class="modal-header">
+                <span class="modal-title">📝 Создать опросник для ${getCategoryName(category)}</span>
+                <button class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="field">
+                    <label>Название опросника</label>
+                    <input type="text" id="quizTitle" placeholder="Например: Проверка знаний - День 1">
+                </div>
+                <div class="field">
+                    <label>Описание (необязательно)</label>
+                    <textarea id="quizDesc" rows="2" placeholder="Краткое описание..."></textarea>
+                </div>
+                <div class="field">
+                    <label>Вопросы (JSON формат)</label>
+                    <textarea id="quizQuestions" rows="10" placeholder='[
+  {
+    "text": "Текст вопроса?",
+    "options": ["Вариант 1", "Вариант 2", "Вариант 3"],
+    "correct": 0,
+    "explanation": "Пояснение почему это правильно"
+  }
+]'></textarea>
+                    <div style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+                        💡 correct — индекс правильного ответа (0, 1, 2...)
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel">Отмена</button>
+                <button class="btn-save" id="saveQuizBtn">💾 Создать</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    const closeModal = () => {
+        modal.classList.remove('open');
+        setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    modal.querySelector('#saveQuizBtn').addEventListener('click', async () => {
+        const title = modal.querySelector('#quizTitle').value.trim();
+        const description = modal.querySelector('#quizDesc').value.trim();
+        let questions;
+        
+        try {
+            questions = JSON.parse(modal.querySelector('#quizQuestions').value);
+            if (!Array.isArray(questions) || questions.length === 0) throw new Error();
+        } catch (e) {
+            alert('Неверный формат JSON. Проверьте синтаксис.');
+            return;
+        }
+        
+        if (!title) {
+            alert('Введите название опросника');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/quizzes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ title, description, questions })
+            });
+            
+            if (response.ok) {
+                alert('Опросник создан');
+                closeModal();
+                loadQuizzes(); // Перезагружаем
+            } else {
+                const error = await response.json();
+                alert('Ошибка: ' + (error.error || 'Неизвестная ошибка'));
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    });
 }
 
+window.editQuiz = async (quizId) => {
+    try {
+        const response = await fetch(`/api/quizzes/${quizId}`, { credentials: 'include' });
+        const quiz = await response.json();
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal" style="max-width: 700px; max-height: 85vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <span class="modal-title">✏️ Редактировать: ${escapeHtml(quiz.title)}</span>
+                    <button class="modal-close">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="field">
+                        <label>Название опросника</label>
+                        <input type="text" id="quizTitle" value="${escapeHtml(quiz.title)}">
+                    </div>
+                    <div class="field">
+                        <label>Описание</label>
+                        <textarea id="quizDesc" rows="2">${escapeHtml(quiz.description || '')}</textarea>
+                    </div>
+                    <div class="field">
+                        <label>Активен</label>
+                        <select id="quizActive">
+                            <option value="true" ${quiz.is_active ? 'selected' : ''}>Да</option>
+                            <option value="false" ${!quiz.is_active ? 'selected' : ''}>Нет</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Вопросы (JSON)</label>
+                        <textarea id="quizQuestions" rows="10">${JSON.stringify(quiz.questions, null, 2)}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel">Отмена</button>
+                    <button class="btn-save" id="saveQuizBtn">💾 Сохранить</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('open'), 10);
+        
+        const closeModal = () => {
+            modal.classList.remove('open');
+            setTimeout(() => modal.remove(), 300);
+        };
+        
+        modal.querySelector('.modal-close').addEventListener('click', closeModal);
+        modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+        
+        modal.querySelector('#saveQuizBtn').addEventListener('click', async () => {
+            const title = modal.querySelector('#quizTitle').value.trim();
+            const description = modal.querySelector('#quizDesc').value.trim();
+            const is_active = modal.querySelector('#quizActive').value === 'true';
+            let questions;
+            
+            try {
+                questions = JSON.parse(modal.querySelector('#quizQuestions').value);
+            } catch (e) {
+                alert('Неверный формат JSON');
+                return;
+            }
+            
+            const updateResponse = await fetch(`/api/quizzes/${quizId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ title, description, questions, is_active })
+            });
+            
+            if (updateResponse.ok) {
+                alert('Сохранено');
+                closeModal();
+                loadQuizzes();
+            } else {
+                alert('Ошибка сохранения');
+            }
+        });
+        
+    } catch (error) {
+        alert('Ошибка загрузки опросника');
+    }
+};
+
+window.deleteQuiz = async (quizId) => {
+    if (!confirm('Удалить опросник? Все результаты будут потеряны.')) return;
+    
+    try {
+        const response = await fetch(`/api/quizzes/${quizId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            alert('Опросник удален');
+            loadQuizzes();
+        } else {
+            alert('Ошибка удаления');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+};
+
 // Отслеживаем просмотр страниц обучения
-document.addEventListener('DOMContentLoaded', () => {
-    loadQuizzes();
+function trackTrainingPage(page) {
+    if (typeof trackPageView === 'function') {
+        trackPageView(page);
+    } else {
+        // Fallback если utils.js не загружен
+        fetch('/api/learning/track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ page })
+        }).catch(console.error);
+    }
+}
+
+// Загрузка прогресса
+async function loadProgress() {
+    try {
+        const response = await fetch('/api/learning/progress', { credentials: 'include' });
+        const data = await response.json();
+        
+        const progressBar = document.getElementById('learningProgressBar');
+        const progressText = document.getElementById('learningProgressText');
+        
+        if (progressBar) progressBar.style.width = `${data.progress}%`;
+        if (progressText) progressText.textContent = `${data.progress}% (${data.completedPages}/${data.totalPages})`;
+    } catch (error) {
+        console.error('Failed to load progress:', error);
+    }
+}
+
+// Инициализация табов
+function initTabs() {
+    const btns = document.querySelectorAll('.tab-btn');
+    btns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const target = this.dataset.tab;
+            btns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            const sec = document.getElementById(target);
+            if (sec) sec.classList.add('active');
+            
+            // Отслеживаем просмотр
+            const page = target.replace('tab-', '');
+            trackTrainingPage(page);
+        });
+    });
+}
+
+// Получаем информацию о пользователе и РОП статусе
+async function checkUserRole() {
+    try {
+        const response = await fetch('/api/check-auth', { credentials: 'include' });
+        const data = await response.json();
+        if (data.authenticated) {
+            window.isRopGlobal = data.user.role === 'rop' || data.user.role === 'root';
+            isRop = window.isRopGlobal;
+            
+            // Показываем кнопки редактирования контента
+            document.querySelectorAll('.btn-edit-content').forEach(btn => {
+                btn.style.display = isRop ? 'inline-flex' : 'none';
+            });
+        }
+    } catch (error) {
+        console.error('Failed to check user role:', error);
+    }
+}
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', async () => {
+    initTabs();
+    await checkUserRole();
+    await loadQuizzes();
+    await loadProgress();
     
     // Отслеживаем текущую вкладку
     const currentTab = document.querySelector('.tab-btn.active')?.dataset.tab;
     if (currentTab) {
-        trackPageView(currentTab.replace('tab-', ''));
+        trackTrainingPage(currentTab.replace('tab-', ''));
     }
     
-    // Отслеживаем переключение вкладок
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tab = btn.dataset.tab.replace('tab-', '');
-            trackPageView(tab);
-        });
-    });
+    console.log('Training page fully loaded');
 });
+
+// Глобальные функции для доступа из onclick
+window.submitQuiz = submitQuiz;
+window.resetQuizForm = resetQuizForm;
+window.openCreateQuizModal = openCreateQuizModal;
+window.editQuiz = editQuiz;
+window.deleteQuiz = deleteQuiz;
+window.loadQuizzes = loadQuizzes;
+</script>
+
 </body>
 </html>
