@@ -208,6 +208,21 @@
     <button id="ropBtn" class="rop-btn" style="display: none;">👑 Управление</button>
     <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
   </div>
+  <!-- Прогресс-бар обучения -->
+  <div class="learning-progress-container" style="background: var(--surface2); border-bottom: 1px solid var(--border); padding: 8px 24px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+              <span style="font-size: 12px; color: var(--muted);">📚 Прогресс обучения:</span>
+              <div style="flex: 1; max-width: 300px; background: var(--border); border-radius: 20px; height: 8px; overflow: hidden;">
+                  <div id="learningProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent3), var(--accent)); transition: width 0.3s;"></div>
+              </div>
+              <span id="learningProgressText" style="font-size: 11px; color: var(--muted);">0%</span>
+          </div>
+          <div id="retakeWarning" style="display: none; background: rgba(252, 184, 48, 0.15); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: var(--accent4);">
+            ⚠️ Требуется повторная аттестация
+          </div>
+      </div>
+  </div>
 </header>
 
 <nav class="tab-nav">
@@ -727,5 +742,238 @@ window.resetQuiz = resetQuiz;
 <script src="main.js?v=38"></script>
 <script src="editor.js?v=2"></script>
 </script>
+// Динамические опросники
+let currentQuizzes = {};
+
+async function loadQuizzes() {
+    try {
+        const response = await fetch('/api/quizzes', { credentials: 'include' });
+        const quizzes = await response.json();
+        
+        // Группируем опросники по дням (по названию)
+        for (const quiz of quizzes) {
+            const dayMatch = quiz.title.match(/День\s+(\d+)/i);
+            if (dayMatch) {
+                const day = `day${dayMatch[1]}`;
+                if (!currentQuizzes[day]) currentQuizzes[day] = [];
+                currentQuizzes[day].push(quiz);
+            } else if (quiz.title.toLowerCase().includes('скрипт')) {
+                if (!currentQuizzes.scripts) currentQuizzes.scripts = [];
+                currentQuizzes.scripts.push(quiz);
+            } else if (quiz.title.toLowerCase().includes('безопасность')) {
+                if (!currentQuizzes.security) currentQuizzes.security = [];
+                currentQuizzes.security.push(quiz);
+            }
+        }
+        
+        // Отображаем опросники
+        renderQuizzes();
+        
+        // Проверяем статус повторной аттестации
+        checkRetakeStatus();
+        
+    } catch (error) {
+        console.error('Failed to load quizzes:', error);
+    }
+}
+
+function renderQuizzes() {
+    for (const [day, quizzes] of Object.entries(currentQuizzes)) {
+        const container = document.getElementById(`quiz-${day}-container`);
+        if (!container) continue;
+        
+        container.innerHTML = '';
+        
+        for (const quiz of quizzes) {
+            const quizDiv = createQuizElement(quiz);
+            container.appendChild(quizDiv);
+        }
+    }
+}
+
+function createQuizElement(quiz) {
+    const questions = quiz.questions;
+    
+    const div = document.createElement('div');
+    div.className = 'quiz-block';
+    div.dataset.quizId = quiz.id;
+    div.innerHTML = `
+        <div class="quiz-title">📋 ${escapeHtml(quiz.title)}</div>
+        ${quiz.description ? `<div style="font-size: 12px; color: var(--muted); margin-bottom: 16px;">${escapeHtml(quiz.description)}</div>` : ''}
+        <div id="quiz-questions-${quiz.id}"></div>
+        <div style="display: flex; gap: 12px; margin-top: 16px;">
+            <button class="quiz-btn" onclick="submitQuiz(${quiz.id})">✅ Проверить ответы</button>
+            <button class="quiz-btn quiz-reset" onclick="resetQuizForm(${quiz.id})">🔄 Сбросить</button>
+        </div>
+        <div id="quiz-result-${quiz.id}" class="quiz-result"></div>
+        <div id="quiz-history-${quiz.id}" style="margin-top: 12px; font-size: 11px; color: var(--muted);"></div>
+    `;
+    
+    // Добавляем вопросы
+    const questionsContainer = div.querySelector(`#quiz-questions-${quiz.id}`);
+    let html = '';
+    questions.forEach((q, idx) => {
+        html += `
+            <div class="quiz-question">
+                <div class="quiz-question-text">${idx + 1}. ${escapeHtml(q.text)}</div>
+                <div class="quiz-options">
+                    ${q.options.map((opt, optIdx) => `
+                        <label class="quiz-option">
+                            <input type="radio" name="q_${quiz.id}_${idx}" value="${optIdx}">
+                            <span>${escapeHtml(opt)}</span>
+                        </label>
+                    `).join('')}
+                </div>
+                <div class="quiz-answer" id="quiz-answer-${quiz.id}-${idx}"></div>
+            </div>
+        `;
+    });
+    questionsContainer.innerHTML = html;
+    
+    // Загружаем историю результатов
+    loadQuizHistory(quiz.id);
+    
+    return div;
+}
+
+async function submitQuiz(quizId) {
+    const quiz = findQuizById(quizId);
+    if (!quiz) return;
+    
+    const answers = [];
+    const questions = quiz.questions;
+    
+    for (let i = 0; i < questions.length; i++) {
+        const selected = document.querySelector(`input[name="q_${quizId}_${i}"]:checked`);
+        answers.push({
+            questionIndex: i,
+            selectedOption: selected ? parseInt(selected.value) : -1
+        });
+    }
+    
+    try {
+        const response = await fetch(`/api/quizzes/${quizId}/submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ answers })
+        });
+        
+        const result = await response.json();
+        
+        // Показываем результаты
+        for (let i = 0; i < result.details.length; i++) {
+            const detail = result.details[i];
+            const answerDiv = document.getElementById(`quiz-answer-${quizId}-${i}`);
+            if (answerDiv) {
+                answerDiv.innerHTML = detail.isCorrect ? 
+                    `✅ ${detail.explanation || 'Правильно!'}` : 
+                    `❌ ${detail.explanation || 'Неправильно.'}`;
+                answerDiv.className = `quiz-answer show ${detail.isCorrect ? 'correct' : 'incorrect'}`;
+            }
+        }
+        
+        const resultDiv = document.getElementById(`quiz-result-${quizId}`);
+        const percentage = result.score;
+        resultDiv.innerHTML = `Результат: ${result.correct} из ${result.total} (${percentage}%)`;
+        resultDiv.className = `quiz-result show ${percentage >= 70 ? 'success' : 'fail'}`;
+        
+        if (result.needsRetake) {
+            resultDiv.innerHTML += `<br>📚 Рекомендуется повторить материал и пройти тест заново.`;
+        }
+        
+        showToast(`Результат: ${percentage}%`, percentage >= 70 ? 'success' : 'error');
+        
+        // Обновляем историю
+        loadQuizHistory(quizId);
+        checkRetakeStatus();
+        
+    } catch (error) {
+        showToast('Ошибка при проверке: ' + error.message, 'error');
+    }
+}
+
+function resetQuizForm(quizId) {
+    const quiz = findQuizById(quizId);
+    if (!quiz) return;
+    
+    for (let i = 0; i < quiz.questions.length; i++) {
+        const radios = document.querySelectorAll(`input[name="q_${quizId}_${i}"]`);
+        radios.forEach(radio => radio.checked = false);
+        const answerDiv = document.getElementById(`quiz-answer-${quizId}-${i}`);
+        if (answerDiv) {
+            answerDiv.innerHTML = '';
+            answerDiv.classList.remove('show', 'correct', 'incorrect');
+        }
+    }
+    
+    const resultDiv = document.getElementById(`quiz-result-${quizId}`);
+    if (resultDiv) {
+        resultDiv.innerHTML = '';
+        resultDiv.classList.remove('show', 'success', 'fail');
+    }
+}
+
+async function loadQuizHistory(quizId) {
+    try {
+        const response = await fetch(`/api/quizzes/${quizId}/results`, { credentials: 'include' });
+        const results = await response.json();
+        
+        const historyDiv = document.getElementById(`quiz-history-${quizId}`);
+        if (historyDiv && results.length > 0) {
+            const lastResult = results[0];
+            historyDiv.innerHTML = `
+                📊 Последний результат: ${lastResult.score}% (${formatRelativeDate(lastResult.completed_at)})
+                ${lastResult.score < 70 ? ' ⚠️ Требуется пересдача' : ' ✅ Зачтено'}
+            `;
+        }
+    } catch (error) {
+        console.error('Failed to load quiz history:', error);
+    }
+}
+
+async function checkRetakeStatus() {
+    try {
+        const response = await fetch('/api/quizzes/retake-status', { credentials: 'include' });
+        const status = await response.json();
+        
+        const needsRetake = Object.values(status).some(s => s.needsRetake);
+        const warningDiv = document.getElementById('retakeWarning');
+        
+        if (warningDiv) {
+            warningDiv.style.display = needsRetake ? 'block' : 'none';
+        }
+    } catch (error) {
+        console.error('Failed to check retake status:', error);
+    }
+}
+
+function findQuizById(quizId) {
+    for (const dayQuizzes of Object.values(currentQuizzes)) {
+        const found = dayQuizzes.find(q => q.id === quizId);
+        if (found) return found;
+    }
+    return null;
+}
+
+// Отслеживаем просмотр страниц обучения
+document.addEventListener('DOMContentLoaded', () => {
+    loadQuizzes();
+    
+    // Отслеживаем текущую вкладку
+    const currentTab = document.querySelector('.tab-btn.active')?.dataset.tab;
+    if (currentTab) {
+        trackPageView(currentTab.replace('tab-', ''));
+    }
+    
+    // Отслеживаем переключение вкладок
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tab = btn.dataset.tab.replace('tab-', '');
+            trackPageView(tab);
+        });
+    });
+});
 </body>
 </html>
