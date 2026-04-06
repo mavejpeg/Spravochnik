@@ -618,21 +618,16 @@
 <script src="editor.js?v=2"></script>
 
 <script>
-// ========== ДИНАМИЧЕСКИЕ ОПРОСНИКИ ==========
+// ========== ОПРОСНИКИ ==========
 let currentQuizzes = {};
-let isRop = false;
 
-// Загрузка опросников из БД
 async function loadQuizzes() {
     try {
         const response = await fetch('/api/quizzes', { credentials: 'include' });
-        if (!response.ok) {
-            console.log('No quizzes endpoint yet');
-            return;
-        }
+        if (!response.ok) return;
+        
         const quizzes = await response.json();
         
-        // Группируем опросники по категориям
         currentQuizzes = { day1: [], day2: [], day3: [], day4: [], scripts: [], security: [] };
         
         for (const quiz of quizzes) {
@@ -647,13 +642,11 @@ async function loadQuizzes() {
         
         renderAllQuizzes();
         checkRetakeStatus();
-        
     } catch (error) {
         console.error('Failed to load quizzes:', error);
     }
 }
 
-// Рендер всех опросников
 function renderAllQuizzes() {
     const categories = ['day1', 'day2', 'day3', 'day4', 'scripts', 'security'];
     
@@ -670,7 +663,7 @@ function renderAllQuizzes() {
                     <div style="font-size: 32px; margin-bottom: 12px;">📋</div>
                     <div style="font-size: 13px; color: var(--muted);">Опросник пока не добавлен</div>
                     ${window.isRopGlobal ? `
-                        <button onclick="openQuizEditor(null, '${category}')" class="admin-quiz-btn" style="margin-top: 12px;">➕ Создать опросник</button>
+                        <button onclick="openQuizEditor(null)" class="admin-quiz-btn" style="margin-top: 12px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 8px; padding: 6px 12px; cursor: pointer;">➕ Создать опросник</button>
                     ` : ''}
                 </div>
             `;
@@ -686,27 +679,13 @@ function renderAllQuizzes() {
             const addBtn = document.createElement('div');
             addBtn.style.marginTop = '16px';
             addBtn.style.textAlign = 'center';
-            addBtn.innerHTML = `<button onclick="openQuizEditor(null, '${category}')" class="admin-quiz-btn">➕ Добавить опросник в ${getCategoryName(category)}</button>`;
+            addBtn.innerHTML = `<button onclick="openQuizEditor(null)" class="admin-quiz-btn" style="background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 8px; padding: 6px 12px; cursor: pointer;">➕ Добавить опросник</button>`;
             container.appendChild(addBtn);
         }
     }
 }
 
-function getCategoryName(category) {
-    const names = {
-        day1: 'День 1',
-        day2: 'День 2', 
-        day3: 'День 3',
-        day4: 'День 4',
-        scripts: 'Скрипты',
-        security: 'Безопасность'
-    };
-    return names[category] || category;
-}
-
 function createQuizElement(quiz) {
-    const questions = quiz.questions;
-    
     const div = document.createElement('div');
     div.className = 'quiz-block';
     div.dataset.quizId = quiz.id;
@@ -715,8 +694,8 @@ function createQuizElement(quiz) {
             📋 ${escapeHtml(quiz.title)}
             ${window.isRopGlobal ? `
                 <div style="margin-left: auto; display: flex; gap: 8px;">
-                    <button onclick="openQuizEditor(${quiz.id})" class="admin-quiz-btn" style="font-size: 10px;">✏️ Редактировать</button>
-                    <button onclick="deleteQuiz(${quiz.id})" class="admin-quiz-btn" style="font-size: 10px; color: var(--accent2);">🗑 Удалить</button>
+                    <button onclick="openQuizEditor(${quiz.id})" class="admin-quiz-btn" style="font-size: 10px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; cursor: pointer;">✏️ Редактировать</button>
+                    <button onclick="deleteQuiz(${quiz.id})" class="admin-quiz-btn" style="font-size: 10px; background: rgba(252,92,124,0.15); border: 1px solid var(--accent2); border-radius: 6px; padding: 4px 10px; cursor: pointer;">🗑 Удалить</button>
                 </div>
             ` : ''}
         </div>
@@ -730,10 +709,9 @@ function createQuizElement(quiz) {
         <div id="quiz-history-${quiz.id}" style="margin-top: 12px; font-size: 11px; color: var(--muted);"></div>
     `;
     
-    // Добавляем вопросы
     const questionsContainer = div.querySelector(`#quiz-questions-${quiz.id}`);
     let html = '';
-    questions.forEach((q, idx) => {
+    quiz.questions.forEach((q, idx) => {
         html += `
             <div class="quiz-question">
                 <div class="quiz-question-text">${idx + 1}. ${escapeHtml(q.text)}</div>
@@ -751,9 +729,7 @@ function createQuizElement(quiz) {
     });
     questionsContainer.innerHTML = html;
     
-    // Загружаем историю результатов
     loadQuizHistory(quiz.id);
-    
     return div;
 }
 
@@ -761,10 +737,7 @@ async function submitQuiz(quizId) {
     let quiz = null;
     for (const cat of Object.values(currentQuizzes)) {
         const found = cat.find(q => q.id === quizId);
-        if (found) {
-            quiz = found;
-            break;
-        }
+        if (found) { quiz = found; break; }
     }
     if (!quiz) return;
     
@@ -791,9 +764,7 @@ async function submitQuiz(quizId) {
             const detail = result.details[i];
             const answerDiv = document.getElementById(`quiz-answer-${quizId}-${i}`);
             if (answerDiv) {
-                answerDiv.innerHTML = detail.isCorrect ? 
-                    `✅ ${detail.explanation || 'Правильно!'}` : 
-                    `❌ ${detail.explanation || 'Неправильно.'}`;
+                answerDiv.innerHTML = detail.isCorrect ? `✅ ${detail.explanation || 'Правильно!'}` : `❌ ${detail.explanation || 'Неправильно.'}`;
                 answerDiv.className = `quiz-answer show ${detail.isCorrect ? 'correct' : 'incorrect'}`;
             }
         }
@@ -803,16 +774,12 @@ async function submitQuiz(quizId) {
         resultDiv.innerHTML = `Результат: ${result.correct} из ${result.total} (${percentage}%)`;
         resultDiv.className = `quiz-result show ${percentage >= 70 ? 'success' : 'fail'}`;
         
-        if (result.needsRetake) {
-            resultDiv.innerHTML += `<br>📚 Рекомендуется повторить материал и пройти тест заново.`;
-        }
+        if (result.needsRetake) resultDiv.innerHTML += `<br>📚 Рекомендуется повторить материал.`;
         
-        showToast(`Результат: ${percentage}%`, percentage >= 70 ? 'success' : 'error');
         loadQuizHistory(quizId);
         checkRetakeStatus();
-        
     } catch (error) {
-        showToast('Ошибка при проверке: ' + error.message, 'error');
+        console.error('Submit error:', error);
     }
 }
 
@@ -820,10 +787,7 @@ function resetQuiz(quizId) {
     let quiz = null;
     for (const cat of Object.values(currentQuizzes)) {
         const found = cat.find(q => q.id === quizId);
-        if (found) {
-            quiz = found;
-            break;
-        }
+        if (found) { quiz = found; break; }
     }
     if (!quiz) return;
     
@@ -848,16 +812,12 @@ async function loadQuizHistory(quizId) {
     try {
         const response = await fetch(`/api/quizzes/${quizId}/results`, { credentials: 'include' });
         if (!response.ok) return;
-        
         const results = await response.json();
         const historyDiv = document.getElementById(`quiz-history-${quizId}`);
         if (historyDiv && results.length > 0) {
             const lastResult = results[0];
             const date = new Date(lastResult.completed_at).toLocaleDateString('ru-RU');
-            historyDiv.innerHTML = `
-                📊 Последний результат: ${lastResult.score}% (${date})
-                ${lastResult.score < 70 ? ' ⚠️ Требуется пересдача' : ' ✅ Зачтено'}
-            `;
+            historyDiv.innerHTML = `📊 Последний результат: ${lastResult.score}% (${date}) ${lastResult.score < 70 ? '⚠️ Требуется пересдача' : '✅ Зачтено'}`;
         }
     } catch (error) {
         console.error('Failed to load quiz history:', error);
@@ -868,20 +828,17 @@ async function checkRetakeStatus() {
     try {
         const response = await fetch('/api/quizzes/retake-status', { credentials: 'include' });
         if (!response.ok) return;
-        
         const status = await response.json();
         const needsRetake = Object.values(status).some(s => s && s.needsRetake);
         const warningDiv = document.getElementById('retakeWarning');
-        if (warningDiv) {
-            warningDiv.style.display = needsRetake ? 'flex' : 'none';
-        }
+        if (warningDiv) warningDiv.style.display = needsRetake ? 'flex' : 'none';
     } catch (error) {
         console.error('Failed to check retake status:', error);
     }
 }
 
 // ========== МОДАЛЬНЫЙ РЕДАКТОР ОПРОСНИКОВ ==========
-function openQuizEditor(quizId = null, category = null) {
+window.openQuizEditor = function(quizId = null) {
     const isEdit = quizId !== null;
     
     const modal = document.createElement('div');
@@ -913,12 +870,10 @@ function openQuizEditor(quizId = null, category = null) {
                 <div class="field">
                     <label style="display: flex; justify-content: space-between; align-items: center;">
                         <span>📋 Вопросы</span>
-                        <button type="button" onclick="addQuestionToEditor()" class="add-question-btn" style="font-size: 11px; padding: 4px 10px;">➕ Добавить вопрос</button>
+                        <button type="button" id="addQuestionBtn" class="add-question-btn" style="font-size: 11px; padding: 4px 10px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; cursor: pointer;">➕ Добавить вопрос</button>
                     </label>
                     <div id="questionsEditor" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--surface2);">
-                        <div class="no-questions-placeholder" style="text-align: center; color: var(--muted); padding: 40px;">
-                            Нажмите "Добавить вопрос" чтобы создать первый вопрос
-                        </div>
+                        <div class="no-questions-placeholder" style="text-align: center; color: var(--muted); padding: 40px;">Нажмите "Добавить вопрос" чтобы создать первый вопрос</div>
                     </div>
                 </div>
             </div>
@@ -932,339 +887,7 @@ function openQuizEditor(quizId = null, category = null) {
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
     
-    let questions = [];
-    
-    // Функция добавления вопроса в редактор
-    window.addQuestionToEditor = function(questionData = null) {
-        const container = document.getElementById('questionsEditor');
-        const placeholder = container.querySelector('.no-questions-placeholder');
-        if (placeholder) placeholder.remove();
-        
-        const index = container.querySelectorAll('.question-editor').length;
-        
-        const qDiv = document.createElement('div');
-        qDiv.className = 'question-editor';
-        qDiv.style.cssText = 'background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px;';
-        qDiv.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <strong style="color: var(--accent);">Вопрос ${index + 1}</strong>
-                <button type="button" class="remove-question-btn" onclick="this.closest('.question-editor').remove(); updateQuestionNumbers();" style="background: rgba(252,92,124,0.15); border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; color: var(--accent2);">🗑 Удалить</button>
-            </div>
-            <div class="field" style="margin-bottom: 12px;">
-                <label>Текст вопроса</label>
-                <input type="text" class="question-text" value="${escapeHtml(questionData?.text || '')}" placeholder="Введите текст вопроса">
-            </div>
-            <div class="field" style="margin-bottom: 12px;">
-                <label>Варианты ответов</label>
-                <div class="options-editor">
-                    ${(questionData?.options || ['', '']).map((opt, optIdx) => `
-                        <div class="option-item" style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
-                            <input type="text" class="option-text" value="${escapeHtml(opt)}" placeholder="Вариант ${optIdx + 1}" style="flex: 1;">
-                            <input type="radio" name="correct_${Date.now()}_${index}" class="correct-option" value="${optIdx}" ${questionData?.correct === optIdx ? 'checked' : ''}>
-                            <label style="font-size: 11px; color: var(--muted);">✓ верный</label>
-                            <button type="button" class="remove-option-btn" onclick="this.closest('.option-item').remove()" style="background: rgba(252,92,124,0.15); border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer;">🗑</button>
-                        </div>
-                    `).join('')}
-                </div>
-                <button type="button" class="add-option-btn" onclick="addOptionToQuestion(this)" style="margin-top: 8px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 11px;">➕ Добавить вариант</button>
-            </div>
-            <div class="field">
-                <label>Пояснение (почему этот ответ правильный)</label>
-                <textarea class="question-explanation" rows="2" placeholder="Объясните почему этот ответ правильный...">${escapeHtml(questionData?.explanation || '')}</textarea>
-            </div>
-        `;
-        container.appendChild(qDiv);
-        updateQuestionNumbers();
-    };
-    
-    // Функция добавления варианта ответа
-    window.addOptionToQuestion = function(btn) {
-        const optionsDiv = btn.closest('.field').querySelector('.options-editor');
-        const optionCount = optionsDiv.querySelectorAll('.option-item').length;
-        const newOption = document.createElement('div');
-        newOption.className = 'option-item';
-        newOption.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
-        newOption.innerHTML = `
-            <input type="text" class="option-text" placeholder="Вариант ${optionCount + 1}" style="flex: 1;">
-            <input type="radio" name="correct_${Date.now()}" class="correct-option" value="${optionCount}">
-            <label style="font-size: 11px; color: var(--muted);">✓ верный</label>
-            <button type="button" class="remove-option-btn" onclick="this.closest('.option-item').remove()" style="background: rgba(252,92,124,0.15); border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer;">🗑</button>
-        `;
-        optionsDiv.appendChild(newOption);
-    };
-    
-    window.updateQuestionNumbers = function() {
-        const container = document.getElementById('questionsEditor');
-        container.querySelectorAll('.question-editor').forEach((q, idx) => {
-            const strong = q.querySelector('strong');
-            if (strong) strong.textContent = `Вопрос ${idx + 1}`;
-        });
-    };
-    
-    // Если редактируем, загружаем данные
-    if (isEdit) {
-        try {
-            const response = await fetch(`/api/quizzes/${quizId}`, { credentials: 'include' });
-            const quiz = await response.json();
-            
-            document.getElementById('quizTitle').value = quiz.title;
-            document.getElementById('quizDesc').value = quiz.description || '';
-            document.getElementById('quizActive').value = quiz.is_active ? 'true' : 'false';
-            questions = quiz.questions || [];
-            
-            // Загружаем вопросы в редактор
-            if (questions.length > 0) {
-                const container = document.getElementById('questionsEditor');
-                container.innerHTML = '';
-                questions.forEach(q => {
-                    window.addQuestionToEditor(q);
-                });
-            }
-        } catch (error) {
-            showToast('Ошибка загрузки опросника', 'error');
-        }
-    }
-    
-    const closeModal = () => {
-        modal.classList.remove('open');
-        setTimeout(() => modal.remove(), 300);
-    };
-    
-    modal.querySelector('.modal-close').addEventListener('click', closeModal);
-    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-    
-    modal.querySelector('#saveQuizBtn').addEventListener('click', async () => {
-        const title = document.getElementById('quizTitle').value.trim();
-        const description = document.getElementById('quizDesc').value.trim();
-        const is_active = document.getElementById('quizActive').value === 'true';
-        
-        if (!title) {
-            showToast('Введите название опросника', 'error');
-            return;
-        }
-        
-        // Собираем вопросы из редактора
-        const questionsData = [];
-        const questionEditors = document.querySelectorAll('#questionsEditor .question-editor');
-        
-        for (const editor of questionEditors) {
-            const text = editor.querySelector('.question-text')?.value.trim();
-            if (!text) continue;
-            
-            const options = [];
-            const optionInputs = editor.querySelectorAll('.option-text');
-            optionInputs.forEach(input => {
-                if (input.value.trim()) options.push(input.value.trim());
-            });
-            
-            if (options.length < 2) {
-                showToast('У каждого вопроса должно быть минимум 2 варианта ответа', 'error');
-                return;
-            }
-            
-            let correct = 0;
-            const radio = editor.querySelector('.correct-option:checked');
-            if (radio) correct = parseInt(radio.value);
-            
-            const explanation = editor.querySelector('.question-explanation')?.value.trim() || '';
-            
-            questionsData.push({ text, options, correct, explanation });
-        }
-        
-        if (questionsData.length === 0) {
-            showToast('Добавьте хотя бы один вопрос', 'error');
-            return;
-        }
-        
-        try {
-            let response;
-            if (isEdit) {
-                response = await fetch(`/api/quizzes/${quizId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ title, description, questions: questionsData, is_active })
-                });
-            } else {
-                response = await fetch('/api/quizzes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ title, description, questions: questionsData })
-                });
-            }
-            
-            if (response.ok) {
-                showToast(isEdit ? 'Опросник сохранен' : 'Опросник создан', 'success');
-                closeModal();
-                loadQuizzes(); // Перезагружаем список опросников
-                if (typeof loadQuizzesAdmin === 'function') loadQuizzesAdmin();
-            } else {
-                const error = await response.json();
-                showToast(error.error || 'Ошибка', 'error');
-            }
-        } catch (error) {
-            showToast('Ошибка: ' + error.message, 'error');
-        }
-    });
-    
-    // Добавляем первый вопрос если создаем новый
-    if (!isEdit && questions.length === 0) {
-        setTimeout(() => window.addQuestionToEditor(), 100);
-    }
-}
-
-// Удаление опросника
-async function deleteQuiz(quizId) {
-    if (!confirm('Удалить опросник? Все результаты будут потеряны.')) return;
-    
-    try {
-        const response = await fetch(`/api/quizzes/${quizId}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-        
-        if (response.ok) {
-            showToast('Опросник удален', 'success');
-            loadQuizzes();
-            if (typeof loadQuizzesAdmin === 'function') loadQuizzesAdmin();
-        } else {
-            showToast('Ошибка удаления', 'error');
-        }
-    } catch (error) {
-        showToast('Ошибка: ' + error.message, 'error');
-    }
-}
-
-function showToast(message, type) {
-    const toast = document.createElement('div');
-    toast.className = `toast-notification ${type}`;
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: var(--surface2);
-        border-left: 3px solid ${type === 'success' ? 'var(--accent3)' : 'var(--accent2)'};
-        padding: 12px 20px;
-        border-radius: 8px;
-        z-index: 10000;
-        animation: slideInRight 0.3s ease;
-        font-size: 13px;
-    `;
-    toast.innerHTML = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
-}
-
-// Отслеживаем просмотр страниц
-function trackTrainingPage(page) {
-    fetch('/api/learning/track', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ page })
-    }).catch(console.error);
-}
-
-// Загрузка прогресса
-async function loadProgress() {
-    try {
-        const response = await fetch('/api/learning/progress', { credentials: 'include' });
-        const data = await response.json();
-        const bar = document.getElementById('learningProgressBar');
-        const text = document.getElementById('learningProgressText');
-        if (bar) bar.style.width = `${data.progress}%`;
-        if (text) text.textContent = `${data.progress}% (${data.completedPages}/${data.totalPages})`;
-    } catch (error) {
-        console.error('Failed to load progress:', error);
-    }
-}
-
-// Инициализация
-document.addEventListener('DOMContentLoaded', async () => {
-    // Ждем загрузки main.js чтобы получить isRopGlobal
-    setTimeout(async () => {
-        window.isRopGlobal = window.isRopGlobal || false;
-        await loadQuizzes();
-        await loadProgress();
-    }, 500);
-    
-    // Отслеживаем текущую вкладку
-    const currentTab = document.querySelector('.tab-btn.active')?.dataset.tab;
-    if (currentTab) {
-        trackTrainingPage(currentTab.replace('tab-', ''));
-    }
-    
-    // Отслеживаем переключение вкладок
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tab = btn.dataset.tab.replace('tab-', '');
-            trackTrainingPage(tab);
-        });
-    });
-});
-
-// Функция открытия редактора опросников
-window.openQuizEditor = function(quizId = null, category = null) {
-    const isEdit = quizId !== null;
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.style.zIndex = '2000';
-    modal.innerHTML = `
-        <div class="modal" style="max-width: 800px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;">
-            <div class="modal-header">
-                <span class="modal-title">${isEdit ? '✏️ Редактировать опросник' : '📝 Создать опросник'}</span>
-                <button class="modal-close">✕</button>
-            </div>
-            <div class="modal-body" style="overflow-y: auto; flex: 1;">
-                <div class="field">
-                    <label>Название опросника *</label>
-                    <input type="text" id="quizTitle" placeholder="Например: Проверка знаний - День 1">
-                </div>
-                <div class="field">
-                    <label>Описание (необязательно)</label>
-                    <textarea id="quizDesc" rows="2" placeholder="Краткое описание..."></textarea>
-                </div>
-                <div class="field">
-                    <label>Активен</label>
-                    <select id="quizActive">
-                        <option value="true">Да</option>
-                        <option value="false">Нет</option>
-                    </select>
-                </div>
-                
-                <div class="field">
-                    <label style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>📋 Вопросы</span>
-                        <button type="button" onclick="window.addQuestionToEditor()" class="add-question-btn" style="font-size: 11px; padding: 4px 10px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; cursor: pointer;">➕ Добавить вопрос</button>
-                    </label>
-                    <div id="questionsEditor" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--surface2);">
-                        <div class="no-questions-placeholder" style="text-align: center; color: var(--muted); padding: 40px;">
-                            Нажмите "Добавить вопрос" чтобы создать первый вопрос
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-cancel">Отмена</button>
-                <button class="btn-save" id="saveQuizBtn">${isEdit ? '💾 Сохранить' : '➕ Создать'}</button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('open'), 10);
-    
-    let questionsData = [];
-    
-    // Функция добавления вопроса
-    window.addQuestionToEditor = function(questionData = null) {
+    function addQuestionToEditor(questionData = null) {
         const container = document.getElementById('questionsEditor');
         const placeholder = container.querySelector('.no-questions-placeholder');
         if (placeholder) placeholder.remove();
@@ -1278,7 +901,7 @@ window.openQuizEditor = function(quizId = null, category = null) {
         qDiv.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <strong style="color: var(--accent);">Вопрос ${index + 1}</strong>
-                <button type="button" class="remove-question-btn" onclick="this.closest('.question-editor').remove(); window.updateQuestionNumbers();" style="background: rgba(252,92,124,0.15); border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; color: var(--accent2);">🗑 Удалить</button>
+                <button type="button" class="remove-question-btn" onclick="this.closest('.question-editor').remove(); updateQuestionNumbers();" style="background: rgba(252,92,124,0.15); border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer;">🗑 Удалить</button>
             </div>
             <div class="field" style="margin-bottom: 12px;">
                 <label>Текст вопроса</label>
@@ -1296,7 +919,7 @@ window.openQuizEditor = function(quizId = null, category = null) {
                         </div>
                     `).join('')}
                 </div>
-                <button type="button" class="add-option-btn" onclick="window.addOptionToQuestion(this)" style="margin-top: 8px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 11px;">➕ Добавить вариант</button>
+                <button type="button" class="add-option-btn" onclick="addOptionToQuestion(this)" style="margin-top: 8px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 11px;">➕ Добавить вариант</button>
             </div>
             <div class="field">
                 <label>Пояснение (почему этот ответ правильный)</label>
@@ -1304,11 +927,10 @@ window.openQuizEditor = function(quizId = null, category = null) {
             </div>
         `;
         container.appendChild(qDiv);
-        window.updateQuestionNumbers();
-    };
+        updateQuestionNumbers();
+    }
     
-    // Функция добавления варианта ответа
-    window.addOptionToQuestion = function(btn) {
+    function addOptionToQuestion(btn) {
         const optionsDiv = btn.closest('.field').querySelector('.options-editor');
         const optionCount = optionsDiv.querySelectorAll('.option-item').length;
         const uniqueId = Date.now();
@@ -1322,46 +944,43 @@ window.openQuizEditor = function(quizId = null, category = null) {
             <button type="button" class="remove-option-btn" onclick="this.closest('.option-item').remove()" style="background: rgba(252,92,124,0.15); border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer;">🗑</button>
         `;
         optionsDiv.appendChild(newOption);
-    };
+    }
     
-    // Обновление номеров вопросов
-    window.updateQuestionNumbers = function() {
+    function updateQuestionNumbers() {
         const container = document.getElementById('questionsEditor');
         container.querySelectorAll('.question-editor').forEach((q, idx) => {
             const strong = q.querySelector('strong');
             if (strong) strong.textContent = `Вопрос ${idx + 1}`;
         });
-    };
+    }
     
     // Если редактируем, загружаем данные
     if (isEdit) {
-        try {
-            const response = await fetch(`/api/quizzes/${quizId}`, { credentials: 'include' });
-            const quiz = await response.json();
-            
-            document.getElementById('quizTitle').value = quiz.title;
-            document.getElementById('quizDesc').value = quiz.description || '';
-            document.getElementById('quizActive').value = quiz.is_active ? 'true' : 'false';
-            questionsData = quiz.questions || [];
-            
-            // Загружаем вопросы в редактор
-            if (questionsData.length > 0) {
-                const container = document.getElementById('questionsEditor');
-                container.innerHTML = '';
-                questionsData.forEach(q => {
-                    window.addQuestionToEditor(q);
-                });
-            } else {
-                window.addQuestionToEditor();
-            }
-        } catch (error) {
-            showToast('Ошибка загрузки опросника', 'error');
-            window.addQuestionToEditor();
-        }
+        fetch(`/api/quizzes/${quizId}`, { credentials: 'include' })
+            .then(res => res.json())
+            .then(quiz => {
+                document.getElementById('quizTitle').value = quiz.title;
+                document.getElementById('quizDesc').value = quiz.description || '';
+                document.getElementById('quizActive').value = quiz.is_active ? 'true' : 'false';
+                if (quiz.questions && quiz.questions.length > 0) {
+                    const container = document.getElementById('questionsEditor');
+                    container.innerHTML = '';
+                    quiz.questions.forEach(q => addQuestionToEditor(q));
+                } else {
+                    addQuestionToEditor();
+                }
+            })
+            .catch(err => {
+                console.error('Failed to load quiz:', err);
+                addQuestionToEditor();
+            });
     } else {
-        // Добавляем пустой вопрос для нового опросника
-        window.addQuestionToEditor();
+        addQuestionToEditor();
     }
+    
+    document.getElementById('addQuestionBtn').onclick = () => addQuestionToEditor();
+    window.addOptionToQuestion = addOptionToQuestion;
+    window.updateQuestionNumbers = updateQuestionNumbers;
     
     const closeModal = () => {
         modal.classList.remove('open');
@@ -1377,11 +996,10 @@ window.openQuizEditor = function(quizId = null, category = null) {
         const is_active = document.getElementById('quizActive').value === 'true';
         
         if (!title) {
-            showToast('Введите название опросника', 'error');
+            alert('Введите название опросника');
             return;
         }
         
-        // Собираем вопросы из редактора
         const collectedQuestions = [];
         const questionEditors = document.querySelectorAll('#questionsEditor .question-editor');
         
@@ -1396,7 +1014,7 @@ window.openQuizEditor = function(quizId = null, category = null) {
             });
             
             if (options.length < 2) {
-                showToast('У каждого вопроса должно быть минимум 2 варианта ответа', 'error');
+                alert('У каждого вопроса должно быть минимум 2 варианта ответа');
                 return;
             }
             
@@ -1405,12 +1023,11 @@ window.openQuizEditor = function(quizId = null, category = null) {
             if (radio) correct = parseInt(radio.value);
             
             const explanation = editor.querySelector('.question-explanation')?.value.trim() || '';
-            
             collectedQuestions.push({ text, options, correct, explanation });
         }
         
         if (collectedQuestions.length === 0) {
-            showToast('Добавьте хотя бы один вопрос', 'error');
+            alert('Добавьте хотя бы один вопрос');
             return;
         }
         
@@ -1433,60 +1050,57 @@ window.openQuizEditor = function(quizId = null, category = null) {
             }
             
             if (response.ok) {
-                showToast(isEdit ? 'Опросник сохранен' : 'Опросник создан', 'success');
+                alert(isEdit ? 'Опросник сохранен' : 'Опросник создан');
                 closeModal();
-                // Перезагружаем опросники
-                if (typeof loadQuizzes === 'function') loadQuizzes();
+                loadQuizzes();
                 if (typeof loadQuizzesAdmin === 'function') loadQuizzesAdmin();
             } else {
                 const error = await response.json();
-                showToast(error.error || 'Ошибка', 'error');
+                alert(error.error || 'Ошибка');
             }
         } catch (error) {
-            showToast('Ошибка: ' + error.message, 'error');
+            alert('Ошибка: ' + error.message);
         }
     });
 };
 
-// Удаление опросника
 window.deleteQuiz = async function(quizId) {
     if (!confirm('Удалить опросник? Все результаты будут потеряны.')) return;
     
     try {
-        const response = await fetch(`/api/quizzes/${quizId}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-        
+        const response = await fetch(`/api/quizzes/${quizId}`, { method: 'DELETE', credentials: 'include' });
         if (response.ok) {
-            showToast('Опросник удален', 'success');
-            if (typeof loadQuizzes === 'function') loadQuizzes();
+            alert('Опросник удален');
+            loadQuizzes();
             if (typeof loadQuizzesAdmin === 'function') loadQuizzesAdmin();
         } else {
-            showToast('Ошибка удаления', 'error');
+            alert('Ошибка удаления');
         }
     } catch (error) {
-        showToast('Ошибка: ' + error.message, 'error');
+        alert('Ошибка: ' + error.message);
     }
 };
 
-function showToast(message, type) {
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: var(--surface2);
-        border-left: 3px solid ${type === 'success' ? 'var(--accent3)' : 'var(--accent2)'};
-        padding: 12px 20px;
-        border-radius: 8px;
-        z-index: 10000;
-        animation: slideInRight 0.3s ease;
-        font-size: 13px;
-    `;
-    toast.innerHTML = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+async function loadProgress() {
+    try {
+        const response = await fetch('/api/learning/progress', { credentials: 'include' });
+        const data = await response.json();
+        const bar = document.getElementById('learningProgressBar');
+        const text = document.getElementById('learningProgressText');
+        if (bar) bar.style.width = `${data.progress}%`;
+        if (text) text.textContent = `${data.progress}% (${data.completedPages}/${data.totalPages})`;
+    } catch (error) {
+        console.error('Failed to load progress:', error);
+    }
+}
+
+function trackTrainingPage(page) {
+    fetch('/api/learning/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ page })
+    }).catch(console.error);
 }
 
 function escapeHtml(str) {
@@ -1494,14 +1108,29 @@ function escapeHtml(str) {
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
 }
 
-// Экспорт
-window.openQuizEditor = openQuizEditor;
-window.addQuestionToEditor = addQuestionToEditor;
-window.addOptionToQuestion = addOptionToQuestion;
-window.updateQuestionNumbers = updateQuestionNumbers;
-window.deleteQuiz = deleteQuiz;
+// Инициализация
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        loadQuizzes();
+        loadProgress();
+        
+        const currentTab = document.querySelector('.tab-btn.active')?.dataset.tab;
+        if (currentTab) trackTrainingPage(currentTab.replace('tab-', ''));
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab.replace('tab-', '');
+                trackTrainingPage(tab);
+            });
+        });
+    }, 500);
+});
 
-console.log('Quiz editor loaded');
+window.openQuizEditor = openQuizEditor;
+window.deleteQuiz = deleteQuiz;
+window.submitQuiz = submitQuiz;
+window.resetQuiz = resetQuiz;
+window.loadQuizzes = loadQuizzes;
 </script>
 
 </body>
