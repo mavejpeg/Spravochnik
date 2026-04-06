@@ -245,6 +245,78 @@ async function initDatabase() {
             ON CONFLICT (username) DO NOTHING
         `);
 
+        // 1. Прогресс обучения
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS learning_progress (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                page VARCHAR(100) NOT NULL,
+                completed BOOLEAN DEFAULT FALSE,
+                completed_at TIMESTAMP,
+                last_viewed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, page)
+            )
+        `);
+
+        // 2. Опросники (вопросы)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS quizzes (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                questions JSONB NOT NULL, -- [{text, options, correct, explanation}]
+                is_active BOOLEAN DEFAULT TRUE,
+                created_by INTEGER REFERENCES users(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // 3. Результаты опросников
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS quiz_results (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                quiz_id INTEGER REFERENCES quizzes(id) ON DELETE CASCADE,
+                score INTEGER NOT NULL,
+                total_questions INTEGER NOT NULL,
+                answers JSONB,
+                completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // 4. Личные заметки
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS user_notes (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                product_type VARCHAR(50) NOT NULL, -- 'manufacturer', 'line', 'product'
+                product_id INTEGER NOT NULL,
+                note TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, product_type, product_id)
+            )
+        `);
+
+        // 5. Глобальный поисковый индекс (для full-text search)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS search_index (
+                id SERIAL PRIMARY KEY,
+                entity_type VARCHAR(50) NOT NULL,
+                entity_id INTEGER NOT NULL,
+                title VARCHAR(500) NOT NULL,
+                description TEXT,
+                category VARCHAR(100),
+                search_vector TSVECTOR GENERATED ALWAYS AS (
+                    setweight(to_tsvector('russian', COALESCE(title, '')), 'A') ||
+                    setweight(to_tsvector('russian', COALESCE(description, '')), 'B')
+                ) STORED
+            )
+        `);
+
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_search_vector ON search_index USING GIN(search_vector)`);
+
         client.release();
         console.log('✅ Database tables ready');
         return true;
@@ -1528,6 +1600,557 @@ app.get('/disposables', protectPage, (req, res) => {
 app.get('/training', protectPage, (req, res) => {
     res.sendFile(path.join(__dirname, 'training.html'));
 });
+
+// ---------- Learning Progress ----------
+app.post('/api/learning/track', requireAuth, async (req, res) => {
+    const { page } = req.body;
+    const userId = req.session.user.id;
+    
+    try {
+        // Проверяем, все ли страницы дня пройдены
+        const dayPages = {
+            'day1': ['day1'],
+            'day2': ['day2'],
+            'day3': ['day3'],
+            'day4': ['day4'],
+            'scripts': ['scripts'],
+            'security': ['security']
+        };
+        
+        await pool.query(
+            `INSERT INTO learning_progress (user_id, page, completed, completed_at, last_viewed)
+             VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+             ON CONFLICT (user_id, page) 
+             DO UPDATE SET completed = TRUE, completed_at = CURRENT_TIMESTAMP, last_viewed = CURRENT_TIMESTAMP`,
+            [userId, page]
+        );
+        
+        // Получаем общий прогресс
+        const result = await pool.query(
+            `SELECT page, completed FROM learning_progress WHERE user_id = $1`,
+            [userId]
+        );
+        
+        const totalPages = Object.keys(dayPages).length;
+        const completedPages = result.rows.filter(r => r.completed).length;
+        const progress = Math.round((completedPages / totalPages) * 100);
+        
+        res.json({ success: true, progress, completedPages, totalPages });
+    } catch (error) {
+        console.error('Track learning error:', error);
+        res.status(500).json({ error: 'Failed to track progress' });
+    }
+});
+
+app.get('/api/learning/progress', requireAuth, async (req, res) => {
+    const userId = req.session.user.id;
+    
+    try {
+        const result = await pool.query(
+            `SELECT page, completed, completed_at, last_viewed 
+             FROM learning_progress WHERE user_id = $1`,
+            [userId]
+        );
+        
+        const totalPages = 6; // day1, day2, day3, day4, scripts, security
+        const completedPages = result.rows.filter(r => r.completed).length;
+        const progress = Math.round((completedPages / totalPages) * 100);
+        
+        res.json({ progress, completedPages, totalPages, details: result.rows });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get progress' });
+    }
+});
+
+// ---------- Quizzes (опросники) ----------
+app.get('/api/quizzes', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT q.*, 
+                    (SELECT COUNT(*) FROM quiz_results WHERE quiz_id = q.id AND user_id = $1) as attempts_count
+             FROM quizzes q 
+             WHERE q.is_active = TRUE 
+             ORDER BY q.created_at DESC`,
+            [req.session.user.id]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get quizzes' });
+    }
+});
+
+app.get('/api/quizzes/:id', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM quizzes WHERE id = $1', [req.params.id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Quiz not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get quiz' });
+    }
+});
+
+app.post('/api/quizzes', requireRop, async (req, res) => {
+    const { title, description, questions } = req.body;
+    
+    if (!title || !questions || !Array.isArray(questions)) {
+        return res.status(400).json({ error: 'Title and questions are required' });
+    }
+    
+    try {
+        const result = await pool.query(
+            `INSERT INTO quizzes (title, description, questions, created_by, is_active)
+             VALUES ($1, $2, $3, $4, TRUE) RETURNING *`,
+            [title, description, JSON.stringify(questions), req.session.user.id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Create quiz error:', error);
+        res.status(500).json({ error: 'Failed to create quiz' });
+    }
+});
+
+app.put('/api/quizzes/:id', requireRop, async (req, res) => {
+    const { title, description, questions, is_active } = req.body;
+    
+    try {
+        const result = await pool.query(
+            `UPDATE quizzes SET title=$1, description=$2, questions=$3, is_active=$4 WHERE id=$5 RETURNING *`,
+            [title, description, JSON.stringify(questions), is_active, req.params.id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update quiz' });
+    }
+});
+
+app.delete('/api/quizzes/:id', requireRop, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM quizzes WHERE id = $1', [req.params.id]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete quiz' });
+    }
+});
+
+app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
+    const { answers } = req.body; // [{questionIndex, selectedOption}]
+    const userId = req.session.user.id;
+    const quizId = parseInt(req.params.id);
+    
+    try {
+        // Получаем quiz
+        const quizResult = await pool.query('SELECT * FROM quizzes WHERE id = $1', [quizId]);
+        if (quizResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Quiz not found' });
+        }
+        
+        const quiz = quizResult.rows[0];
+        const questions = quiz.questions;
+        
+        // Подсчет баллов
+        let correctCount = 0;
+        const answerDetails = [];
+        
+        answers.forEach(answer => {
+            const question = questions[answer.questionIndex];
+            const isCorrect = question.correct === answer.selectedOption;
+            if (isCorrect) correctCount++;
+            answerDetails.push({
+                questionIndex: answer.questionIndex,
+                selected: answer.selectedOption,
+                isCorrect,
+                correctAnswer: question.correct,
+                explanation: question.explanation
+            });
+        });
+        
+        const score = Math.round((correctCount / questions.length) * 100);
+        
+        // Сохраняем результат
+        await pool.query(
+            `INSERT INTO quiz_results (user_id, quiz_id, score, total_questions, answers, completed_at)
+             VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+            [userId, quizId, score, questions.length, JSON.stringify(answerDetails)]
+        );
+        
+        // Удаляем старые результаты (старше 30 дней)
+        await pool.query(
+            `DELETE FROM quiz_results WHERE completed_at < NOW() - INTERVAL '30 days'`
+        );
+        
+        // Проверяем, нужно ли повторно пройти (если балл меньше 70)
+        const needsRetake = score < 70;
+        
+        res.json({ 
+            success: true, 
+            score, 
+            total: questions.length,
+            correct: correctCount,
+            needsRetake,
+            details: answerDetails
+        });
+    } catch (error) {
+        console.error('Submit quiz error:', error);
+        res.status(500).json({ error: 'Failed to submit quiz' });
+    }
+});
+
+app.get('/api/quizzes/:id/results', requireAuth, async (req, res) => {
+    const userId = req.session.user.id;
+    const quizId = parseInt(req.params.id);
+    
+    try {
+        const result = await pool.query(
+            `SELECT * FROM quiz_results 
+             WHERE user_id = $1 AND quiz_id = $2 
+             ORDER BY completed_at DESC 
+             LIMIT 10`,
+            [userId, quizId]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get results' });
+    }
+});
+
+// Получить информацию о необходимости повторной аттестации
+app.get('/api/quizzes/retake-status', requireAuth, async (req, res) => {
+    const userId = req.session.user.id;
+    
+    try {
+        // Получаем все активные опросники
+        const quizzesResult = await pool.query(
+            `SELECT id, title FROM quizzes WHERE is_active = TRUE`
+        );
+        
+        const status = {};
+        
+        for (const quiz of quizzesResult.rows) {
+            // Получаем последний результат за последние 90 дней
+            const lastResult = await pool.query(
+                `SELECT score, completed_at FROM quiz_results 
+                 WHERE user_id = $1 AND quiz_id = $2 
+                 AND completed_at > NOW() - INTERVAL '90 days'
+                 ORDER BY completed_at DESC LIMIT 1`,
+                [userId, quiz.id]
+            );
+            
+            if (lastResult.rows.length === 0) {
+                status[quiz.id] = { needsRetake: true, lastScore: null, lastDate: null };
+            } else {
+                status[quiz.id] = {
+                    needsRetake: lastResult.rows[0].score < 70,
+                    lastScore: lastResult.rows[0].score,
+                    lastDate: lastResult.rows[0].completed_at
+                };
+            }
+        }
+        
+        res.json(status);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get retake status' });
+    }
+});
+
+// ---------- User Notes (личные заметки) ----------
+app.get('/api/notes/:productType/:productId', requireAuth, async (req, res) => {
+    const { productType, productId } = req.params;
+    const userId = req.session.user.id;
+    
+    try {
+        const result = await pool.query(
+            `SELECT * FROM user_notes 
+             WHERE user_id = $1 AND product_type = $2 AND product_id = $3`,
+            [userId, productType, productId]
+        );
+        res.json({ note: result.rows[0]?.note || '' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get note' });
+    }
+});
+
+app.post('/api/notes', requireAuth, async (req, res) => {
+    const { product_type, product_id, note } = req.body;
+    const userId = req.session.user.id;
+    
+    try {
+        const result = await pool.query(
+            `INSERT INTO user_notes (user_id, product_type, product_id, note, updated_at)
+             VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+             ON CONFLICT (user_id, product_type, product_id)
+             DO UPDATE SET note = EXCLUDED.note, updated_at = CURRENT_TIMESTAMP
+             RETURNING *`,
+            [userId, product_type, product_id, note]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Save note error:', error);
+        res.status(500).json({ error: 'Failed to save note' });
+    }
+});
+
+app.delete('/api/notes/:productType/:productId', requireAuth, async (req, res) => {
+    const { productType, productId } = req.params;
+    const userId = req.session.user.id;
+    
+    try {
+        await pool.query(
+            `DELETE FROM user_notes WHERE user_id = $1 AND product_type = $2 AND product_id = $3`,
+            [userId, productType, productId]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete note' });
+    }
+});
+
+// ---------- Global Search (глобальный поиск) ----------
+// Функция для обновления поискового индекса
+async function updateSearchIndex() {
+    // Очищаем старый индекс
+    await pool.query('TRUNCATE search_index');
+    
+    // Добавляем производителей табака
+    await pool.query(`
+        INSERT INTO search_index (entity_type, entity_id, title, description, category)
+        SELECT 'tobacco_manufacturer', id, name, COALESCE(description, ''), 'tobacco'
+        FROM manufacturers
+    `);
+    
+    // Добавляем линейки табака
+    await pool.query(`
+        INSERT INTO search_index (entity_type, entity_id, title, description, category)
+        SELECT 'tobacco_line', l.id, l.name, COALESCE(l.description, ''), 'tobacco'
+        FROM lines l
+    `);
+    
+    // Добавляем производителей жидкостей
+    await pool.query(`
+        INSERT INTO search_index (entity_type, entity_id, title, description, category)
+        SELECT 'liquid_manufacturer', id, name, COALESCE(description, ''), 'liquids'
+        FROM liquid_manufacturers
+    `);
+    
+    // Добавляем линейки жидкостей
+    await pool.query(`
+        INSERT INTO search_index (entity_type, entity_id, title, description, category)
+        SELECT 'liquid_line', l.id, l.name, COALESCE(l.description, ''), 'liquids'
+        FROM liquid_lines l
+    `);
+    
+    // Добавляем производителей одноразок
+    await pool.query(`
+        INSERT INTO search_index (entity_type, entity_id, title, description, category)
+        SELECT 'disposables_manufacturer', id, name, COALESCE(description, ''), 'disposables'
+        FROM disposables_manufacturers
+    `);
+    
+    // Добавляем линейки одноразок
+    await pool.query(`
+        INSERT INTO search_index (entity_type, entity_id, title, description, category)
+        SELECT 'disposables_line', l.id, l.name, COALESCE(l.description, ''), 'disposables'
+        FROM disposables_lines l
+    `);
+    
+    // Добавляем производителей снюса
+    await pool.query(`
+        INSERT INTO search_index (entity_type, entity_id, title, description, category)
+        SELECT 'snus_manufacturer', id, name, COALESCE(description, ''), 'snus'
+        FROM snus_manufacturers
+    `);
+    
+    // Добавляем линейки снюса
+    await pool.query(`
+        INSERT INTO search_index (entity_type, entity_id, title, description, category)
+        SELECT 'snus_line', l.id, l.name, COALESCE(l.description, ''), 'snus'
+        FROM snus_lines l
+    `);
+    
+    // Добавляем контент страниц
+    await pool.query(`
+        INSERT INTO search_index (entity_type, entity_id, title, description, category)
+        SELECT 'content', id, page || ' - ' || section, COALESCE(content, ''), page
+        FROM content
+    `);
+    
+    console.log('✅ Search index updated');
+}
+
+// Простой алгоритм Левенштейна для нечеткого поиска
+function levenshteinDistance(a, b) {
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+    }
+    for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+    }
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            const cost = a[j - 1] === b[i - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j] + 1,
+                matrix[i][j - 1] + 1,
+                matrix[i - 1][j - 1] + cost
+            );
+        }
+    }
+    return matrix[b.length][a.length];
+}
+
+function suggestCorrection(query, candidates, maxDistance = 2) {
+    let bestMatch = null;
+    let bestDistance = Infinity;
+    
+    for (const candidate of candidates) {
+        const distance = levenshteinDistance(query.toLowerCase(), candidate.toLowerCase());
+        if (distance < bestDistance && distance <= maxDistance) {
+            bestDistance = distance;
+            bestMatch = candidate;
+        }
+    }
+    
+    return bestMatch;
+}
+
+app.get('/api/search', requireAuth, async (req, res) => {
+    const { q, category, limit = 50 } = req.query;
+    
+    if (!q || q.length < 2) {
+        return res.json({ results: [], suggestion: null });
+    }
+    
+    try {
+        // Получаем все популярные термины для автодополнения
+        const allTermsResult = await pool.query(`
+            SELECT DISTINCT title FROM search_index LIMIT 1000
+        `);
+        const allTerms = allTermsResult.rows.map(r => r.title);
+        
+        // Исправление опечаток
+        const suggestion = suggestCorrection(q, allTerms, 2);
+        
+        // Поиск через full-text search
+        let queryText = `
+            SELECT 
+                entity_type, 
+                entity_id, 
+                title, 
+                description, 
+                category,
+                ts_rank(search_vector, plainto_tsquery('russian', $1)) as rank
+            FROM search_index
+            WHERE search_vector @@ plainto_tsquery('russian', $1)
+        `;
+        const params = [q];
+        
+        if (category && category !== 'all') {
+            queryText += ` AND category = $2`;
+            params.push(category);
+        }
+        
+        queryText += ` ORDER BY rank DESC LIMIT $${params.length + 1}`;
+        params.push(limit);
+        
+        const result = await pool.query(queryText, params);
+        
+        // Группируем результаты по типу
+        const grouped = {
+            manufacturers: [],
+            lines: [],
+            content: [],
+            other: []
+        };
+        
+        for (const row of result.rows) {
+            const item = {
+                type: row.entity_type,
+                id: row.entity_id,
+                title: row.title,
+                description: row.description,
+                category: row.category,
+                url: getUrlForEntity(row.entity_type, row.entity_id, row.category)
+            };
+            
+            if (row.entity_type.includes('manufacturer')) {
+                grouped.manufacturers.push(item);
+            } else if (row.entity_type.includes('line')) {
+                grouped.lines.push(item);
+            } else if (row.entity_type === 'content') {
+                grouped.content.push(item);
+            } else {
+                grouped.other.push(item);
+            }
+        }
+        
+        res.json({
+            results: grouped,
+            suggestion: suggestion !== q ? suggestion : null,
+            query: q
+        });
+    } catch (error) {
+        console.error('Search error:', error);
+        res.status(500).json({ error: 'Search failed' });
+    }
+});
+
+// Вспомогательная функция для получения URL
+function getUrlForEntity(entityType, entityId, category) {
+    const urls = {
+        'tobacco_manufacturer': `/tobacco#manufacturer-${entityId}`,
+        'tobacco_line': `/tobacco#line-${entityId}`,
+        'liquid_manufacturer': `/liquids#manufacturer-${entityId}`,
+        'liquid_line': `/liquids#line-${entityId}`,
+        'disposables_manufacturer': `/disposables#manufacturer-${entityId}`,
+        'disposables_line': `/disposables#line-${entityId}`,
+        'snus_manufacturer': `/snus#manufacturer-${entityId}`,
+        'snus_line': `/snus#line-${entityId}`,
+        'content': `/${category}#${entityId}`
+    };
+    return urls[entityType] || '#';
+}
+
+// Эндпоинт для автодополнения (autocomplete)
+app.get('/api/search/autocomplete', requireAuth, async (req, res) => {
+    const { q, limit = 10 } = req.query;
+    
+    if (!q || q.length < 1) {
+        return res.json([]);
+    }
+    
+    try {
+        const result = await pool.query(`
+            SELECT DISTINCT title 
+            FROM search_index 
+            WHERE title ILIKE $1 
+            LIMIT $2
+        `, [`%${q}%`, limit]);
+        
+        // Добавляем исправление опечаток
+        const allTerms = result.rows.map(r => r.title);
+        const suggestion = suggestCorrection(q, allTerms, 2);
+        
+        res.json({
+            suggestions: result.rows.map(r => r.title),
+            correction: suggestion !== q ? suggestion : null
+        });
+    } catch (error) {
+        res.status(500).json([]);
+    }
+});
+
+// Обновляем поисковый индекс после изменений в БД
+// Вызывать после добавления/изменения производителей и линеек
+async function rebuildSearchIndex() {
+    await updateSearchIndex();
+}
+
+// Вызываем при старте сервера
+setTimeout(() => {
+    rebuildSearchIndex().catch(console.error);
+}, 5000);
 
 // ========== START SERVER ==========
 async function startServer() {
