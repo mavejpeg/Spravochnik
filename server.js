@@ -2187,10 +2187,16 @@ app.get('/api/schedule/point/:pointId/:year/:month', requireRop, async (req, res
             };
         }
         
+        // Получаем список всех сотрудников для выбора сменщика
+        const allUsersResult = await pool.query(`
+            SELECT id, full_name FROM users WHERE role = 'user' ORDER BY full_name
+        `);
+        
         res.json({
             users: usersResult.rows,
             schedules: schedules,
-            daysInMonth: new Date(year, month, 0).getDate()
+            daysInMonth: new Date(year, month, 0).getDate(),
+            allUsers: allUsersResult.rows
         });
     } catch (error) {
         console.error('Error fetching point schedules:', error);
@@ -2228,6 +2234,57 @@ app.post('/api/schedule/point/:pointId', requireRop, async (req, res) => {
     } catch (error) {
         console.error('Error saving point schedules:', error);
         res.status(500).json({ error: 'Failed to save schedules' });
+    }
+});
+
+// Скопировать график с прошлого месяца
+app.post('/api/schedule/copy/:pointId', requireRop, async (req, res) => {
+    const { pointId } = req.params;
+    const { year, month } = req.body;
+    
+    let prevYear = year;
+    let prevMonth = month - 1;
+    if (prevMonth < 1) {
+        prevMonth = 12;
+        prevYear--;
+    }
+    
+    try {
+        // Получаем графики за прошлый месяц
+        const usersResult = await pool.query(`
+            SELECT id FROM users WHERE point_id = $1 AND role = 'user'
+        `, [pointId]);
+        
+        const schedules = {};
+        for (const user of usersResult.rows) {
+            const scheduleResult = await pool.query(`
+                SELECT days, partner_id
+                FROM schedules 
+                WHERE user_id = $1 AND year = $2 AND month = $3
+            `, [user.id, prevYear, prevMonth]);
+            
+            if (scheduleResult.rows[0]) {
+                let days = scheduleResult.rows[0].days;
+                // Обрезаем или дополняем до нужного количества дней
+                const daysInMonth = new Date(year, month, 0).getDate();
+                if (days.length > daysInMonth) {
+                    days = days.slice(0, daysInMonth);
+                } else if (days.length < daysInMonth) {
+                    while (days.length < daysInMonth) {
+                        days.push('off');
+                    }
+                }
+                schedules[user.id] = {
+                    days: days,
+                    partner_id: scheduleResult.rows[0].partner_id
+                };
+            }
+        }
+        
+        res.json({ schedules });
+    } catch (error) {
+        console.error('Error copying schedule:', error);
+        res.status(500).json({ error: 'Failed to copy schedule' });
     }
 });
 
