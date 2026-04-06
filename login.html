@@ -118,26 +118,6 @@
             opacity: 0.5;
         }
         
-        .hidden-field {
-            display: none;
-            animation: slideDown 0.3s ease;
-        }
-        
-        .hidden-field.show {
-            display: block;
-        }
-        
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
         .login-btn {
             width: 100%;
             background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -162,25 +142,22 @@
             transform: translateY(0);
         }
         
-        .rop-toggle-btn {
-            width: 100%;
-            background: transparent;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 12px;
-            color: var(--accent);
-            font-size: 13px;
-            font-weight: 600;
-            font-family: 'Manrope', sans-serif;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 12px;
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
         }
         
-        .rop-toggle-btn:hover {
-            background: var(--accent-glow);
-            border-color: var(--accent);
-            transform: translateY(-1px);
+        .register-link a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        .register-link a:hover {
+            text-decoration: underline;
         }
         
         .error-message {
@@ -214,20 +191,104 @@
             border-top: 1px solid var(--border);
         }
         
-        .mode-badge {
-            display: inline-block;
-            font-size: 10px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            background: var(--surface2);
-            color: var(--muted);
-            margin-bottom: 16px;
+        /* Модальные окна регистрации */
+        .register-modal {
+            max-width: 450px;
         }
         
-        .mode-badge.rop-mode {
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid var(--accent);
+        .register-step {
+            display: none;
+        }
+        
+        .register-step.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--border);
+            transition: all 0.3s;
+        }
+        
+        .step-dot.active {
+            background: var(--accent);
+            width: 24px;
+            border-radius: 4px;
+        }
+        
+        .step-dot.completed {
+            background: var(--accent3);
+        }
+        
+        .step-title {
+            text-align: center;
+            margin-bottom: 24px;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--strong);
+        }
+        
+        .pending-message {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .pending-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .pending-title {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent4);
+            margin-bottom: 12px;
+        }
+        
+        .pending-text {
+            color: var(--text2);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        
+        .password-strength {
+            margin-top: 8px;
+            font-size: 11px;
+        }
+        
+        .strength-weak { color: var(--accent2); }
+        .strength-medium { color: var(--accent4); }
+        .strength-strong { color: var(--accent3); }
+        
+        select {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: 'Manrope', sans-serif;
+            cursor: pointer;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
         }
     </style>
 </head>
@@ -237,59 +298,121 @@
             <div class="logo">
                 <div class="logo-icon">☁</div>
                 <h1>СПРАВОЧНИК</h1>
-                <p>Введите пароль для доступа</p>
+                <p>Войдите или зарегистрируйтесь</p>
             </div>
             
             <div class="error-message" id="errorMessage">
-                ❌ Неверный пароль
+                ❌ Ошибка
             </div>
             
+            <!-- Форма входа -->
             <form id="loginForm">
-                <!-- Обычный режим (только пароль) -->
-                <div id="userMode">
-                    <div class="input-group">
-                        <label>🔐 ПАРОЛЬ ДОСТУПА</label>
-                        <input type="password" id="userPassword" placeholder="Введите пароль" autofocus>
-                    </div>
+                <div class="input-group">
+                    <label>👤 ЛОГИН</label>
+                    <input type="text" id="loginUsername" placeholder="Введите логин" autofocus>
                 </div>
-                
-                <!-- РОП режим (логин + пароль) -->
-                <div id="ropMode" class="hidden-field">
-                    <div class="mode-badge rop-mode">👑 РЕЖИМ РОП</div>
-                    <div class="input-group">
-                        <label>👤 ЛОГИН</label>
-                        <input type="text" id="ropUsername" placeholder="Введите логин">
-                    </div>
-                    <div class="input-group">
-                        <label>🔐 ПАРОЛЬ</label>
-                        <input type="password" id="ropPassword" placeholder="Введите пароль">
-                    </div>
+                <div class="input-group">
+                    <label>🔐 ПАРОЛЬ</label>
+                    <input type="password" id="loginPassword" placeholder="Введите пароль">
                 </div>
-                
-                <button type="submit" class="login-btn" id="submitBtn">ВОЙТИ</button>
+                <button type="submit" class="login-btn">ВОЙТИ</button>
             </form>
             
-            <button class="rop-toggle-btn" id="ropToggleBtn">
-                👑 Вход для РОП
-            </button>
+            <div class="register-link">
+                <a onclick="openRegisterModal()">📝 Нет аккаунта? Зарегистрироваться</a>
+            </div>
             
             <div class="info-text">
-                🔐 Если не знаешь пароль, напиши РОПу <span></span>
+                🔐 Если забыли пароль, обратитесь к руководителю
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно регистрации -->
+    <div id="registerModal" class="modal-overlay" style="display: none;">
+        <div class="modal register-modal" style="max-width: 450px;">
+            <div class="modal-header">
+                <span class="modal-title">📝 Регистрация</span>
+                <button class="modal-close" onclick="closeRegisterModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="step-indicator">
+                    <div class="step-dot active" id="step1Dot"></div>
+                    <div class="step-dot" id="step2Dot"></div>
+                    <div class="step-dot" id="step3Dot"></div>
+                </div>
+                
+                <!-- Шаг 1: ФИО -->
+                <div id="step1" class="register-step active">
+                    <div class="step-title">📝 Как вас зовут?</div>
+                    <div class="input-group">
+                        <label>ФАМИЛИЯ И ИМЯ</label>
+                        <input type="text" id="regFullName" placeholder="Иванов Иван" autocomplete="off">
+                    </div>
+                    <button onclick="nextStep()" class="login-btn">ПРОДОЛЖИТЬ →</button>
+                </div>
+                
+                <!-- Шаг 2: Логин и пароль -->
+                <div id="step2" class="register-step">
+                    <div class="step-title">🔐 Придумайте логин и пароль</div>
+                    <div class="input-group">
+                        <label>ЛОГИН</label>
+                        <input type="text" id="regUsername" placeholder="ivan.ivanov" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>ПАРОЛЬ</label>
+                        <input type="password" id="regPassword" placeholder="Придумайте сложный пароль">
+                        <div id="passwordStrength" class="password-strength"></div>
+                    </div>
+                    <div class="input-group">
+                        <label>ПОВТОРИТЕ ПАРОЛЬ</label>
+                        <input type="password" id="regPasswordConfirm" placeholder="Повторите пароль">
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-top: 16px;">
+                        <button onclick="prevStep()" class="btn-cancel" style="flex: 1;">← НАЗАД</button>
+                        <button onclick="nextStep()" class="login-btn" style="flex: 1;">ПРОДОЛЖИТЬ →</button>
+                    </div>
+                </div>
+                
+                <!-- Шаг 3: Выбор точки -->
+                <div id="step3" class="register-step">
+                    <div class="step-title">📍 Выберите точку работы</div>
+                    <div class="input-group">
+                        <label>ТОРГОВАЯ ТОЧКА</label>
+                        <select id="regPointId">
+                            <option value="">-- Выберите точку --</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-top: 16px;">
+                        <button onclick="prevStep()" class="btn-cancel" style="flex: 1;">← НАЗАД</button>
+                        <button onclick="submitRegistration()" class="login-btn" style="flex: 1;">ОТПРАВИТЬ ЗАЯВКУ</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно ожидания -->
+    <div id="pendingModal" class="modal-overlay" style="display: none;">
+        <div class="modal register-modal" style="max-width: 400px;">
+            <div class="pending-message">
+                <div class="pending-icon">⏳</div>
+                <div class="pending-title">Заявка отправлена</div>
+                <div class="pending-text">
+                    Ваша заявка на регистрацию отправлена руководителю.<br>
+                    Доступ к системе будет открыт после подтверждения.<br>
+                    Ожидайте уведомление.
+                </div>
+                <button onclick="closePendingModal()" class="login-btn">ПОНЯТНО</button>
             </div>
         </div>
     </div>
     
     <script>
-        const form = document.getElementById('loginForm');
-        const errorDiv = document.getElementById('errorMessage');
-        const ropToggleBtn = document.getElementById('ropToggleBtn');
-        const userMode = document.getElementById('userMode');
-        const ropMode = document.getElementById('ropMode');
-        const submitBtn = document.getElementById('submitBtn');
+        let currentStep = 1;
+        let pointsList = [];
         
-        let isRopMode = false;
-        
-        // Проверяем, не залогинен ли уже пользователь
+        // Проверка авторизации
         fetch('/api/check-auth', { credentials: 'include' })
             .then(res => res.json())
             .then(data => {
@@ -299,91 +422,179 @@
             })
             .catch(err => console.error('Auth check error:', err));
         
-        // Переключение режима РОП
-        ropToggleBtn.addEventListener('click', () => {
-            isRopMode = !isRopMode;
-            
-            if (isRopMode) {
-                userMode.style.display = 'none';
-                ropMode.classList.add('show');
-                ropToggleBtn.textContent = '← Обычный вход';
-                ropToggleBtn.style.borderColor = 'var(--accent)';
-                submitBtn.textContent = 'ВОЙТИ КАК РОП';
-                setTimeout(() => document.getElementById('ropUsername').focus(), 100);
-            } else {
-                userMode.style.display = 'block';
-                ropMode.classList.remove('show');
-                ropToggleBtn.textContent = '👑 Вход для РОП';
-                ropToggleBtn.style.borderColor = 'var(--border)';
-                submitBtn.textContent = 'ВОЙТИ';
-                setTimeout(() => document.getElementById('userPassword').focus(), 100);
+        // Загрузка точек для регистрации
+        async function loadPoints() {
+            try {
+                const response = await fetch('/api/points-public');
+                const points = await response.json();
+                pointsList = points;
+                const select = document.getElementById('regPointId');
+                select.innerHTML = '<option value="">-- Выберите точку --</option>' +
+                    points.map(p => `<option value="${p.id}">📍 ${p.name}${p.address ? ' — ' + p.address : ''}</option>`).join('');
+            } catch (error) {
+                console.error('Failed to load points:', error);
             }
+        }
+        
+        // Проверка сложности пароля
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]/)) strength++;
+            if (password.match(/[A-Z]/)) strength++;
+            if (password.match(/[0-9]/)) strength++;
+            if (password.match(/[^a-zA-Z0-9]/)) strength++;
+            
+            if (strength <= 2) return { level: 'weak', text: 'Слабый пароль', class: 'strength-weak' };
+            if (strength <= 4) return { level: 'medium', text: 'Средний пароль', class: 'strength-medium' };
+            return { level: 'strong', text: 'Сложный пароль ✓', class: 'strength-strong' };
+        }
+        
+        // Обработчик ввода пароля
+        document.getElementById('regPassword')?.addEventListener('input', function(e) {
+            const strength = checkPasswordStrength(e.target.value);
+            const div = document.getElementById('passwordStrength');
+            div.innerHTML = `<span class="${strength.class}">${strength.text}</span>`;
         });
         
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        function openRegisterModal() {
+            document.getElementById('registerModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('registerModal').classList.add('open'), 10);
+            loadPoints();
+            currentStep = 1;
+            updateSteps();
+        }
+        
+        function closeRegisterModal() {
+            const modal = document.getElementById('registerModal');
+            modal.classList.remove('open');
+            setTimeout(() => modal.style.display = 'none', 300);
+            // Очистка формы
+            document.getElementById('regFullName').value = '';
+            document.getElementById('regUsername').value = '';
+            document.getElementById('regPassword').value = '';
+            document.getElementById('regPasswordConfirm').value = '';
+            document.getElementById('passwordStrength').innerHTML = '';
+        }
+        
+        function updateSteps() {
+            // Обновляем видимость шагов
+            document.getElementById('step1').classList.remove('active');
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step3').classList.remove('active');
+            document.getElementById(`step${currentStep}`).classList.add('active');
             
-            if (isRopMode) {
-                // РОП режим - нужны логин и пароль
-                const username = document.getElementById('ropUsername').value.trim();
-                const password = document.getElementById('ropPassword').value;
-                
-                if (!username || !password) {
-                    showError('Заполните логин и пароль');
+            // Обновляем индикаторы
+            for (let i = 1; i <= 3; i++) {
+                const dot = document.getElementById(`step${i}Dot`);
+                if (i < currentStep) {
+                    dot.classList.add('completed');
+                    dot.classList.remove('active');
+                } else if (i === currentStep) {
+                    dot.classList.add('active');
+                    dot.classList.remove('completed');
+                } else {
+                    dot.classList.remove('active', 'completed');
+                }
+            }
+        }
+        
+        function nextStep() {
+            if (currentStep === 1) {
+                const fullName = document.getElementById('regFullName').value.trim();
+                if (!fullName) {
+                    showError('Введите фамилию и имя');
                     return;
                 }
-                
-                try {
-                    const response = await fetch('/api/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ username, password })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        window.location.href = '/';
-                    } else {
-                        showError(data.error || 'Неверный логин или пароль');
-                    }
-                } catch (error) {
-                    console.error('Login error:', error);
-                    showError('Ошибка соединения с сервером');
+                if (fullName.split(' ').length < 2) {
+                    showError('Введите фамилию и имя через пробел');
+                    return;
                 }
-            } else {
-                // Обычный режим - только пароль
-                const password = document.getElementById('userPassword').value;
+                currentStep = 2;
+                updateSteps();
+            } else if (currentStep === 2) {
+                const username = document.getElementById('regUsername').value.trim();
+                const password = document.getElementById('regPassword').value;
+                const confirm = document.getElementById('regPasswordConfirm').value;
                 
+                if (!username) {
+                    showError('Введите логин');
+                    return;
+                }
+                if (username.length < 3) {
+                    showError('Логин должен быть не менее 3 символов');
+                    return;
+                }
                 if (!password) {
                     showError('Введите пароль');
                     return;
                 }
-                
-                try {
-                    const response = await fetch('/api/simple-login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ password })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        window.location.href = '/';
-                    } else {
-                        showError(data.error || 'Неверный пароль');
-                    }
-                } catch (error) {
-                    console.error('Simple login error:', error);
-                    showError('Ошибка соединения с сервером');
+                const strength = checkPasswordStrength(password);
+                if (strength.level === 'weak') {
+                    showError('Придумайте более сложный пароль (минимум 8 символов, буквы и цифры)');
+                    return;
                 }
+                if (password !== confirm) {
+                    showError('Пароли не совпадают');
+                    return;
+                }
+                currentStep = 3;
+                updateSteps();
             }
-        });
+        }
+        
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateSteps();
+            }
+        }
+        
+        async function submitRegistration() {
+            const pointId = document.getElementById('regPointId').value;
+            if (!pointId) {
+                showError('Выберите точку работы');
+                return;
+            }
+            
+            const fullName = document.getElementById('regFullName').value.trim();
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            
+            try {
+                const response = await fetch('/api/register-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        full_name: fullName,
+                        username: username,
+                        password: password,
+                        point_id: parseInt(pointId)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    closeRegisterModal();
+                    document.getElementById('pendingModal').style.display = 'flex';
+                    setTimeout(() => document.getElementById('pendingModal').classList.add('open'), 10);
+                } else {
+                    showError(data.error || 'Ошибка регистрации');
+                }
+            } catch (error) {
+                showError('Ошибка соединения');
+            }
+        }
+        
+        function closePendingModal() {
+            const modal = document.getElementById('pendingModal');
+            modal.classList.remove('open');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
         
         function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = `❌ ${message}`;
             errorDiv.classList.add('show');
             setTimeout(() => {
@@ -391,16 +602,44 @@
             }, 3000);
         }
         
-        // Enter key submit для всех полей
-        const handleEnter = (e) => {
-            if (e.key === 'Enter') {
-                form.dispatchEvent(new Event('submit'));
+        // Вход в систему
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                showError('Введите логин и пароль');
+                return;
             }
-        };
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    showError(data.error || 'Неверный логин или пароль');
+                }
+            } catch (error) {
+                showError('Ошибка соединения');
+            }
+        });
         
-        document.getElementById('userPassword').addEventListener('keypress', handleEnter);
-        document.getElementById('ropUsername').addEventListener('keypress', handleEnter);
-        document.getElementById('ropPassword').addEventListener('keypress', handleEnter);
+        // Enter key submit
+        document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
     </script>
 </body>
 </html>
