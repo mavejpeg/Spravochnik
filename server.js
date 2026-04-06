@@ -2288,6 +2288,98 @@ app.post('/api/schedule/copy/:pointId', requireRop, async (req, res) => {
     }
 });
 
+// ========== ВСПОМОГАТЕЛЬНЫЕ ЭНДПОИНТЫ ДЛЯ ОТЛАДКИ ==========
+
+// Проверить состояние пользователей
+app.get('/api/debug/users-status', requireRop, async (req, res) => {
+    try {
+        // Все пользователи
+        const allUsers = await pool.query(`
+            SELECT id, full_name, username, role, point_id 
+            FROM users 
+            ORDER BY id
+        `);
+        
+        // Все точки
+        const points = await pool.query(`SELECT id, name FROM points ORDER BY id`);
+        
+        // Пользователи без точки
+        const usersWithoutPoint = await pool.query(`
+            SELECT id, full_name, role 
+            FROM users 
+            WHERE point_id IS NULL AND role = 'user'
+        `);
+        
+        res.json({
+            users: allUsers.rows,
+            points: points.rows,
+            usersWithoutPoint: usersWithoutPoint.rows,
+            usersWithoutPointCount: usersWithoutPoint.rows.length
+        });
+    } catch (error) {
+        console.error('Debug error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Быстрое исправление - назначить всех сотрудников на первую точку
+app.post('/api/debug/assign-users-to-first-point', requireRop, async (req, res) => {
+    try {
+        // Получаем первую точку
+        const firstPoint = await pool.query(`SELECT id FROM points ORDER BY id LIMIT 1`);
+        
+        if (firstPoint.rows.length === 0) {
+            return res.status(400).json({ error: 'Нет ни одной точки. Сначала создайте точку.' });
+        }
+        
+        const pointId = firstPoint.rows[0].id;
+        
+        // Назначаем всех сотрудников на эту точку
+        const result = await pool.query(`
+            UPDATE users 
+            SET point_id = $1 
+            WHERE role = 'user' AND point_id IS NULL
+            RETURNING id, full_name
+        `, [pointId]);
+        
+        res.json({
+            success: true,
+            message: `Назначено ${result.rowCount} сотрудников на точку ID ${pointId}`,
+            assignedUsers: result.rows,
+            pointId: pointId
+        });
+    } catch (error) {
+        console.error('Assign error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Создать тестовую точку если нет ни одной
+app.post('/api/debug/create-default-point', requireRop, async (req, res) => {
+    try {
+        const existingPoints = await pool.query(`SELECT id FROM points LIMIT 1`);
+        
+        if (existingPoints.rows.length > 0) {
+            return res.json({ success: true, message: 'Точка уже существует', pointId: existingPoints.rows[0].id });
+        }
+        
+        const result = await pool.query(`
+            INSERT INTO points (name, address) 
+            VALUES ('Основная точка', 'Адрес не указан')
+            RETURNING id
+        `);
+        
+        res.json({
+            success: true,
+            message: 'Создана тестовая точка',
+            pointId: result.rows[0].id
+        });
+    } catch (error) {
+        console.error('Create point error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Обновляем поисковый индекс после изменений в БД
 // Вызывать после добавления/изменения производителей и линеек
 async function rebuildSearchIndex() {
