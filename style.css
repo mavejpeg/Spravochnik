@@ -62,8 +62,8 @@ input, textarea, select, [contenteditable="true"] {
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 200;
-  background: rgba(9,9,14,0.95);
+  z-index: 1000; /* Было 200, увеличиваем */
+  background: rgba(9,9,14, 0.98); /* Было 0.95, делаем более непрозрачным */
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   padding: 0 16px;
@@ -217,10 +217,9 @@ input, textarea, select, [contenteditable="true"] {
   background: var(--surface);
   -webkit-overflow-scrolling: touch;
   position: sticky;
-  top: 56px;
-  z-index: 199;
+  top: 56px; /* Высота header */
+  z-index: 999; /* Было 199, увеличиваем */
 }
-
 @media (min-width: 640px) {
   .tab-nav {
     top: 60px;
@@ -274,6 +273,9 @@ main {
   padding: 20px 16px; 
   width: 100%;
   overflow-x: hidden;
+  position: relative;
+  z-index: 1;
+  background: var(--bg); /* Добавляем фон */
 }
 
 @media (min-width: 640px) {
@@ -3075,4 +3077,24 @@ img {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+}
+
+/* Убедитесь, что body имеет фон */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+  background-attachment: fixed; /* Добавляем */
+}
+
+/* Добавьте обертку для контента */
+.content-wrapper {
+  position: relative;
+  z-index: 1;
+  background: var(--bg);
 }
