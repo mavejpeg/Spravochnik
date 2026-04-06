@@ -2163,14 +2163,20 @@ app.get('/api/users-with-points', requireRop, async (req, res) => {
 app.get('/api/schedule/point/:pointId/:year/:month', requireRop, async (req, res) => {
     const { pointId, year, month } = req.params;
     
+    console.log(`Schedule request: pointId=${pointId}, year=${year}, month=${month}`);
+    
     try {
-        // Получаем всех сотрудников точки
+        // Получаем всех сотрудников точки (ВКЛЮЧАЯ пользователей с ролью user И rop И root)
         const usersResult = await pool.query(`
             SELECT id, full_name, position 
             FROM users 
-            WHERE point_id = $1 AND role = 'user'
+            WHERE point_id = $1
             ORDER BY full_name
         `, [pointId]);
+        
+        console.log(`Found ${usersResult.rows.length} users on point ${pointId}:`, usersResult.rows.map(u => u.full_name));
+        
+        const daysInMonth = new Date(year, month, 0).getDate();
         
         // Получаем графики для этих сотрудников
         const schedules = {};
@@ -2182,25 +2188,25 @@ app.get('/api/schedule/point/:pointId/:year/:month', requireRop, async (req, res
             `, [user.id, year, month]);
             
             schedules[user.id] = {
-                days: scheduleResult.rows[0]?.days || Array(new Date(year, month, 0).getDate()).fill('off'),
+                days: scheduleResult.rows[0]?.days || Array(daysInMonth).fill('off'),
                 partner_id: scheduleResult.rows[0]?.partner_id || null
             };
         }
         
         // Получаем список всех сотрудников для выбора сменщика
         const allUsersResult = await pool.query(`
-            SELECT id, full_name FROM users WHERE role = 'user' ORDER BY full_name
+            SELECT id, full_name FROM users ORDER BY full_name
         `);
         
         res.json({
             users: usersResult.rows,
             schedules: schedules,
-            daysInMonth: new Date(year, month, 0).getDate(),
+            daysInMonth: daysInMonth,
             allUsers: allUsersResult.rows
         });
     } catch (error) {
         console.error('Error fetching point schedules:', error);
-        res.status(500).json({ error: 'Failed to fetch schedules' });
+        res.status(500).json({ error: 'Failed to fetch schedules: ' + error.message });
     }
 });
 
@@ -2426,6 +2432,26 @@ app.get('/api/debug/all-users-with-points', requireRop, async (req, res) => {
             ORDER BY u.id
         `);
         res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Прямой запрос пользователей точки
+app.get('/api/debug/point-users-direct/:pointId', requireRop, async (req, res) => {
+    const { pointId } = req.params;
+    try {
+        const result = await pool.query(`
+            SELECT id, full_name, username, role, point_id 
+            FROM users 
+            WHERE point_id = $1
+        `, [pointId]);
+        
+        res.json({
+            pointId: pointId,
+            count: result.rows.length,
+            users: result.rows
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
