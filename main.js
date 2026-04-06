@@ -1,12 +1,12 @@
-// main.js v5.0 - ИСПРАВЛЕНА ВСЯ АДМИН-ПАНЕЛЬ
+// main.js v6.0 - ИСПРАВЛЕНА РЕКУРСИЯ И КОНФЛИКТЫ
 
 window.isRop = false;
 window.isRopGlobal = false;
 window._authLoaded = false;
-window._ropPanelOpen = false; // Флаг для предотвращения двойного открытия
+window._ropPanelOpen = false;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Main.js v5.0 loaded');
+    console.log('Main.js v6.0 loaded');
     initTabs();
     initAccordions();
     initSearch();
@@ -154,7 +154,6 @@ async function loadUserInfo() {
             if (userNameSpan) userNameSpan.textContent = data.user.full_name;
             if (ropBtn) {
                 ropBtn.style.display = isRop ? 'block' : 'none';
-                console.log('ROP button display set to:', isRop ? 'block' : 'none');
             }
 
             const addManufBtn = document.getElementById('btnAddManufacturer');
@@ -204,6 +203,7 @@ async function loadUserInfo() {
     }
 }
 
+// ИСПРАВЛЕНО: убираем бесконечную рекурсию
 window.refreshEditButtons = function() {
     const isRop = window.isRopGlobal === true;
     document.querySelectorAll('.btn-edit-content').forEach(btn => {
@@ -213,9 +213,7 @@ window.refreshEditButtons = function() {
     if (addManufBtn) {
         addManufBtn.style.display = isRop ? 'flex' : 'none';
     }
-    if (typeof window.setupEditButtons === 'function') {
-        window.setupEditButtons(isRop);
-    }
+    // Убираем вызов самого себя!
 };
 window.setupEditButtons = window.refreshEditButtons;
 
@@ -246,7 +244,6 @@ async function handleRopPanel(e) {
     e.stopPropagation();
     console.log('ROP button clicked, opening panel...');
     
-    // Предотвращаем двойное открытие
     if (window._ropPanelOpen) {
         console.log('Panel already open, ignoring');
         return;
@@ -257,7 +254,6 @@ async function handleRopPanel(e) {
 
 // ========== ГЛАВНАЯ ФУНКЦИЯ openRopPanel ==========
 window.openRopPanel = async function() {
-    // Предотвращаем двойное открытие
     if (window._ropPanelOpen) {
         console.log('Panel already open');
         return;
@@ -313,24 +309,36 @@ window.openRopPanel = async function() {
             const panel = document.getElementById(panelId);
             if (panel) panel.style.display = 'block';
             
-            // Обновляем данные при переключении
             if (tab.dataset.panel === 'schedule') {
-                if (typeof window.initScheduleEditor === 'function') {
-                    setTimeout(() => window.initScheduleEditor(), 100);
-                }
+                setTimeout(() => {
+                    if (typeof window.initScheduleEditor === 'function') {
+                        window.initScheduleEditor();
+                    } else {
+                        document.getElementById('scheduleEditorContainer').innerHTML = '<div style="text-align: center; padding: 40px;">Загрузка редактора...</div>';
+                        const script = document.createElement('script');
+                        script.src = '/schedule-editor.js';
+                        script.onload = () => {
+                            if (typeof window.initScheduleEditor === 'function') {
+                                window.initScheduleEditor();
+                            }
+                        };
+                        document.head.appendChild(script);
+                    }
+                }, 100);
             } else if (tab.dataset.panel === 'quizzes') {
-                if (typeof window.loadQuizzesAdmin === 'function') {
-                    window.loadQuizzesAdmin();
-                }
+                setTimeout(() => {
+                    if (typeof window.loadQuizzesAdmin === 'function') {
+                        window.loadQuizzesAdmin();
+                    }
+                }, 100);
             }
         });
     });
 
-    // Рендерим все панели
     await renderUsersPanel();
-    await renderSchedulePanel();
+    renderSchedulePanel();
     await renderPointsPanel();
-    await renderQuizzesPanel();
+    renderQuizzesPanel();
 };
 
 // ===================== USERS PANEL =====================
@@ -510,7 +518,7 @@ window.saveUserProfile = async function(userId) {
 };
 
 // ===================== SCHEDULE PANEL =====================
-async function renderSchedulePanel() {
+function renderSchedulePanel() {
     const panel = document.getElementById('adminPanel-schedule');
     if (!panel) return;
     
@@ -535,20 +543,6 @@ async function renderSchedulePanel() {
             </div>
         </div>
     `;
-    
-    // Загружаем schedule-editor.js если еще не загружен
-    if (typeof window.initScheduleEditor === 'undefined') {
-        const script = document.createElement('script');
-        script.src = '/schedule-editor.js';
-        script.onload = () => {
-            if (typeof window.initScheduleEditor === 'function') {
-                window.initScheduleEditor();
-            }
-        };
-        document.head.appendChild(script);
-    } else {
-        window.initScheduleEditor();
-    }
 }
 
 // ===================== POINTS PANEL =====================
@@ -590,10 +584,6 @@ async function renderPointsPanel() {
                 document.getElementById('newPointName').value = '';
                 document.getElementById('newPointAddress').value = '';
                 await loadPointsList();
-                // Обновляем список точек в редакторе графиков
-                if (typeof window.loadPointsListForSchedule === 'function') {
-                    window.loadPointsListForSchedule();
-                }
             } else {
                 alert('Ошибка');
             }
@@ -643,7 +633,7 @@ window.deletePoint = async function(id) {
 };
 
 // ===================== QUIZZES PANEL =====================
-async function renderQuizzesPanel() {
+function renderQuizzesPanel() {
     const panel = document.getElementById('adminPanel-quizzes');
     if (!panel) return;
     
@@ -656,7 +646,7 @@ async function renderQuizzesPanel() {
         <div id="quizzesAdminList"></div>
     `;
     
-    await loadQuizzesAdmin();
+    loadQuizzesAdmin();
 }
 
 async function loadQuizzesAdmin() {
@@ -695,106 +685,20 @@ async function loadQuizzesAdmin() {
     }
 }
 
-window.openQuizEditorInAdmin = async function(quizId = null) {
-    // Используем функцию из training.html если доступна
+window.openQuizEditorInAdmin = function(quizId = null) {
     if (typeof window.openQuizEditor === 'function') {
         window.openQuizEditor(quizId);
     } else {
-        // Простой редактор
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal" style="max-width: 700px;">
-                <div class="modal-header">
-                    <span class="modal-title">${quizId ? '✏️ Редактировать' : '📝 Создать'} опросник</span>
-                    <button class="modal-close">✕</button>
-                </div>
-                <div class="modal-body">
-                    <div class="field">
-                        <label>Название</label>
-                        <input type="text" id="simpleQuizTitle" placeholder="Название опросника">
-                    </div>
-                    <div class="field">
-                        <label>Описание</label>
-                        <textarea id="simpleQuizDesc" rows="2" placeholder="Описание..."></textarea>
-                    </div>
-                    <div class="field">
-                        <label>Вопросы (JSON формат)</label>
-                        <textarea id="simpleQuizQuestions" rows="10" placeholder='[\n  {\n    "text": "Вопрос?",\n    "options": ["Вариант 1", "Вариант 2"],\n    "correct": 0,\n    "explanation": "Пояснение"\n  }\n]'></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-cancel">Отмена</button>
-                    <button class="btn-save" id="saveSimpleQuizBtn">💾 Сохранить</button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        setTimeout(() => modal.classList.add('open'), 10);
-        
-        const closeModal = () => {
-            modal.classList.remove('open');
-            setTimeout(() => modal.remove(), 300);
+        alert('Редактор опросников загружается. Попробуйте еще раз.');
+        // Загружаем редактор
+        const script = document.createElement('script');
+        script.src = '/quiz-editor.js';
+        script.onload = () => {
+            if (typeof window.openQuizEditor === 'function') {
+                window.openQuizEditor(quizId);
+            }
         };
-        
-        modal.querySelector('.modal-close').addEventListener('click', closeModal);
-        modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-        
-        if (quizId) {
-            try {
-                const res = await fetch(`/api/quizzes/${quizId}`, { credentials: 'include' });
-                const quiz = await res.json();
-                document.getElementById('simpleQuizTitle').value = quiz.title;
-                document.getElementById('simpleQuizDesc').value = quiz.description || '';
-                document.getElementById('simpleQuizQuestions').value = JSON.stringify(quiz.questions, null, 2);
-            } catch(e) {}
-        }
-        
-        modal.querySelector('#saveSimpleQuizBtn').addEventListener('click', async () => {
-            const title = document.getElementById('simpleQuizTitle').value.trim();
-            const description = document.getElementById('simpleQuizDesc').value.trim();
-            let questions;
-            try {
-                questions = JSON.parse(document.getElementById('simpleQuizQuestions').value);
-            } catch(e) {
-                alert('Неверный формат JSON');
-                return;
-            }
-            if (!title) {
-                alert('Введите название');
-                return;
-            }
-            
-            try {
-                let response;
-                if (quizId) {
-                    response = await fetch(`/api/quizzes/${quizId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ title, description, questions, is_active: true })
-                    });
-                } else {
-                    response = await fetch('/api/quizzes', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ title, description, questions })
-                    });
-                }
-                if (response.ok) {
-                    alert('Сохранено');
-                    closeModal();
-                    await loadQuizzesAdmin();
-                    if (typeof window.loadQuizzes === 'function') window.loadQuizzes();
-                } else {
-                    alert('Ошибка');
-                }
-            } catch(e) {
-                alert('Ошибка: ' + e.message);
-            }
-        });
+        document.head.appendChild(script);
     }
 };
 
@@ -809,7 +713,7 @@ window.deleteQuizInAdmin = async function(quizId) {
         
         if (response.ok) {
             alert('Опросник удален');
-            await loadQuizzesAdmin();
+            loadQuizzesAdmin();
             if (typeof window.loadQuizzes === 'function') window.loadQuizzes();
         } else {
             alert('Ошибка удаления');
@@ -825,40 +729,14 @@ function escapeHtml(str) {
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
 }
 
-function showToast(message, type) {
-    const toast = document.createElement('div');
-    toast.className = `toast-notification ${type}`;
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: var(--surface2);
-        border-left: 3px solid ${type === 'success' ? 'var(--accent3)' : 'var(--accent2)'};
-        padding: 12px 20px;
-        border-radius: 8px;
-        z-index: 10001;
-        animation: slideInRight 0.3s ease;
-        font-size: 13px;
-    `;
-    toast.innerHTML = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
-
-// Экспортируем всё в window
+// Экспорт
 window.openRopPanel = openRopPanel;
-window.initTabs = initTabs;
-window.initAccordions = initAccordions;
-window.loadUserInfo = loadUserInfo;
-window.loadAllContent = loadAllContent;
-window.loadContent = loadContent;
-window.initDetailsHandlers = initDetailsHandlers;
+window.loadQuizzesAdmin = loadQuizzesAdmin;
 window.renderUsersPanel = renderUsersPanel;
 window.renderSchedulePanel = renderSchedulePanel;
 window.renderPointsPanel = renderPointsPanel;
 window.renderQuizzesPanel = renderQuizzesPanel;
 window.loadUsersList = loadUsersList;
 window.loadPointsList = loadPointsList;
-window.loadQuizzesAdmin = loadQuizzesAdmin;
 
 console.log('main.js loaded, openRopPanel available:', typeof window.openRopPanel);
