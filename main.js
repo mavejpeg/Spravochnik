@@ -1,13 +1,12 @@
-// main.js v6.0 - ИСПРАВЛЕНА РЕКУРСИЯ И КОНФЛИКТЫ
+// main.js v7.0 - ИСПРАВЛЕНА КНОПКА АДМИНИСТРИРОВАНИЯ
 
 window.isRop = false;
 window.isRopGlobal = false;
-window._currentUser = null;
 window._authLoaded = false;
 window._ropPanelOpen = false;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Main.js v6.0 loaded');
+    console.log('Main.js v7.0 loaded');
     initTabs();
     initAccordions();
     initSearch();
@@ -82,7 +81,7 @@ async function loadContent(page, section) {
         }, 100);
         
     } catch (error) {
-        console.error(`Failed to load content for ${page}/${section}:`, error);
+        console.error('Failed to load content:', error);
     }
 }
 
@@ -113,7 +112,7 @@ async function loadAllContent() {
         await loadContent(page, section);
     }
     
-    console.log(`Loaded content for ${sections.length} sections on ${page}`);
+    console.log('Loaded content for', sections.length, 'sections on', page);
 }
 
 function initDetailsHandlers() {
@@ -148,7 +147,7 @@ async function loadUserInfo() {
             window._authLoaded = true;
             window._currentUser = data.user;
             
-            console.log('✅ User authenticated:', data.user.full_name, 'ROP:', isRop);
+            console.log('User authenticated:', data.user.full_name, 'ROP:', isRop);
 
             const userNameSpan = document.getElementById('userName');
             const ropBtn = document.getElementById('ropBtn');
@@ -193,7 +192,7 @@ async function loadUserInfo() {
             }, 200);
 
         } else {
-            console.log('❌ Not authenticated, redirecting to login...');
+            console.log('Not authenticated, redirecting to login...');
             sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
             window.location.href = '/login';
         }
@@ -204,7 +203,6 @@ async function loadUserInfo() {
     }
 }
 
-// ИСПРАВЛЕНО: убираем бесконечную рекурсию
 window.refreshEditButtons = function() {
     const isRop = window.isRopGlobal === true;
     document.querySelectorAll('.btn-edit-content').forEach(btn => {
@@ -214,7 +212,6 @@ window.refreshEditButtons = function() {
     if (addManufBtn) {
         addManufBtn.style.display = isRop ? 'flex' : 'none';
     }
-    // Убираем вызов самого себя!
 };
 window.setupEditButtons = window.refreshEditButtons;
 
@@ -277,17 +274,13 @@ window.openRopPanel = async function() {
                 <button class="admin-tab" data-panel="schedule">📅 Графики</button>
                 <button class="admin-tab" data-panel="points">📍 Точки</button>
                 <button class="admin-tab" data-panel="quizzes">📋 Опросники</button>
-                <button class="admin-tab" data-panel="requests">📝 Заявки</button>
-                <button class="admin-tab" data-panel="substitutions">🔄 Подмены</button>
-                <button class="admin-tab" data-panel="roles">👥 Роли и должности</button>
+                <button class="admin-tab" data-panel="roles">👥 Роли</button>
             </div>
             <div style="flex: 1; overflow-y: auto; padding: 20px 24px;">
                 <div id="adminPanel-users" class="admin-panel"></div>
                 <div id="adminPanel-schedule" class="admin-panel" style="display:none;"></div>
                 <div id="adminPanel-points" class="admin-panel" style="display:none;"></div>
                 <div id="adminPanel-quizzes" class="admin-panel" style="display:none;"></div>
-                <div id="adminPanel-requests" class="admin-panel" style="display:none;"></div>
-                <div id="adminPanel-substitutions" class="admin-panel" style="display:none;"></div>
                 <div id="adminPanel-roles" class="admin-panel" style="display:none;"></div>
             </div>
         </div>
@@ -320,16 +313,6 @@ window.openRopPanel = async function() {
                 setTimeout(() => {
                     if (typeof window.initScheduleEditor === 'function') {
                         window.initScheduleEditor();
-                    } else {
-                        document.getElementById('scheduleEditorContainer').innerHTML = '<div style="text-align: center; padding: 40px;">Загрузка редактора...</div>';
-                        const script = document.createElement('script');
-                        script.src = '/schedule-editor.js';
-                        script.onload = () => {
-                            if (typeof window.initScheduleEditor === 'function') {
-                                window.initScheduleEditor();
-                            }
-                        };
-                        document.head.appendChild(script);
                     }
                 }, 100);
             } else if (tab.dataset.panel === 'quizzes') {
@@ -338,15 +321,12 @@ window.openRopPanel = async function() {
                         window.loadQuizzesAdmin();
                     }
                 }, 100);
-            }
-            else if (tab.dataset.panel === 'requests') {
-                renderRequestsPanel();
-            }
-            else if (tab.dataset.panel === 'substitutions') {
-                renderSubstitutionsPanel();
-            }
-            else if (tab.dataset.panel === 'roles') {
-                renderRolesPanel();
+            } else if (tab.dataset.panel === 'roles') {
+                setTimeout(() => {
+                    if (typeof window.renderRolesPanel === 'function') {
+                        window.renderRolesPanel();
+                    }
+                }, 100);
             }
         });
     });
@@ -355,6 +335,7 @@ window.openRopPanel = async function() {
     renderSchedulePanel();
     await renderPointsPanel();
     renderQuizzesPanel();
+    renderRolesPanel();
 };
 
 // ===================== USERS PANEL =====================
@@ -539,8 +520,8 @@ function renderSchedulePanel() {
     if (!panel) return;
     
     panel.innerHTML = `
-        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div class="schedule-nav">
+        <div class="schedule-nav">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <button id="schedulePrevMonth" class="schedule-nav-btn">←</button>
                     <span id="scheduleCurrentMonth" class="schedule-current-month"></span>
@@ -552,117 +533,25 @@ function renderSchedulePanel() {
                     </select>
                 </div>
             </div>
-            <div>
-                <button onclick="fixScheduleUsers()" class="btn-add" style="background: var(--accent4);">🔧 Исправить сотрудников</button>
-            </div>
         </div>
-        <div id="scheduleDebugInfo" style="margin-bottom: 16px; padding: 12px; background: var(--surface2); border-radius: 8px; font-size: 12px; display: none;"></div>
         <div id="scheduleEditorContainer" style="margin-top: 20px;">
             <div style="text-align: center; padding: 60px; color: var(--muted);">
                 📅 Выберите точку для редактирования графика
             </div>
         </div>
     `;
-}
-
-// Добавьте эту функцию в main.js
-window.fixScheduleUsers = async function() {
-    const debugDiv = document.getElementById('scheduleDebugInfo');
-    debugDiv.style.display = 'block';
-    debugDiv.innerHTML = '<div style="text-align: center;">⏳ Проверка состояния...</div>';
     
-    try {
-        // 1. Проверяем текущее состояние
-        const statusRes = await fetch('/api/debug/users-status', { credentials: 'include' });
-        const status = await statusRes.json();
-        
-        console.log('Users status:', status);
-        
-        if (status.usersWithoutPointCount === 0) {
-            debugDiv.innerHTML = `
-                <div style="color: var(--accent3);">
-                    ✅ Все сотрудники уже назначены на точки!
-                    <br>Сотрудников без точки: 0
-                    <br>Всего сотрудников: ${status.users.filter(u => u.role === 'user').length}
-                    <br><button onclick="document.getElementById('scheduleDebugInfo').style.display='none'" class="btn-cancel" style="margin-top: 8px;">Закрыть</button>
-                </div>
-            `;
-            // Перезагружаем график
+    if (typeof window.initScheduleEditor === 'undefined') {
+        const script = document.createElement('script');
+        script.src = '/schedule-editor.js';
+        script.onload = () => {
             if (typeof window.initScheduleEditor === 'function') {
                 window.initScheduleEditor();
             }
-            return;
-        }
-        
-        // 2. Проверяем есть ли точки
-        if (status.points.length === 0) {
-            debugDiv.innerHTML = `
-                <div style="color: var(--accent4);">
-                    ⚠️ Нет ни одной точки! Создаю...
-                </div>
-            `;
-            
-            const createRes = await fetch('/api/debug/create-default-point', {
-                method: 'POST',
-                credentials: 'include'
-            });
-            const createData = await createRes.json();
-            
-            if (createData.success) {
-                debugDiv.innerHTML = `
-                    <div style="color: var(--accent3);">
-                        ✅ Создана точка ID: ${createData.pointId}
-                        <br>Теперь назначаю сотрудников...
-                    </div>
-                `;
-                
-                // Пауза
-                await new Promise(r => setTimeout(r, 1000));
-            }
-        }
-        
-        // 3. Назначаем сотрудников на первую точку
-        const assignRes = await fetch('/api/debug/assign-users-to-first-point', {
-            method: 'POST',
-            credentials: 'include'
-        });
-        const assignData = await assignRes.json();
-        
-        if (assignData.success) {
-            debugDiv.innerHTML = `
-                <div style="color: var(--accent3);">
-                    ✅ ${assignData.message}
-                    <br>Назначенные сотрудники: ${assignData.assignedUsers.map(u => u.full_name).join(', ') || 'нет'}
-                    <br><br>
-                    <button onclick="document.getElementById('scheduleDebugInfo').style.display='none'" class="btn-cancel" style="margin-top: 8px;">Закрыть</button>
-                </div>
-            `;
-            
-            // Перезагружаем график
-            setTimeout(() => {
-                if (typeof window.initScheduleEditor === 'function') {
-                    window.initScheduleEditor();
-                }
-            }, 1000);
-        } else {
-            debugDiv.innerHTML = `
-                <div style="color: var(--accent2);">
-                    ❌ Ошибка: ${assignData.error}
-                    <br><button onclick="document.getElementById('scheduleDebugInfo').style.display='none'" class="btn-cancel" style="margin-top: 8px;">Закрыть</button>
-                </div>
-            `;
-        }
-        
-    } catch (error) {
-        console.error('Fix error:', error);
-        debugDiv.innerHTML = `
-            <div style="color: var(--accent2);">
-                ❌ Ошибка: ${error.message}
-                <br><button onclick="document.getElementById('scheduleDebugInfo').style.display='none'" class="btn-cancel" style="margin-top: 8px;">Закрыть</button>
-            </div>
-        `;
+        };
+        document.head.appendChild(script);
     }
-};
+}
 
 // ===================== POINTS PANEL =====================
 async function renderPointsPanel() {
@@ -809,15 +698,8 @@ window.openQuizEditorInAdmin = function(quizId = null) {
         window.openQuizEditor(quizId);
     } else {
         alert('Редактор опросников загружается. Попробуйте еще раз.');
-        // Загружаем редактор
         const script = document.createElement('script');
-        script.src = '/quiz-editor.js';
-        script.onload = () => {
-            if (typeof window.openQuizEditor === 'function') {
-                window.openQuizEditor(quizId);
-            }
-        };
-        document.head.appendChild(script);
+        script.src = '/training.html';
     }
 };
 
@@ -842,226 +724,24 @@ window.deleteQuizInAdmin = async function(quizId) {
     }
 };
 
-// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
-}
-
-async function renderRequestsPanel() {
-    const panel = document.getElementById('adminPanel-requests');
-    if (!panel) return;
-    
-    panel.innerHTML = '<div style="text-align: center; padding: 40px;">⏳ Загрузка заявок...</div>';
-    
-    try {
-        const response = await fetch('/api/registration-requests', { credentials: 'include' });
-        const requests = await response.json();
-        
-        if (requests.length === 0) {
-            panel.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);">📭 Нет новых заявок на регистрацию</div>';
-            return;
-        }
-        
-        panel.innerHTML = requests.map(req => `
-            <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                    <div>
-                        <div style="font-weight: 600; font-size: 14px;">${escapeHtml(req.full_name)}</div>
-                        <div style="font-size: 12px; color: var(--muted);">Логин: ${escapeHtml(req.username)}</div>
-                        <div style="font-size: 12px; color: var(--muted);">Точка: ${escapeHtml(req.point_name || '—')}</div>
-                        <div style="font-size: 11px; color: var(--muted);">Дата: ${new Date(req.created_at).toLocaleString()}</div>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button onclick="processRequest(${req.id}, 'approve')" class="btn-add" style="background: var(--accent3);">✅ Одобрить</button>
-                        <button onclick="processRequest(${req.id}, 'reject')" class="btn-delete">❌ Отклонить</button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    } catch (error) {
-        panel.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--accent2);">❌ Ошибка загрузки</div>';
-    }
-}
-
-async function renderSubstitutionsPanel() {
-    const panel = document.getElementById('adminPanel-substitutions');
-    if (!panel) return;
-    
-    panel.innerHTML = `
-        <div class="admin-panel-label">➕ Создать подмену</div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
-            <select id="subOriginalUser" class="admin-panel-select" style="flex:1;">
-                <option value="">— Кого заменяем —</option>
-            </select>
-            <select id="subSubstituteUser" class="admin-panel-select" style="flex:1;">
-                <option value="">— Кто заменяет —</option>
-            </select>
-            <select id="subPoint" class="admin-panel-select" style="flex:1;">
-                <option value="">— Точка подмены —</option>
-            </select>
-            <input type="date" id="subDate" class="admin-panel-input" style="width: 140px;">
-            <button id="createSubstitutionBtn" class="btn-add">➕ Создать</button>
-        </div>
-        <div class="admin-panel-label">📋 Активные подмены</div>
-        <div id="substitutionsList"></div>
-    `;
-    
-    // Загружаем пользователей и точки
-    const [usersRes, pointsRes, subsRes] = await Promise.all([
-        fetch('/api/users-full', { credentials: 'include' }),
-        fetch('/api/points', { credentials: 'include' }),
-        fetch('/api/substitutions/all', { credentials: 'include' })
-    ]);
-    
-    const users = await usersRes.json();
-    const points = await pointsRes.json();
-    const substitutions = await subsRes.json();
-    
-    const userSelect = document.getElementById('subOriginalUser');
-    const subSelect = document.getElementById('subSubstituteUser');
-    const pointSelect = document.getElementById('subPoint');
-    
-    userSelect.innerHTML = '<option value="">— Кого заменяем —</option>' + 
-        users.map(u => `<option value="${u.id}">${escapeHtml(u.full_name)} (${u.point_name || 'нет точки'})</option>`).join('');
-    
-    subSelect.innerHTML = '<option value="">— Кто заменяет —</option>' + 
-        users.map(u => `<option value="${u.id}">${escapeHtml(u.full_name)} (${u.point_name || 'нет точки'})</option>`).join('');
-    
-    pointSelect.innerHTML = '<option value="">— Точка подмены —</option>' + 
-        points.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
-    
-    // Список подмен
-    const listDiv = document.getElementById('substitutionsList');
-    if (substitutions.length === 0) {
-        listDiv.innerHTML = '<div style="color: var(--muted); padding: 20px;">Нет активных подмен</div>';
-    } else {
-        listDiv.innerHTML = substitutions.map(sub => `
-            <div class="substitution-item" style="background: var(--surface2); border-radius: 10px; padding: 12px; margin-bottom: 8px;">
-                <div>
-                    <div><strong>${escapeHtml(sub.original_name)}</strong> → <strong>${escapeHtml(sub.substitute_name || 'ищется')}</strong></div>
-                    <div class="substitution-info">📅 ${new Date(sub.date).toLocaleDateString('ru-RU')}</div>
-                    <div class="substitution-info">📍 ${sub.point_name || '—'}</div>
-                    ${sub.note ? `<div class="substitution-info">📝 ${escapeHtml(sub.note)}</div>` : ''}
-                </div>
-                <button onclick="deleteSubstitution(${sub.id})" class="btn-delete" style="padding: 5px 12px;">🗑 Отменить</button>
-            </div>
-        `).join('');
-    }
-    
-    document.getElementById('createSubstitutionBtn').addEventListener('click', async () => {
-        const original_user_id = document.getElementById('subOriginalUser').value;
-        const substitute_user_id = document.getElementById('subSubstituteUser').value;
-        const substitute_point_id = document.getElementById('subPoint').value;
-        const date = document.getElementById('subDate').value;
-        
-        if (!original_user_id || !substitute_user_id || !date) {
-            alert('Заполните все поля');
-            return;
-        }
-        
-        const response = await fetch('/api/substitutions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-                original_user_id: parseInt(original_user_id),
-                substitute_user_id: parseInt(substitute_user_id),
-                substitute_point_id: substitute_point_id ? parseInt(substitute_point_id) : null,
-                date: date,
-                note: 'Создана руководителем'
-            })
-        });
-        
-        if (response.ok) {
-            alert('Подмена создана');
-            renderSubstitutionsPanel();
-        } else {
-            const error = await response.json();
-            alert(error.error || 'Ошибка');
-        }
-    });
-}
-
-window.deleteSubstitution = async function(id) {
-    if (!confirm('Отменить подмену?')) return;
-    const response = await fetch(`/api/substitutions/${id}`, { method: 'DELETE', credentials: 'include' });
-    if (response.ok) {
-        alert('Подмена отменена');
-        renderSubstitutionsPanel();
-    } else {
-        alert('Ошибка');
-    }
-};
-
-// Добавьте эндпоинт для получения всех подмен
-app.get('/api/substitutions/all', requireRop, async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT s.*, 
-                   u.full_name as original_name,
-                   sub.full_name as substitute_name,
-                   p.name as point_name
-            FROM substitutions s
-            LEFT JOIN users u ON s.original_user_id = u.id
-            LEFT JOIN users sub ON s.substitute_user_id = sub.id
-            LEFT JOIN points p ON s.substitute_point_id = p.id
-            WHERE s.status = 'approved' AND s.date >= CURRENT_DATE
-            ORDER BY s.date ASC
-        `);
-        res.json(result.rows);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to get substitutions' });
-    }
-});
-
-window.processRequest = async function(id, action) {
-    if (!confirm(action === 'approve' ? 'Одобрить регистрацию?' : 'Отклонить заявку?')) return;
-    
-    try {
-        const response = await fetch(`/api/registration-requests/${id}/${action}`, {
-            method: 'POST',
-            credentials: 'include'
-        });
-        
-        if (response.ok) {
-            alert(action === 'approve' ? 'Пользователь создан' : 'Заявка отклонена');
-            renderRequestsPanel();
-        } else {
-            alert('Ошибка');
-        }
-    } catch (error) {
-        alert('Ошибка: ' + error.message);
-    }
-};
-
-// ===================== РОЛИ И ДОЛЖНОСТИ (только для root) =====================
-async function renderRolesPanel() {
+// ===================== ROLES PANEL =====================
+function renderRolesPanel() {
     const panel = document.getElementById('adminPanel-roles');
     if (!panel) return;
     
-    // Проверяем, что пользователь - root
-    const me = await fetch('/api/check-auth', { credentials: 'include' }).then(r => r.json());
-    if (me.user?.role !== 'root') {
-        panel.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--accent2);">⛔ Доступ только для главного администратора</div>';
-        return;
-    }
-    
     panel.innerHTML = `
-        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <div class="admin-panel-label">📋 Управление ролями и должностями</div>
-            <button onclick="openCreateRoleModal()" class="btn-add">➕ Создать новую роль</button>
+        <div style="margin-bottom: 20px;">
+            <div class="admin-panel-label">👥 Управление ролями</div>
+            <button onclick="openCreateRoleModal()" class="btn-add" style="margin-bottom: 20px;">➕ Создать новую роль</button>
         </div>
-        
-        <div class="admin-panel-label" style="margin-top: 20px;">📋 Список ролей</div>
+        <div class="admin-panel-label">📋 Список ролей</div>
         <div id="rolesList"></div>
-        
-        <div class="admin-panel-label" style="margin-top: 30px;">👥 Пользователи и их роли</div>
+        <div class="admin-panel-label" style="margin-top: 30px;">👥 Пользователи</div>
         <div id="usersWithRolesList"></div>
     `;
     
-    await loadRolesList();
-    await loadUsersWithRolesList();
+    loadRolesList();
+    loadUsersWithRolesList();
 }
 
 async function loadRolesList() {
@@ -1072,7 +752,7 @@ async function loadRolesList() {
         const container = document.getElementById('rolesList');
         if (!container) return;
         
-        if (roles.length === 0) {
+        if (!roles.length) {
             container.innerHTML = '<div style="color: var(--muted); padding: 20px;">Нет ролей</div>';
             return;
         }
@@ -1085,8 +765,7 @@ async function loadRolesList() {
                         <div style="font-size: 12px; color: var(--muted);">${escapeHtml(role.name)}</div>
                         <div style="font-size: 12px; margin-top: 4px;">${escapeHtml(role.description || 'Нет описания')}</div>
                         <div style="font-size: 11px; color: var(--muted); margin-top: 6px;">
-                            📊 Уровень: ${role.level} | 👥 Пользователей: ${role.users_count} | 
-                            ${role.is_active ? '🟢 Активна' : '🔴 Неактивна'}
+                            Уровень: ${role.level} | Пользователей: ${role.users_count}
                         </div>
                     </div>
                     <div style="display: flex; gap: 8px;">
@@ -1112,7 +791,7 @@ async function loadUsersWithRolesList() {
         const container = document.getElementById('usersWithRolesList');
         if (!container) return;
         
-        if (users.length === 0) {
+        if (!users.length) {
             container.innerHTML = '<div style="color: var(--muted); padding: 20px;">Нет пользователей</div>';
             return;
         }
@@ -1125,7 +804,6 @@ async function loadUsersWithRolesList() {
                         <div style="font-size: 12px; color: var(--muted);">${user.username}</div>
                         <div style="font-size: 11px; margin-top: 4px;">
                             Текущая роль: <strong>${user.role_display || user.custom_role || user.role || 'Сотрудник'}</strong>
-                            ${user.position ? ` | Должность: ${escapeHtml(user.position)}` : ''}
                         </div>
                     </div>
                     <div>
@@ -1133,30 +811,15 @@ async function loadUsersWithRolesList() {
                             <option value="">— Выберите роль —</option>
                             ${roles.map(role => `
                                 <option value="${role.id}" ${user.role_id === role.id ? 'selected' : ''}>
-                                    ${escapeHtml(role.display_name)} (${escapeHtml(role.name)})
+                                    ${escapeHtml(role.display_name)}
                                 </option>
                             `).join('')}
-                            <option value="custom" ${!user.role_id && user.custom_role ? 'selected' : ''}>Своя роль</option>
                         </select>
-                        <input type="text" id="custom-role-${user.id}" class="admin-panel-input" 
-                               placeholder="Своя роль" style="width: 150px; margin-top: 8px; display: ${!user.role_id && user.custom_role ? 'block' : 'none'};"
-                               value="${escapeHtml(user.custom_role || '')}">
-                        <button onclick="assignUserRole(${user.id})" class="btn-add" style="margin-top: 8px; width: 100%;">💾 Назначить</button>
+                        <button onclick="assignUserRole(${user.id})" class="btn-add" style="margin-top: 8px; width: 100%;">Назначить</button>
                     </div>
                 </div>
             </div>
         `).join('');
-        
-        // Добавляем обработчики для показа/скрытия поля своей роли
-        users.forEach(user => {
-            const select = document.getElementById(`role-select-${user.id}`);
-            const customInput = document.getElementById(`custom-role-${user.id}`);
-            if (select && customInput) {
-                select.addEventListener('change', () => {
-                    customInput.style.display = select.value === 'custom' ? 'block' : 'none';
-                });
-            }
-        });
     } catch (error) {
         console.error('Failed to load users with roles:', error);
     }
@@ -1164,27 +827,14 @@ async function loadUsersWithRolesList() {
 
 window.assignUserRole = async function(userId) {
     const select = document.getElementById(`role-select-${userId}`);
-    const customInput = document.getElementById(`custom-role-${userId}`);
-    
-    let role_id = null;
-    let custom_role = null;
-    
-    if (select.value === 'custom') {
-        custom_role = customInput.value.trim();
-        if (!custom_role) {
-            alert('Введите название роли');
-            return;
-        }
-    } else if (select.value) {
-        role_id = parseInt(select.value);
-    }
+    const role_id = select.value ? parseInt(select.value) : null;
     
     try {
         const response = await fetch(`/api/users/${userId}/role`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ role_id, custom_role })
+            body: JSON.stringify({ role_id, custom_role: null })
         });
         
         if (response.ok) {
@@ -1211,26 +861,25 @@ window.openCreateRoleModal = function() {
             <div class="modal-body">
                 <div class="field">
                     <label>Название (системное)</label>
-                    <input type="text" id="roleName" placeholder="например: supervisor, mentor, assistant">
+                    <input type="text" id="roleName" placeholder="supervisor">
                     <div style="font-size: 11px; color: var(--muted);">Только латиница, без пробелов</div>
                 </div>
                 <div class="field">
                     <label>Отображаемое имя</label>
-                    <input type="text" id="roleDisplayName" placeholder="например: Супервайзер, Наставник">
+                    <input type="text" id="roleDisplayName" placeholder="Супервайзер">
                 </div>
                 <div class="field">
                     <label>Описание</label>
-                    <textarea id="roleDescription" rows="3" placeholder="Обязанности и права роли..."></textarea>
+                    <textarea id="roleDescription" rows="3" placeholder="Обязанности и права..."></textarea>
                 </div>
                 <div class="field">
-                    <label>Уровень доступа (число)</label>
+                    <label>Уровень доступа</label>
                     <input type="number" id="roleLevel" value="30" min="0" max="100">
-                    <div style="font-size: 11px; color: var(--muted);">Чем выше число, тем больше прав</div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-cancel">Отмена</button>
-                <button class="btn-save" id="createRoleBtn">💾 Создать</button>
+                <button class="btn-save" id="createRoleBtn">Создать</button>
             </div>
         </div>
     `;
@@ -1287,7 +936,7 @@ window.openCreateRoleModal = function() {
 
 window.openEditRoleModal = async function(roleId) {
     try {
-        const response = await fetch(`/api/roles`, { credentials: 'include' });
+        const response = await fetch('/api/roles', { credentials: 'include' });
         const roles = await response.json();
         const role = roles.find(r => r.id === roleId);
         
@@ -1327,7 +976,7 @@ window.openEditRoleModal = async function(roleId) {
                 </div>
                 <div class="modal-footer">
                     <button class="btn-cancel">Отмена</button>
-                    <button class="btn-save" id="saveRoleBtn">💾 Сохранить</button>
+                    <button class="btn-save" id="saveRoleBtn">Сохранить</button>
                 </div>
             </div>
         `;
@@ -1375,7 +1024,6 @@ window.openEditRoleModal = async function(roleId) {
                 alert('Ошибка: ' + error.message);
             }
         });
-        
     } catch (error) {
         alert('Ошибка загрузки роли');
     }
@@ -1402,60 +1050,44 @@ window.deleteRole = async function(roleId) {
         alert('Ошибка: ' + error.message);
     }
 };
-/* ========== РОЛИ И ДОЛЖНОСТИ ========== */
-.roles-list-container {
-    max-height: 400px;
-    overflow-y: auto;
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
 }
 
-.role-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    transition: all 0.2s;
-}
-
-.role-card:hover {
-    border-color: var(--accent);
-}
-
-.role-name {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--accent);
-}
-
-.role-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 10px;
-    font-weight: 600;
-    margin-left: 8px;
-}
-
-.role-badge.root { background: rgba(252,92,124,0.15); color: var(--accent2); }
-.role-badge.rop { background: rgba(252,184,48,0.15); color: var(--accent4); }
-.role-badge.manager { background: rgba(124,92,252,0.15); color: var(--accent); }
-.role-badge.user { background: rgba(60,255,160,0.1); color: var(--accent3); }
-
-.user-role-selector {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap;
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification ${type}`;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--surface2);
+        border-left: 3px solid ${type === 'success' ? 'var(--accent3)' : 'var(--accent2)'};
+        padding: 12px 20px;
+        border-radius: 8px;
+        z-index: 10001;
+        animation: slideInRight 0.3s ease;
+        font-size: 13px;
+    `;
+    toast.innerHTML = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
 
 // Экспорт
 window.openRopPanel = openRopPanel;
-window.loadQuizzesAdmin = loadQuizzesAdmin;
 window.renderUsersPanel = renderUsersPanel;
 window.renderSchedulePanel = renderSchedulePanel;
 window.renderPointsPanel = renderPointsPanel;
 window.renderQuizzesPanel = renderQuizzesPanel;
+window.renderRolesPanel = renderRolesPanel;
 window.loadUsersList = loadUsersList;
 window.loadPointsList = loadPointsList;
+window.loadQuizzesAdmin = loadQuizzesAdmin;
+window.loadRolesList = loadRolesList;
+window.loadUsersWithRolesList = loadUsersWithRolesList;
 
 console.log('main.js loaded, openRopPanel available:', typeof window.openRopPanel);
