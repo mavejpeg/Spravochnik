@@ -2141,6 +2141,96 @@ app.get('/api/search/autocomplete', requireAuth, async (req, res) => {
     }
 });
 
+// Получить всех сотрудников с их точками
+app.get('/api/users-with-points', requireRop, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.full_name, u.position, u.point_id, 
+                   p.name as point_name, p.address as point_address
+            FROM users u
+            LEFT JOIN points p ON u.point_id = p.id
+            WHERE u.role = 'user'
+            ORDER BY p.name NULLS LAST, u.full_name
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching users with points:', error);
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// Получить ВСЕ графики для точки за месяц
+app.get('/api/schedule/point/:pointId/:year/:month', requireRop, async (req, res) => {
+    const { pointId, year, month } = req.params;
+    
+    try {
+        // Получаем всех сотрудников точки
+        const usersResult = await pool.query(`
+            SELECT id, full_name, position 
+            FROM users 
+            WHERE point_id = $1 AND role = 'user'
+            ORDER BY full_name
+        `, [pointId]);
+        
+        // Получаем графики для этих сотрудников
+        const schedules = {};
+        for (const user of usersResult.rows) {
+            const scheduleResult = await pool.query(`
+                SELECT days, partner_id
+                FROM schedules 
+                WHERE user_id = $1 AND year = $2 AND month = $3
+            `, [user.id, year, month]);
+            
+            schedules[user.id] = {
+                days: scheduleResult.rows[0]?.days || Array(new Date(year, month, 0).getDate()).fill('off'),
+                partner_id: scheduleResult.rows[0]?.partner_id || null
+            };
+        }
+        
+        res.json({
+            users: usersResult.rows,
+            schedules: schedules,
+            daysInMonth: new Date(year, month, 0).getDate()
+        });
+    } catch (error) {
+        console.error('Error fetching point schedules:', error);
+        res.status(500).json({ error: 'Failed to fetch schedules' });
+    }
+});
+
+// Сохранить ВСЕ графики для точки за месяц
+app.post('/api/schedule/point/:pointId', requireRop, async (req, res) => {
+    const { pointId } = req.params;
+    const { year, month, schedules } = req.body;
+    
+    if (!year || !month || !schedules) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    try {
+        const results = [];
+        
+        for (const [userId, scheduleData] of Object.entries(schedules)) {
+            const { days, partner_id } = scheduleData;
+            
+            const result = await pool.query(`
+                INSERT INTO schedules (user_id, partner_id, year, month, days, updated_by, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                ON CONFLICT (user_id, year, month)
+                DO UPDATE SET partner_id = $2, days = $5, updated_by = $6, updated_at = NOW()
+                RETURNING *
+            `, [userId, partner_id || null, year, month, JSON.stringify(days), req.session.user.id]);
+            
+            results.push(result.rows[0]);
+        }
+        
+        res.json({ success: true, results });
+    } catch (error) {
+        console.error('Error saving point schedules:', error);
+        res.status(500).json({ error: 'Failed to save schedules' });
+    }
+});
+
 // Обновляем поисковый индекс после изменений в БД
 // Вызывать после добавления/изменения производителей и линеек
 async function rebuildSearchIndex() {
