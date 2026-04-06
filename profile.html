@@ -6,7 +6,6 @@
 <title>Мой профиль — Справочник</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  /* Стили для таблицы РОП */
   .rop-table {
     width: 100%;
     border-collapse: collapse;
@@ -58,11 +57,6 @@
     color: var(--accent4);
   }
   
-  .rop-role.admin {
-    background: rgba(124, 92, 252, 0.15);
-    color: var(--accent);
-  }
-  
   .rop-contact-cell {
     font-size: 12px;
     color: var(--text2);
@@ -80,7 +74,6 @@
     color: var(--muted);
   }
   
-  /* Кнопка подмены */
   .substitution-section {
     margin-top: 20px;
     padding-top: 20px;
@@ -124,60 +117,118 @@
   
   .cal-day {
     position: relative;
-    cursor: help;
   }
   
-  .cal-day .tooltip {
-    visibility: hidden;
+  .cal-day.work {
+    background: linear-gradient(135deg, rgba(60,255,160,0.2), rgba(60,255,160,0.08));
+    border: 1px solid rgba(60,255,160,0.3);
+    color: var(--accent3);
+  }
+  
+  .cal-day.day-off {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  
+  .cal-day.cleaning {
+    background: linear-gradient(135deg, rgba(124,92,252,0.2), rgba(124,92,252,0.08));
+    border: 1px solid rgba(124,92,252,0.3);
+    color: var(--accent);
+  }
+  
+  .cal-day.today {
+    outline: 2px solid var(--accent5);
+    outline-offset: 1px;
+  }
+  
+  .cal-day.partner-work::after {
+    content: '●';
     position: absolute;
-    bottom: 100%;
+    bottom: 3px;
     left: 50%;
     transform: translateX(-50%);
+    font-size: 8px;
+    color: var(--accent5);
+    opacity: 0.8;
+  }
+  
+  .cal-day .day-icon {
+    font-size: 9px;
+    margin-top: 1px;
+    opacity: 0.8;
+  }
+  
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .stat-box {
     background: var(--surface2);
-    border: 1px solid var(--accent);
-    border-radius: 8px;
-    padding: 8px 12px;
+    border-radius: 14px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  
+  .stat-num {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--strong);
+  }
+  
+  .stat-label {
     font-size: 11px;
-    white-space: nowrap;
-    z-index: 100;
-    opacity: 0;
-    transition: opacity 0.2s;
-    pointer-events: none;
-    margin-bottom: 8px;
-    color: var(--text);
+    color: var(--muted);
+    margin-top: 2px;
   }
   
-  .cal-day.has-substitution:hover .tooltip {
-    visibility: visible;
-    opacity: 1;
+  .calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
   }
   
-  .legend-dot.substitution {
-    background: rgba(252, 184, 48, 0.3);
-    border: 1px solid var(--accent4);
+  .cal-head {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    padding: 4px 0;
+    font-weight: 600;
+    text-transform: uppercase;
   }
   
-  .rop-edit-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--accent);
-    padding: 4px 8px;
-    border-radius: 6px;
-    transition: all 0.2s;
+  .cal-legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
   }
   
-  .rop-edit-btn:hover {
-    background: var(--accent-glow);
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
   }
   
-  .rop-description {
-    font-size: 12px;
-    color: var(--text2);
-    line-height: 1.4;
-    max-width: 250px;
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
   }
+  
+  .legend-dot.work { background: rgba(60,255,160,0.4); border: 1px solid rgba(60,255,160,0.5); }
+  .legend-dot.day-off { background: var(--surface2); border: 1px solid var(--border); }
+  .legend-dot.cleaning { background: rgba(124,92,252,0.3); border: 1px solid rgba(124,92,252,0.5); }
+  .legend-dot.partner { background: transparent; border: 1px solid var(--accent5); position: relative; }
+  .legend-dot.partner::after { content: '●'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8px; color: var(--accent5); }
 </style>
 </head>
 <body>
@@ -214,12 +265,10 @@
             <tr>
               <th>Сотрудник</th>
               <th>Должность</th>
-              <th>Контакты / Описание</th>
-              <th>График работы</th>
-            </tr>
-          </thead>
+              <th>Контакты</th>
+            </thead>
           <tbody id="ropTableBody">
-            <tr><td colspan="4" style="text-align: center;">Загрузка...</td></tr>
+            <tr><td colspan="3" style="text-align: center;">Загрузка...</td></tr>
           </tbody>
         </table>
       </div>
@@ -420,7 +469,7 @@ async function loadRopTable() {
     
     const tbody = document.getElementById('ropTableBody');
     if (!rops.length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Нет данных</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Нет данных</td></tr>';
       return;
     }
     
@@ -444,16 +493,15 @@ async function loadRopTable() {
           <td>${rop.position || '—'}</td>
           <td class="rop-contact-cell">
             <span>📧 ${rop.username || '—'}@company.ru</span>
-            <span>📞 ${rop.phone || '+7 (XXX) XXX-XX-XX'}</span>
-            ${rop.description ? `<div class="rop-description">📝 ${escapeHtml(rop.description)}</div>` : ''}
-            ${window.isRopGlobal ? `<button class="rop-edit-btn" onclick="editRopInfo(${rop.id})" title="Редактировать">✏️</button>` : ''}
+            <span>📞 +7 (XXX) XXX-XX-XX</span>
           </td>
-          <td class="rop-schedule">${rop.schedule_info || 'График уточняйте'}</td>
         </tr>
       `;
     }).join('');
   } catch (error) {
     console.error('Failed to load ROP table:', error);
+    const tbody = document.getElementById('ropTableBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Ошибка загрузки</td></tr>';
   }
 }
 
