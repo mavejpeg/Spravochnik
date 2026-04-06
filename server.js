@@ -300,9 +300,34 @@ async function initDatabase() {
             )
         `);
 
-        // Add point_id column if not exists
-        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS point_id INTEGER`).catch(e => {});
-        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(255)`).catch(e => {});
+        // Таблица ролей (должностей)
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS roles (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(50) UNIQUE NOT NULL,
+                display_name VARCHAR(100) NOT NULL,
+                description TEXT,
+                permissions JSONB DEFAULT '[]',
+                level INTEGER DEFAULT 0,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Таблица прав доступа
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS permissions (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) UNIQUE NOT NULL,
+                display_name VARCHAR(100) NOT NULL,
+                category VARCHAR(50),
+                description TEXT
+            )
+        `);
+
+        // Добавляем колонку role_id в users вместо role (сохраняем для совместимости)
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role_id INTEGER REFERENCES roles(id)`).catch(e => {});
+        await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_role VARCHAR(50)`).catch(e => {});
 
         // ========== НЕ СОЗДАЕМ ПОЛЬЗОВАТЕЛЕЙ И ТОЧКИ АВТОМАТИЧЕСКИ ==========
         // Пользователи и точки добавляются только через админ-панель
@@ -316,6 +341,24 @@ async function initDatabase() {
         console.error('❌ Database init error:', error.message);
         return false;
     }
+}
+
+// ========== БАЗОВЫЕ РОЛИ ==========
+// Добавляем стандартные роли
+const defaultRoles = [
+    { name: 'root', display_name: 'Главный администратор', description: 'Полный доступ ко всем функциям', level: 100 },
+    { name: 'rop', display_name: 'Руководитель отдела продаж', description: 'Управление сотрудниками и графиками', level: 80 }
+];
+
+for (const role of defaultRoles) {
+    await client.query(`
+        INSERT INTO roles (name, display_name, description, level, permissions)
+        VALUES ($1, $2, $3, $4, '[]')
+        ON CONFLICT (name) DO UPDATE SET
+            display_name = EXCLUDED.display_name,
+            description = EXCLUDED.description,
+            level = EXCLUDED.level
+    `, [role.name, role.display_name, role.description, role.level]);
 }
 
 // ========== Cloudinary ==========
@@ -2419,6 +2462,194 @@ app.get('/api/ensure-rop-point', requireRop, async (req, res) => {
         res.status(500).json({ error: 'Failed to ensure ROP point' });
     }
 });
+
+// Получить все роли (только для root)
+app.get('/api/roles', requireRop, async (req, res) => {
+    // Только root может управлять ролями
+    if (req.session.user.role !== 'root') {
+        return res.status(403).json({ error: 'Доступ запрещен' });
+    }
+    
+    try {
+        const result = await pool.query(`
+            SELECT r.*, COUNT(u.id) as users_count
+            FROM roles r
+            LEFT JOIN users u ON u.role_id = r.id
+            GROUP BY r.id
+            ORDER BY r.level DESC
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching roles:', error);
+        res.status(500).json({ error: 'Failed to fetch roles' });
+    }
+});
+
+// Создать новую роль
+app.post('/api/roles', requireRop, async (req, res) => {
+    if (req.session.user.role !== 'root') {
+        return res.status(403).json({ error: 'Доступ запрещен' });
+    }
+    
+    const { name, display_name, description, level, permissions } = req.body;
+    
+    if (!name || !display_name) {
+        return res.status(400).json({ error: 'Название и отображаемое имя обязательны' });
+    }
+    
+    try {
+        const result = await pool.query(`
+            INSERT INTO roles (name, display_name, description, level, permissions)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+        `, [name.toLowerCase(), display_name, description || '', level || 0, JSON.stringify(permissions || [])]);
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error creating role:', error);
+        res.status(500).json({ error: 'Failed to create role' });
+    }
+});
+
+// Обновить роль
+app.put('/api/roles/:id', requireRop, async (req, res) => {
+    if (req.session.user.role !== 'root') {
+        return res.status(403).json({ error: 'Доступ запрещен' });
+    }
+    
+    const { id } = req.params;
+    const { display_name, description, level, permissions, is_active } = req.body;
+    
+    try {
+        const result = await pool.query(`
+            UPDATE roles 
+            SET display_name = COALESCE($1, display_name),
+                description = COALESCE($2, description),
+                level = COALESCE($3, level),
+                permissions = COALESCE($4, permissions),
+                is_active = COALESCE($5, is_active)
+            WHERE id = $6
+            RETURNING *
+        `, [display_name, description, level, JSON.stringify(permissions), is_active, id]);
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error updating role:', error);
+        res.status(500).json({ error: 'Failed to update role' });
+    }
+});
+
+// Удалить роль (только если нет пользователей с этой ролью)
+app.delete('/api/roles/:id', requireRop, async (req, res) => {
+    if (req.session.user.role !== 'root') {
+        return res.status(403).json({ error: 'Доступ запрещен' });
+    }
+    
+    const { id } = req.params;
+    
+    try {
+        const usersCount = await pool.query('SELECT COUNT(*) FROM users WHERE role_id = $1', [id]);
+        if (parseInt(usersCount.rows[0].count) > 0) {
+            return res.status(400).json({ error: 'Нельзя удалить роль, у которой есть пользователи' });
+        }
+        
+        await pool.query('DELETE FROM roles WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting role:', error);
+        res.status(500).json({ error: 'Failed to delete role' });
+    }
+});
+
+// Получить список доступных прав
+app.get('/api/permissions', requireRop, async (req, res) => {
+    if (req.session.user.role !== 'root') {
+        return res.status(403).json({ error: 'Доступ запрещен' });
+    }
+    
+    const permissions = [
+        { name: 'view_products', display_name: 'Просмотр товаров', category: 'products' },
+        { name: 'edit_products', display_name: 'Редактирование товаров', category: 'products' },
+        { name: 'delete_products', display_name: 'Удаление товаров', category: 'products' },
+        { name: 'view_schedule', display_name: 'Просмотр графика', category: 'schedule' },
+        { name: 'edit_schedule', display_name: 'Редактирование графика', category: 'schedule' },
+        { name: 'view_users', display_name: 'Просмотр пользователей', category: 'users' },
+        { name: 'edit_users', display_name: 'Редактирование пользователей', category: 'users' },
+        { name: 'delete_users', display_name: 'Удаление пользователей', category: 'users' },
+        { name: 'view_reports', display_name: 'Просмотр отчетов', category: 'reports' },
+        { name: 'manage_quizzes', display_name: 'Управление опросниками', category: 'quizzes' },
+        { name: 'manage_points', display_name: 'Управление точками', category: 'points' },
+        { name: 'manage_substitutions', display_name: 'Управление подменами', category: 'substitutions' }
+    ];
+    
+    res.json(permissions);
+});
+
+// Назначить роль пользователю
+app.put('/api/users/:id/role', requireRop, async (req, res) => {
+    if (req.session.user.role !== 'root') {
+        return res.status(403).json({ error: 'Доступ запрещен' });
+    }
+    
+    const { id } = req.params;
+    const { role_id, custom_role } = req.body;
+    
+    try {
+        // Получаем информацию о роли
+        let roleInfo = null;
+        if (role_id) {
+            const roleResult = await pool.query('SELECT name FROM roles WHERE id = $1', [role_id]);
+            roleInfo = roleResult.rows[0];
+        }
+        
+        await pool.query(`
+            UPDATE users 
+            SET role_id = $1, 
+                role = COALESCE($2, 'user'),
+                custom_role = $3
+            WHERE id = $4
+        `, [role_id, roleInfo?.name || custom_role || 'user', custom_role, id]);
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error assigning role:', error);
+        res.status(500).json({ error: 'Failed to assign role' });
+    }
+});
+
+// Получить пользователей с их ролями
+app.get('/api/users-with-roles', requireRop, async (req, res) => {
+    try {
+        let result;
+        if (req.session.user.role === 'root') {
+            result = await pool.query(`
+                SELECT u.id, u.username, u.full_name, u.role, u.custom_role, u.position, u.point_id,
+                       r.id as role_id, r.display_name as role_display, r.level as role_level,
+                       p.name as point_name
+                FROM users u
+                LEFT JOIN roles r ON u.role_id = r.id
+                LEFT JOIN points p ON u.point_id = p.id
+                ORDER BY COALESCE(r.level, 0) DESC, u.full_name
+            `);
+        } else if (req.session.user.role === 'rop') {
+            result = await pool.query(`
+                SELECT u.id, u.username, u.full_name, u.role, u.custom_role, u.position, u.point_id,
+                       r.id as role_id, r.display_name as role_display,
+                       p.name as point_name
+                FROM users u
+                LEFT JOIN roles r ON u.role_id = r.id
+                LEFT JOIN points p ON u.point_id = p.id
+                WHERE u.role = 'user' OR r.level <= 40
+                ORDER BY u.full_name
+            `);
+        } else {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching users with roles:', error);
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
