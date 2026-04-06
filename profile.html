@@ -57,48 +57,64 @@
     color: var(--accent4);
   }
   
-  .rop-contact-cell {
+  .rop-description {
     font-size: 12px;
     color: var(--text2);
+    line-height: 1.4;
+    max-width: 250px;
   }
   
-  .rop-contact-cell span {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-right: 12px;
-  }
-  
-  .rop-schedule {
-    font-size: 11px;
-    color: var(--muted);
-  }
-  
-  .substitution-section {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-  }
-  
-  .request-substitution-btn {
-    background: var(--accent-glow);
-    border: 1px solid var(--accent);
-    border-radius: 10px;
-    padding: 10px 16px;
-    color: var(--accent);
-    font-size: 13px;
+  .rop-edit-btn {
+    background: transparent;
+    border: none;
     cursor: pointer;
+    font-size: 14px;
+    color: var(--accent);
+    padding: 4px 8px;
+    border-radius: 6px;
     transition: all 0.2s;
+  }
+  
+  .rop-edit-btn:hover {
+    background: var(--accent-glow);
+  }
+  
+  .rop-schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    font-size: 11px;
+  }
+  
+  .rop-schedule-table th,
+  .rop-schedule-table td {
+    padding: 6px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  
+  .rop-schedule-table th {
+    background: var(--surface2);
+    font-weight: 600;
+  }
+  
+  .rop-schedule-day {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    width: 100%;
     justify-content: center;
   }
   
-  .request-substitution-btn:hover {
-    background: var(--accent);
-    color: white;
+  .rop-schedule-day.work {
+    background: rgba(60, 255, 160, 0.2);
+    color: var(--accent3);
+  }
+  
+  .rop-schedule-day.off {
+    background: var(--surface2);
+    color: var(--muted);
   }
   
   .warning-banner {
@@ -115,9 +131,36 @@
     flex-wrap: wrap;
   }
   
-  .cal-day {
-    position: relative;
+  .calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
   }
+  
+  .cal-head {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    padding: 4px 0;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  
+  .cal-day {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    position: relative;
+    min-height: 44px;
+    transition: all 0.15s;
+  }
+  
+  .cal-day.empty { background: transparent; }
   
   .cal-day.work {
     background: linear-gradient(135deg, rgba(60,255,160,0.2), rgba(60,255,160,0.08));
@@ -186,21 +229,6 @@
     margin-top: 2px;
   }
   
-  .calendar {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-  }
-  
-  .cal-head {
-    font-size: 10px;
-    color: var(--muted);
-    text-align: center;
-    padding: 4px 0;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-  
   .cal-legend {
     display: flex;
     gap: 16px;
@@ -229,6 +257,81 @@
   .legend-dot.cleaning { background: rgba(124,92,252,0.3); border: 1px solid rgba(124,92,252,0.5); }
   .legend-dot.partner { background: transparent; border: 1px solid var(--accent5); position: relative; }
   .legend-dot.partner::after { content: '●'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8px; color: var(--accent5); }
+  
+  .rop-schedule-section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  
+  .rop-schedule-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--strong);
+    margin-bottom: 16px;
+  }
+  
+  .month-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  
+  .month-nav button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  
+  .month-nav button:hover {
+    background: var(--surface3);
+    border-color: var(--accent);
+  }
+  
+  .month-label {
+    font-size: 13px;
+    color: var(--text);
+    min-width: 120px;
+    text-align: center;
+  }
+  
+  .substitution-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  
+  .request-substitution-btn {
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 10px 16px;
+    color: var(--accent);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .request-substitution-btn:hover {
+    background: var(--accent);
+    color: white;
+  }
 </style>
 </head>
 <body>
@@ -265,12 +368,25 @@
             <tr>
               <th>Сотрудник</th>
               <th>Должность</th>
-              <th>Контакты</th>
+              <th>Описание / Контакты</th>
             </thead>
           <tbody id="ropTableBody">
             <tr><td colspan="3" style="text-align: center;">Загрузка...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- График работы руководства -->
+    <div class="rop-schedule-section">
+      <div class="rop-schedule-title">📅 График работы руководства</div>
+      <div class="month-nav">
+        <button id="ropPrevMonth">‹</button>
+        <div class="month-label" id="ropMonthLabel"></div>
+        <button id="ropNextMonth">›</button>
+      </div>
+      <div id="ropScheduleContainer" style="overflow-x: auto;">
+        <div style="text-align: center; padding: 40px;">Загрузка...</div>
       </div>
     </div>
 
@@ -326,11 +442,11 @@
         </div>
       </div>
 
-      <!-- Правая колонка - график -->
+      <!-- Правая колонка - график сотрудника -->
       <div>
         <div class="schedule-card">
           <div class="schedule-header">
-            <div class="schedule-title">📅 Рабочий график</div>
+            <div class="schedule-title">📅 Мой график работы</div>
             <div class="month-nav">
               <button id="prevMonth">‹</button>
               <div class="month-label" id="monthLabel"></div>
@@ -372,7 +488,6 @@
             <div class="legend-item"><div class="legend-dot partner"></div>Сменщик работает</div>
           </div>
           
-          <!-- Кнопка запроса подмены под графиком -->
           <div class="substitution-section">
             <button class="request-substitution-btn" onclick="alert('Функция в разработке')">
               📅 Запросить подмену
@@ -388,6 +503,7 @@
 // ========== ВСЯ ЛОГИКА ПРОФИЛЯ ==========
 let currentYear, currentMonth, currentUserId, scheduleData = null;
 let partnerDays = [];
+let ropScheduleYear, ropScheduleMonth;
 
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь',
                      'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -423,9 +539,14 @@ function initPage(user) {
   const now = new Date();
   currentYear = now.getFullYear();
   currentMonth = now.getMonth() + 1;
+  ropScheduleYear = currentYear;
+  ropScheduleMonth = currentMonth;
+  
   updateMonthLabel();
+  updateRopMonthLabel();
   loadProfile();
   loadRopTable();
+  loadRopSchedules();
   loadSchedule();
   loadLearningProgress();
   checkRetakeStatus();
@@ -434,6 +555,11 @@ function initPage(user) {
 function updateMonthLabel() {
   const label = document.getElementById('monthLabel');
   if (label) label.textContent = `${MONTH_NAMES[currentMonth-1]} ${currentYear}`;
+}
+
+function updateRopMonthLabel() {
+  const label = document.getElementById('ropMonthLabel');
+  if (label) label.textContent = `${MONTH_NAMES[ropScheduleMonth-1]} ${ropScheduleYear}`;
 }
 
 async function loadProfile() {
@@ -464,7 +590,7 @@ async function loadProfile() {
 
 async function loadRopTable() {
   try {
-    const response = await fetch('/api/rop-list', { credentials: 'include' });
+    const response = await fetch('/api/rop-full-list', { credentials: 'include' });
     const rops = await response.json();
     
     const tbody = document.getElementById('ropTableBody');
@@ -472,6 +598,8 @@ async function loadRopTable() {
       tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Нет данных</td></tr>';
       return;
     }
+    
+    const isRoot = window.isRopGlobal && window._currentUser?.role === 'root';
     
     tbody.innerHTML = rops.map(rop => {
       let roleClass = '';
@@ -487,15 +615,25 @@ async function loadRopTable() {
         roleName = 'Администратор';
       }
       
+      const description = rop.description || 'Нет описания';
+      const phone = rop.phone || '+7 (XXX) XXX-XX-XX';
+      
       return `
         <tr>
-          <td><strong>${escapeHtml(rop.full_name)}</strong><br><span class="rop-role ${roleClass}">${roleName}</span></td>
-          <td>${rop.position || '—'}</td>
-          <td class="rop-contact-cell">
-            <span>📧 ${rop.username || '—'}@company.ru</span>
-            <span>📞 +7 (XXX) XXX-XX-XX</span>
+          <td style="min-width: 150px;">
+            <strong>${escapeHtml(rop.full_name)}</strong><br>
+            <span class="rop-role ${roleClass}">${roleName}</span>
+           </td>
+          <td style="min-width: 120px;">${rop.position || '—'}</td>
+          <td>
+            <div class="rop-description">📝 ${escapeHtml(description)}</div>
+            <div style="margin-top: 6px; font-size: 11px;">
+              <span>📧 ${rop.username}@company.ru</span><br>
+              <span>📞 ${escapeHtml(phone)}</span>
+            </div>
+            ${isRoot ? `<button class="rop-edit-btn" onclick="editRopInfo(${rop.id}, '${escapeHtml(rop.full_name)}', '${escapeHtml(description)}', '${escapeHtml(phone)}', '${escapeHtml(rop.schedule_info || '')}')">✏️ Редактировать</button>` : ''}
           </td>
-        </tr>
+        </table>
       `;
     }).join('');
   } catch (error) {
@@ -504,6 +642,126 @@ async function loadRopTable() {
     if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Ошибка загрузки</td></tr>';
   }
 }
+
+async function loadRopSchedules() {
+  try {
+    const response = await fetch(`/api/rop-schedules/${ropScheduleYear}/${ropScheduleMonth}`, { credentials: 'include' });
+    const data = await response.json();
+    
+    const container = document.getElementById('ropScheduleContainer');
+    if (!container) return;
+    
+    const schedules = data.schedules;
+    const daysInMonth = data.daysInMonth;
+    const rops = Object.values(schedules);
+    
+    if (rops.length === 0) {
+      container.innerHTML = '<div style="text-align: center; padding: 40px;">Нет данных</div>';
+      return;
+    }
+    
+    let html = '<table class="rop-schedule-table"><thead><tr><th>Сотрудник</th>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(ropScheduleYear, ropScheduleMonth - 1, d);
+      const weekday = date.toLocaleDateString('ru-RU', { weekday: 'short' });
+      html += `<th>${d}<br><span style="font-size: 9px;">${weekday}</span></th>`;
+    }
+    html += '</tr></thead><tbody>';
+    
+    for (const [id, schedule] of Object.entries(schedules)) {
+      let roleIcon = schedule.role === 'root' ? '👑' : '👤';
+      html += `<tr><td style="text-align: left;"><strong>${roleIcon} ${escapeHtml(schedule.full_name)}</strong><br><span style="font-size: 10px;">${schedule.role === 'root' ? 'Гл. администратор' : 'РОП'}</span></td>`;
+      
+      for (let d = 0; d < daysInMonth; d++) {
+        const dayType = schedule.days[d] || 'off';
+        const isSunday = new Date(ropScheduleYear, ropScheduleMonth - 1, d + 1).getDay() === 0;
+        let display = '';
+        if (dayType === 'work') {
+          display = isSunday ? '🧹' : '✓';
+        } else {
+          display = '✗';
+        }
+        html += `<td><div class="rop-schedule-day ${dayType}">${display}</div></td>`;
+      }
+      html += '</tr>';
+    }
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  } catch (error) {
+    console.error('Failed to load ROP schedules:', error);
+    const container = document.getElementById('ropScheduleContainer');
+    if (container) container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--accent2);">Ошибка загрузки графиков</div>';
+  }
+}
+
+window.editRopInfo = async function(id, name, currentDescription, currentPhone, currentSchedule) {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-header">
+        <span class="modal-title">✏️ Редактировать: ${escapeHtml(name)}</span>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>📝 Описание</label>
+          <textarea id="editDescription" rows="3" placeholder="Описание сотрудника, контакты, обязанности...">${escapeHtml(currentDescription)}</textarea>
+        </div>
+        <div class="field">
+          <label>📞 Телефон</label>
+          <input type="text" id="editPhone" value="${escapeHtml(currentPhone)}" placeholder="+7 (XXX) XXX-XX-XX">
+        </div>
+        <div class="field">
+          <label>📅 Информация о графике</label>
+          <input type="text" id="editSchedule" value="${escapeHtml(currentSchedule)}" placeholder="Например: Пн-Пт 9:00-18:00">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel">Отмена</button>
+        <button class="btn-save" id="saveRopBtn">💾 Сохранить</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  setTimeout(() => modal.classList.add('open'), 10);
+  
+  const closeModal = () => {
+    modal.classList.remove('open');
+    setTimeout(() => modal.remove(), 300);
+  };
+  
+  modal.querySelector('.modal-close').addEventListener('click', closeModal);
+  modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+  
+  modal.querySelector('#saveRopBtn').addEventListener('click', async () => {
+    const description = modal.querySelector('#editDescription').value.trim();
+    const phone = modal.querySelector('#editPhone').value.trim();
+    const schedule_info = modal.querySelector('#editSchedule').value.trim();
+    
+    try {
+      const response = await fetch(`/api/rop-info/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ phone, description, schedule_info })
+      });
+      
+      if (response.ok) {
+        alert('Сохранено');
+        closeModal();
+        loadRopTable();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Ошибка');
+      }
+    } catch (error) {
+      alert('Ошибка: ' + error.message);
+    }
+  });
+};
 
 async function loadSchedule() {
   try {
@@ -649,7 +907,7 @@ function escapeHtml(str) {
   return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
 }
 
-// Навигация по месяцам
+// Навигация для графика сотрудника
 const prevBtn = document.getElementById('prevMonth');
 const nextBtn = document.getElementById('nextMonth');
 
@@ -677,6 +935,34 @@ if (nextBtn) {
   });
 }
 
+// Навигация для графика руководства
+const ropPrevBtn = document.getElementById('ropPrevMonth');
+const ropNextBtn = document.getElementById('ropNextMonth');
+
+if (ropPrevBtn) {
+  ropPrevBtn.addEventListener('click', () => {
+    ropScheduleMonth--;
+    if (ropScheduleMonth < 1) { 
+      ropScheduleMonth = 12; 
+      ropScheduleYear--; 
+    }
+    updateRopMonthLabel();
+    loadRopSchedules();
+  });
+}
+
+if (ropNextBtn) {
+  ropNextBtn.addEventListener('click', () => {
+    ropScheduleMonth++;
+    if (ropScheduleMonth > 12) { 
+      ropScheduleMonth = 1; 
+      ropScheduleYear++; 
+    }
+    updateRopMonthLabel();
+    loadRopSchedules();
+  });
+}
+
 // Logout
 const logoutBtn = document.getElementById('logoutBtn');
 if (logoutBtn) {
@@ -686,19 +972,44 @@ if (logoutBtn) {
   });
 }
 
-// ROP Panel
+// ROP Panel - фикс для страницы профиля
 const ropBtn = document.getElementById('ropBtn');
 if (ropBtn) {
   ropBtn.addEventListener('click', async () => {
+    console.log('ROP button clicked on profile page');
     if (typeof window.openRopPanel === 'function') {
       window.openRopPanel();
     } else {
-      alert('Функция администрирования загружается...');
+      // Загружаем main.js если не загружен
+      if (!document.querySelector('script[src*="main.js"]')) {
+        const script = document.createElement('script');
+        script.src = '/main.js?v=' + Date.now();
+        script.onload = () => {
+          if (typeof window.openRopPanel === 'function') {
+            window.openRopPanel();
+          } else {
+            alert('Функция администрирования временно недоступна');
+          }
+        };
+        document.head.appendChild(script);
+      } else {
+        alert('Функция администрирования загружается... Попробуйте еще раз');
+      }
     }
   });
 }
 
+// Создаем служебную точку для РОП при загрузке
+async function ensureRopPoint() {
+  try {
+    await fetch('/api/ensure-rop-point', { credentials: 'include' });
+  } catch (error) {
+    console.error('Failed to ensure ROP point:', error);
+  }
+}
+
 checkAuthAndLoad();
+ensureRopPoint();
 </script>
 </body>
 </html>
