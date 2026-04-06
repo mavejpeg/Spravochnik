@@ -2256,27 +2256,48 @@ app.post('/api/substitutions/request', requireAuth, async (req, res) => {
     }
 });
 
-// Получить информацию о РОП
-app.get('/api/rop-info', requireAuth, async (req, res) => {
+// Получить список всех РОП и администраторов
+app.get('/api/rop-list', requireAuth, async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT id, full_name, username, position 
+            SELECT id, full_name, username, role, position, 
+                   COALESCE(phone, '') as phone,
+                   COALESCE(description, '') as description,
+                   COALESCE(schedule_info, 'График уточняйте') as schedule_info
             FROM users 
             WHERE role IN ('rop', 'root')
-            ORDER BY role DESC
-            LIMIT 1
+            ORDER BY 
+                CASE role 
+                    WHEN 'root' THEN 1 
+                    WHEN 'rop' THEN 2 
+                    ELSE 3 
+                END,
+                full_name
         `);
-        
-        res.json({
-            rop: result.rows[0] || null,
-            allRops: result.rows
-        });
+        res.json(result.rows);
     } catch (error) {
-        console.error('Error fetching ROP info:', error);
-        res.status(500).json({ error: 'Failed to get ROP info' });
+        console.error('Error fetching ROP list:', error);
+        res.status(500).json({ error: 'Failed to get ROP list' });
     }
 });
 
+// Обновить информацию о РОП (телефон, описание, график)
+app.put('/api/rop-info/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { phone, description, schedule_info } = req.body;
+    
+    try {
+        await pool.query(`
+            UPDATE users 
+            SET phone = $1, description = $2, schedule_info = $3
+            WHERE id = $4
+        `, [phone, description, schedule_info, id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating ROP info:', error);
+        res.status(500).json({ error: 'Failed to update ROP info' });
+    }
+});
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
