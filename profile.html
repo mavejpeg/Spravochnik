@@ -6,47 +6,106 @@
 <title>Мой профиль — Справочник</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .rop-card {
-    background: linear-gradient(135deg, rgba(124,92,252,0.15), rgba(252,92,124,0.08));
-    border: 1px solid var(--accent);
-    border-radius: 20px;
-    padding: 20px;
+  /* Стили для таблицы РОП */
+  .rop-table {
+    width: 100%;
+    border-collapse: collapse;
     margin-bottom: 24px;
-    position: relative;
+    background: var(--surface);
+    border-radius: 16px;
     overflow: hidden;
   }
   
-  .rop-card::before {
-    content: '👑';
-    position: absolute;
-    right: 20px;
-    top: 20px;
-    font-size: 40px;
-    opacity: 0.15;
+  .rop-table th,
+  .rop-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
   }
   
-  .rop-name {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
+  .rop-table th {
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .rop-table tr:last-child td {
+    border-bottom: none;
+  }
+  
+  .rop-table tr:hover td {
+    background: var(--surface2);
+  }
+  
+  .rop-role {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  
+  .rop-role.root {
+    background: rgba(252, 92, 124, 0.15);
+    color: var(--accent2);
+  }
+  
+  .rop-role.rop {
+    background: rgba(252, 184, 48, 0.15);
+    color: var(--accent4);
+  }
+  
+  .rop-role.admin {
+    background: rgba(124, 92, 252, 0.15);
     color: var(--accent);
-    margin-bottom: 8px;
   }
   
-  .rop-contact {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-    font-size: 13px;
+  .rop-contact-cell {
+    font-size: 12px;
+    color: var(--text2);
   }
   
-  .rop-contact span {
+  .rop-contact-cell span {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    color: var(--text2);
+    gap: 4px;
+    margin-right: 12px;
+  }
+  
+  .rop-schedule {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  
+  /* Кнопка подмены */
+  .substitution-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  
+  .request-substitution-btn {
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 10px 16px;
+    color: var(--accent);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .request-substitution-btn:hover {
+    background: var(--accent);
+    color: white;
   }
   
   .warning-banner {
@@ -63,17 +122,9 @@
     flex-wrap: wrap;
   }
   
-  .warning-banner .icon {
-    font-size: 20px;
-  }
-  
   .cal-day {
     position: relative;
     cursor: help;
-  }
-  
-  .cal-day.has-substitution {
-    box-shadow: 0 0 0 2px var(--accent4);
   }
   
   .cal-day .tooltip {
@@ -94,7 +145,6 @@
     pointer-events: none;
     margin-bottom: 8px;
     color: var(--text);
-    font-weight: normal;
   }
   
   .cal-day.has-substitution:hover .tooltip {
@@ -102,34 +152,31 @@
     opacity: 1;
   }
   
-  .substitution-badge {
-    font-size: 8px;
-    margin-top: 2px;
-    color: var(--accent4);
-  }
-  
-  .request-substitution-btn {
-    background: var(--accent-glow);
-    border: 1px solid var(--accent);
-    border-radius: 10px;
-    padding: 8px 16px;
-    color: var(--accent);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  
-  .request-substitution-btn:hover {
-    background: var(--accent);
-    color: white;
-  }
-  
   .legend-dot.substitution {
     background: rgba(252, 184, 48, 0.3);
     border: 1px solid var(--accent4);
+  }
+  
+  .rop-edit-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--accent);
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  
+  .rop-edit-btn:hover {
+    background: var(--accent-glow);
+  }
+  
+  .rop-description {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.4;
+    max-width: 250px;
   }
 </style>
 </head>
@@ -146,7 +193,7 @@
 </header>
 
 <main>
-  <div style="max-width: 1100px; margin: 0 auto; padding: 0 20px 60px;">
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px 60px;">
     <div style="padding: 32px 0 8px;">
       <a href="/" style="font-size: 12px; color: var(--muted); text-decoration: none;">← Главная</a>
       <h1 style="font-family: 'Unbounded', sans-serif; font-size: 24px; font-weight: 700; color: var(--strong); margin-top: 12px;">Мой профиль</h1>
@@ -158,21 +205,28 @@
       <span>Внимание, график ориентировочный. Будут изменения, не забывайте его проверять!</span>
     </div>
 
-    <!-- РОП карточка -->
-    <div class="rop-card" id="ropCard">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-        <div>
-          <div class="rop-name" id="ropName">Загрузка...</div>
-          <div id="ropPosition" style="font-size: 12px; color: var(--muted);">Руководитель отдела продаж</div>
-          <div class="rop-contact" id="ropContact"></div>
-        </div>
-        <div id="ropSchedule" style="font-size: 12px; color: var(--text2); background: var(--surface2); padding: 8px 12px; border-radius: 10px;">
-          График работы: загрузка...
-        </div>
+    <!-- Таблица РОП и администраторов -->
+    <div style="margin-bottom: 24px;">
+      <h3 style="font-family: 'Unbounded', sans-serif; font-size: 14px; margin-bottom: 12px;">👑 Руководство и администраторы</h3>
+      <div style="overflow-x: auto;">
+        <table class="rop-table" id="ropTable">
+          <thead>
+            <tr>
+              <th>Сотрудник</th>
+              <th>Должность</th>
+              <th>Контакты / Описание</th>
+              <th>График работы</th>
+            </tr>
+          </thead>
+          <tbody id="ropTableBody">
+            <tr><td colspan="4" style="text-align: center;">Загрузка...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
     <div class="profile-grid">
+      <!-- Левая колонка - информация о сотруднике -->
       <div>
         <div class="profile-card" id="profileCard">
           <div style="display: flex; align-items: center; gap: 16px;">
@@ -220,12 +274,10 @@
           <div id="profileRetakeWarning" class="retake-warning" style="display: none;">
             ⚠️ Внимание! Требуется повторная аттестация. Пройдите опросники в разделе "Обучение".
           </div>
-          <button class="request-substitution-btn" onclick="alert('Функция в разработке')" style="margin-top: 16px; width: 100%; justify-content: center;">
-            📅 Запросить подмену
-          </button>
         </div>
       </div>
 
+      <!-- Правая колонка - график -->
       <div>
         <div class="schedule-card">
           <div class="schedule-header">
@@ -269,7 +321,13 @@
             <div class="legend-item"><div class="legend-dot day-off"></div>Выходной</div>
             <div class="legend-item"><div class="legend-dot cleaning"></div>Уборка (Вс)</div>
             <div class="legend-item"><div class="legend-dot partner"></div>Сменщик работает</div>
-            <div class="legend-item"><div class="legend-dot substitution"></div>Подмена</div>
+          </div>
+          
+          <!-- Кнопка запроса подмены под графиком -->
+          <div class="substitution-section">
+            <button class="request-substitution-btn" onclick="alert('Функция в разработке')">
+              📅 Запросить подмену
+            </button>
           </div>
         </div>
       </div>
@@ -318,7 +376,7 @@ function initPage(user) {
   currentMonth = now.getMonth() + 1;
   updateMonthLabel();
   loadProfile();
-  loadRopInfo();
+  loadRopTable();
   loadSchedule();
   loadLearningProgress();
   checkRetakeStatus();
@@ -355,30 +413,47 @@ async function loadProfile() {
   }
 }
 
-async function loadRopInfo() {
+async function loadRopTable() {
   try {
-    const response = await fetch('/api/rop-info', { credentials: 'include' });
-    const data = await response.json();
+    const response = await fetch('/api/rop-list', { credentials: 'include' });
+    const rops = await response.json();
     
-    if (data.rop) {
-      document.getElementById('ropName').textContent = data.rop.full_name;
-      document.getElementById('ropPosition').textContent = data.rop.position || 'Руководитель отдела продаж';
-      
-      const contactHtml = `
-        <span>📧 ${data.rop.username}@company.ru</span>
-        <span>📞 +7 (XXX) XXX-XX-XX</span>
-      `;
-      document.getElementById('ropContact').innerHTML = contactHtml;
-      
-      if (data.schedule) {
-        const workDays = data.schedule.filter(d => d === 'work').length;
-        document.getElementById('ropSchedule').innerHTML = `График работы: ~${workDays} дней в месяце`;
-      } else {
-        document.getElementById('ropSchedule').innerHTML = 'График работы: уточняйте';
-      }
+    const tbody = document.getElementById('ropTableBody');
+    if (!rops.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Нет данных</td></tr>';
+      return;
     }
+    
+    tbody.innerHTML = rops.map(rop => {
+      let roleClass = '';
+      let roleName = '';
+      if (rop.role === 'root') {
+        roleClass = 'root';
+        roleName = 'Главный администратор';
+      } else if (rop.role === 'rop') {
+        roleClass = 'rop';
+        roleName = 'Руководитель отдела продаж';
+      } else {
+        roleClass = 'admin';
+        roleName = 'Администратор';
+      }
+      
+      return `
+        <tr>
+          <td><strong>${escapeHtml(rop.full_name)}</strong><br><span class="rop-role ${roleClass}">${roleName}</span></td>
+          <td>${rop.position || '—'}</td>
+          <td class="rop-contact-cell">
+            <span>📧 ${rop.username || '—'}@company.ru</span>
+            <span>📞 ${rop.phone || '+7 (XXX) XXX-XX-XX'}</span>
+            ${rop.description ? `<div class="rop-description">📝 ${escapeHtml(rop.description)}</div>` : ''}
+            ${window.isRopGlobal ? `<button class="rop-edit-btn" onclick="editRopInfo(${rop.id})" title="Редактировать">✏️</button>` : ''}
+          </td>
+          <td class="rop-schedule">${rop.schedule_info || 'График уточняйте'}</td>
+        </tr>
+      `;
+    }).join('');
   } catch (error) {
-    console.error('Failed to load ROP info:', error);
+    console.error('Failed to load ROP table:', error);
   }
 }
 
@@ -521,7 +596,12 @@ async function checkRetakeStatus() {
   }
 }
 
-// Навигация
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+}
+
+// Навигация по месяцам
 const prevBtn = document.getElementById('prevMonth');
 const nextBtn = document.getElementById('nextMonth');
 
