@@ -1,4 +1,4 @@
-// schedule-editor.js - Полноценный редактор графиков
+// schedule-editor.js - Исправленная версия
 (function() {
     'use strict';
     
@@ -24,10 +24,9 @@
         
         setTimeout(() => {
             const pointSelect = document.getElementById('schedulePointSelect');
-            if (pointSelect && _pointsList.length > 0 && !_currentPointId) {
-                _currentPointId = _pointsList[0].id;
-                pointSelect.value = _currentPointId;
-                loadPointSchedule();
+            if (pointSelect && _pointsList.length > 0) {
+                // Не выбираем автоматически, ждем выбора пользователя
+                console.log('Points loaded, waiting for user selection');
             }
         }, 100);
     };
@@ -36,7 +35,8 @@
         try {
             const response = await fetch('/api/points', { credentials: 'include' });
             _pointsList = await response.json();
-            console.log('Points loaded:', _pointsList);
+            console.log('Points loaded:', _pointsList.length);
+            console.log('First point:', _pointsList[0]);
             
             const pointSelect = document.getElementById('schedulePointSelect');
             if (pointSelect) {
@@ -46,13 +46,14 @@
                 }
                 
                 pointSelect.innerHTML = '<option value="">— Выберите точку —</option>' +
-                    _pointsList.map(p => `<option value="${p.id}">📍 ${escapeHtml(p.name)}${p.address ? ' — ' + escapeHtml(p.address) : ''}</option>`).join('');
+                    _pointsList.map(p => `<option value="${p.id}">📍 ${escapeHtml(p.name)}${p.address ? ' — ' + escapeHtml(p.address) : ''} (ID: ${p.id})</option>`).join('');
                 
                 const newSelect = pointSelect.cloneNode(true);
                 pointSelect.parentNode.replaceChild(newSelect, pointSelect);
                 
                 newSelect.addEventListener('change', async (e) => {
                     const value = e.target.value;
+                    console.log('Point selected:', value);
                     if (value && value !== '') {
                         _currentPointId = parseInt(value);
                         await loadPointSchedule();
@@ -74,23 +75,80 @@
         
         container.innerHTML = '<div style="text-align: center; padding: 40px;">⏳ Загрузка графика...</div>';
         
+        console.log('Loading schedule for point ID:', _currentPointId);
+        
+        // Сначала посмотрим всех пользователей и их точки
+        try {
+            const usersRes = await fetch('/api/debug/all-users-with-points', { credentials: 'include' });
+            const allUsers = await usersRes.json();
+            console.log('ALL USERS WITH POINTS:');
+            allUsers.forEach(u => {
+                console.log(`  - ${u.full_name}: point_id=${u.point_id}, point_name=${u.point_name || 'NULL'}`);
+            });
+            
+            // Пользователи выбранной точки
+            const usersOnPoint = allUsers.filter(u => u.point_id === _currentPointId && u.role === 'user');
+            console.log(`Users on point ${_currentPointId}:`, usersOnPoint.length);
+            
+            if (usersOnPoint.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px; color: var(--accent4);">
+                        ⚠️ На этой точке (ID: ${_currentPointId}) нет сотрудников!<br><br>
+                        <div style="text-align: left; background: var(--surface); padding: 16px; border-radius: 12px; margin-top: 16px;">
+                            <strong>📋 Список всех сотрудников и их точки:</strong><br><br>
+                            ${allUsers.filter(u => u.role === 'user').map(u => 
+                                `• ${u.full_name} → точка: ${u.point_name || 'НЕ НАЗНАЧЕН'} (ID: ${u.point_id || 'NULL'})<br>`
+                            ).join('')}
+                        </div>
+                        <br>
+                        <button onclick="window.location.reload()" class="btn-add" style="margin-top: 10px;">🔄 Обновить</button>
+                    </div>
+                `;
+                return;
+            }
+        } catch (err) {
+            console.error('Debug error:', err);
+        }
+        
         try {
             const response = await fetch(`/api/schedule/point/${_currentPointId}/${_currentYear}/${_currentMonth}`, {
                 credentials: 'include'
             });
             
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
             
             const data = await response.json();
+            console.log('Schedule API response:', data);
+            
             _currentUsers = data.users || [];
             _currentSchedules = data.schedules || {};
             _daysInMonth = data.daysInMonth || new Date(_currentYear, _currentMonth, 0).getDate();
             _allUsersList = data.allUsers || [];
             
+            console.log('Users from API:', _currentUsers.length);
+            console.log('Users:', _currentUsers);
+            
+            if (_currentUsers.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px; color: var(--accent4);">
+                        ⚠️ API вернул 0 сотрудников для точки ID ${_currentPointId}<br><br>
+                        <button onclick="window.initScheduleEditor()" class="btn-add" style="margin-top: 10px;">🔄 Попробовать снова</button>
+                    </div>
+                `;
+                return;
+            }
+            
             renderScheduleEditor();
         } catch (error) {
             console.error('Failed to load schedule:', error);
-            container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--accent2);">❌ Ошибка загрузки графика</div>';
+            container.innerHTML = `
+                <div style="text-align: center; padding: 60px; color: var(--accent2);">
+                    ❌ Ошибка загрузки графика: ${error.message}<br>
+                    <button onclick="window.initScheduleEditor()" class="btn-add" style="margin-top: 10px;">🔄 Повторить</button>
+                </div>
+            `;
         }
     }
 
@@ -100,20 +158,11 @@
         
         const point = _pointsList.find(p => p.id === _currentPointId);
         
-        if (!_currentUsers.length) {
-            container.innerHTML = `
-                <div style="text-align: center; padding: 60px; color: var(--muted);">
-                    👥 Нет сотрудников на этой точке<br>
-                    <small>Сначала назначьте сотрудников на точку в разделе "Пользователи"</small>
-                </div>
-            `;
-            return;
-        }
-        
         let html = `
             <div class="schedule-point-header">
-                <div class="schedule-point-name">📍 ${escapeHtml(point?.name || 'Точка')}</div>
+                <div class="schedule-point-name">📍 ${escapeHtml(point?.name || 'Точка')} (ID: ${_currentPointId})</div>
                 ${point?.address ? `<div class="schedule-point-address">${escapeHtml(point.address)}</div>` : ''}
+                <div style="font-size: 11px; color: var(--muted); margin-top: 8px;">👥 Сотрудников на точке: ${_currentUsers.length}</div>
             </div>
             
             <div class="schedule-toolbar">
@@ -210,7 +259,7 @@
         container.innerHTML = html;
     }
 
-    // Глобальные функции
+    // Функции для работы с днями
     window.toggleDay = function(userId, dayIndex) {
         if (!_currentSchedules[userId]) {
             _currentSchedules[userId] = { days: Array(_daysInMonth).fill('off') };
