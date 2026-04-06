@@ -314,16 +314,45 @@ window.openRopPanel = async function() {
 };
 
 // Простая версия для графика (без сложного редактора)
-function renderSchedulePanelSimple() {
+function renderSchedulePanel() {
     const panel = document.getElementById('adminPanel-schedule');
     if (!panel) return;
     
     panel.innerHTML = `
-        <div style="text-align: center; padding: 40px; color: var(--muted);">
-            📅 Редактор графиков в разработке<br>
-            <small>Используйте существующий интерфейс</small>
+        <div class="schedule-nav">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button id="schedulePrevMonth" class="schedule-nav-btn">←</button>
+                    <span id="scheduleCurrentMonth" class="schedule-current-month"></span>
+                    <button id="scheduleNextMonth" class="schedule-nav-btn">→</button>
+                </div>
+                <div style="min-width: 250px;">
+                    <select id="schedulePointSelect" class="schedule-point-select">
+                        <option value="">— Выберите точку —</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div id="scheduleEditorContainer" style="margin-top: 20px;">
+            <div style="text-align: center; padding: 60px; color: var(--muted);">
+                📅 Выберите точку для редактирования графика
+            </div>
         </div>
     `;
+    
+    // Загружаем schedule-editor.js если еще не загружен
+    if (typeof window.initScheduleEditor === 'undefined') {
+        const script = document.createElement('script');
+        script.src = '/schedule-editor.js';
+        script.onload = () => {
+            if (typeof window.initScheduleEditor === 'function') {
+                window.initScheduleEditor();
+            }
+        };
+        document.head.appendChild(script);
+    } else {
+        window.initScheduleEditor();
+    }
 }
 
 // Простая версия для опросников
