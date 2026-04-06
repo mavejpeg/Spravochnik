@@ -193,11 +193,6 @@
     outline-offset: 1px;
   }
 
-  /* Индикатор сменщика */
-  .cal-day.partner-work {
-    position: relative;
-  }
-
   .cal-day.partner-work::after {
     content: '●';
     position: absolute;
@@ -244,7 +239,6 @@
   .legend-dot.partner { background: transparent; border: 1px solid var(--accent5); position: relative; }
   .legend-dot.partner::after { content: '●'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8px; color: var(--accent5); }
 
-  /* Partner card */
   .partner-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -328,7 +322,6 @@
   .badge.root { background: rgba(252,92,124,0.15); color: var(--accent2); }
   .badge.user { background: rgba(60,255,160,0.1); color: var(--accent3); }
 
-  /* Learning progress in profile */
   .learning-section {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -361,7 +354,6 @@
     margin-top: 8px;
   }
 
-  /* Retake warning */
   .retake-warning {
     background: rgba(252, 184, 48, 0.15);
     border-left: 3px solid var(--accent4);
@@ -393,7 +385,6 @@
     </div>
 
     <div class="profile-grid">
-      <!-- Left: profile info -->
       <div>
         <div class="profile-card" id="profileCard">
           <div style="display: flex; align-items: center; gap: 16px;">
@@ -418,7 +409,6 @@
           </div>
         </div>
 
-        <!-- Partner card -->
         <div class="partner-card" id="partnerCard" style="display: none;">
           <div class="section-title">👥 Сменщик</div>
           <div class="partner-inner">
@@ -430,7 +420,6 @@
           </div>
         </div>
 
-        <!-- Learning progress -->
         <div class="learning-section">
           <div class="section-title">📚 Прогресс обучения</div>
           <div class="learning-progress-bar-container">
@@ -446,7 +435,6 @@
         </div>
       </div>
 
-      <!-- Right: schedule -->
       <div>
         <div class="schedule-card">
           <div class="schedule-header">
@@ -497,16 +485,68 @@
   </div>
 </main>
 
-<script src="utils.js?v=2"></script>
-<script src="core.js?v=38"></script>
-<script src="main.js?v=38"></script>
-
 <script>
+// ========== ВСЯ ЛОГИКА ПРОФИЛЯ ЗДЕСЬ, НЕ ЗАВИСИТ ОТ main.js ==========
+
 let currentYear, currentMonth, currentUserId, scheduleData = null;
 let partnerDays = [];
 
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь',
                      'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+}
+
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast-notification ${type}`;
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--surface2);
+    border-left: 3px solid ${type === 'success' ? 'var(--accent3)' : type === 'error' ? 'var(--accent2)' : 'var(--accent)'};
+    padding: 12px 20px;
+    border-radius: 8px;
+    z-index: 10001;
+    animation: slideInRight 0.3s ease;
+    font-size: 13px;
+  `;
+  toast.innerHTML = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+async function checkAuthAndLoad() {
+  try {
+    const response = await fetch('/api/check-auth', { credentials: 'include' });
+    const data = await response.json();
+    
+    if (!data.authenticated) {
+      window.location.href = '/login';
+      return;
+    }
+    
+    // Показываем кнопку администрирования если нужно
+    const ropBtn = document.getElementById('ropBtn');
+    if (ropBtn && (data.user.role === 'rop' || data.user.role === 'root')) {
+      ropBtn.style.display = 'block';
+    }
+    
+    // Показываем имя пользователя
+    const userNameSpan = document.getElementById('userName');
+    if (userNameSpan) userNameSpan.textContent = data.user.full_name;
+    
+    // Инициализируем страницу
+    initPage(data.user);
+    
+  } catch (error) {
+    console.error('Auth check error:', error);
+    window.location.href = '/login';
+  }
+}
 
 function initPage(user) {
   currentUserId = user.id;
@@ -521,23 +561,34 @@ function initPage(user) {
 }
 
 function updateMonthLabel() {
-  document.getElementById('monthLabel').textContent = `${MONTH_NAMES[currentMonth-1]} ${currentYear}`;
+  const label = document.getElementById('monthLabel');
+  if (label) label.textContent = `${MONTH_NAMES[currentMonth-1]} ${currentYear}`;
 }
 
 async function loadProfile() {
-  const res = await fetch('/api/profile', { credentials: 'include' });
-  const p = await res.json();
+  try {
+    const res = await fetch('/api/profile', { credentials: 'include' });
+    const p = await res.json();
 
-  document.getElementById('profileName').textContent = p.full_name || '—';
-  document.getElementById('profileUsername').textContent = p.username || '';
-  document.getElementById('profilePosition').textContent = p.position || 'Не указана';
-  document.getElementById('profilePoint').textContent = p.point_name
-    ? `${p.point_name}${p.point_address ? ' · ' + p.point_address : ''}`
-    : 'Не назначена';
+    const nameEl = document.getElementById('profileName');
+    const usernameEl = document.getElementById('profileUsername');
+    const positionEl = document.getElementById('profilePosition');
+    const pointEl = document.getElementById('profilePoint');
+    
+    if (nameEl) nameEl.textContent = p.full_name || '—';
+    if (usernameEl) usernameEl.textContent = p.username || '';
+    if (positionEl) positionEl.textContent = p.position || 'Не указана';
+    if (pointEl) pointEl.textContent = p.point_name
+      ? `${p.point_name}${p.point_address ? ' · ' + p.point_address : ''}`
+      : 'Не назначена';
 
-  const roles = { root: ['ROOT', 'root'], rop: ['РОП', 'rop'], user: ['Сотрудник', 'user'] };
-  const [label, cls] = roles[p.role] || ['Сотрудник', 'user'];
-  document.getElementById('profileRoleBadge').innerHTML = `<span class="badge ${cls}">${label}</span>`;
+    const roles = { root: ['ROOT', 'root'], rop: ['РОП', 'rop'], user: ['Сотрудник', 'user'] };
+    const [label, cls] = roles[p.role] || ['Сотрудник', 'user'];
+    const badgeEl = document.getElementById('profileRoleBadge');
+    if (badgeEl) badgeEl.innerHTML = `<span class="badge ${cls}">${label}</span>`;
+  } catch (error) {
+    console.error('Failed to load profile:', error);
+  }
 }
 
 async function loadLearningProgress() {
@@ -575,40 +626,49 @@ async function checkRetakeStatus() {
 }
 
 async function loadSchedule() {
-  const res = await fetch(`/api/schedule/${currentUserId}/${currentYear}/${currentMonth}`, { credentials: 'include' });
-  scheduleData = await res.json();
+  try {
+    const res = await fetch(`/api/schedule/${currentUserId}/${currentYear}/${currentMonth}`, { credentials: 'include' });
+    scheduleData = await res.json();
 
-  // Update partner card
-  const partnerCard = document.getElementById('partnerCard');
-  if (scheduleData && scheduleData.partner_name) {
-    partnerCard.style.display = 'block';
-    document.getElementById('partnerName').textContent = scheduleData.partner_name;
-    
-    // Load partner profile for position
-    try {
-      const pr = await fetch(`/api/profile/${scheduleData.partner_id}`, { credentials: 'include' });
-      const partner = await pr.json();
-      document.getElementById('partnerPosition').textContent = partner.position || '';
-    } catch(e) {}
-    
-    // Load partner schedule for display
-    try {
-      const partnerRes = await fetch(`/api/schedule/${scheduleData.partner_id}/${currentYear}/${currentMonth}`, { credentials: 'include' });
-      const partnerSchedule = await partnerRes.json();
-      partnerDays = partnerSchedule?.days || [];
-    } catch(e) {
+    // Update partner card
+    const partnerCard = document.getElementById('partnerCard');
+    if (scheduleData && scheduleData.partner_name) {
+      partnerCard.style.display = 'block';
+      const partnerNameEl = document.getElementById('partnerName');
+      if (partnerNameEl) partnerNameEl.textContent = scheduleData.partner_name;
+      
+      // Load partner profile for position
+      try {
+        const pr = await fetch(`/api/profile/${scheduleData.partner_id}`, { credentials: 'include' });
+        const partner = await pr.json();
+        const partnerPositionEl = document.getElementById('partnerPosition');
+        if (partnerPositionEl) partnerPositionEl.textContent = partner.position || '';
+      } catch(e) {}
+      
+      // Load partner schedule for display
+      try {
+        const partnerRes = await fetch(`/api/schedule/${scheduleData.partner_id}/${currentYear}/${currentMonth}`, { credentials: 'include' });
+        const partnerSchedule = await partnerRes.json();
+        partnerDays = partnerSchedule?.days || [];
+      } catch(e) {
+        partnerDays = [];
+      }
+    } else {
+      partnerCard.style.display = 'none';
       partnerDays = [];
     }
-  } else {
-    partnerCard.style.display = 'none';
-    partnerDays = [];
+    
+    renderCalendar();
+  } catch (error) {
+    console.error('Failed to load schedule:', error);
+    renderCalendar();
   }
-  
-  renderCalendar();
 }
 
 function renderCalendar() {
   const cal = document.getElementById('calendar');
+  if (!cal) return;
+  
   // Clear day cells (keep headers)
   const heads = cal.querySelectorAll('.cal-head');
   cal.innerHTML = '';
@@ -618,13 +678,13 @@ function renderCalendar() {
   const statsRow = document.getElementById('statsRow');
 
   if (!scheduleData || !scheduleData.days || !scheduleData.days.length) {
-    noSched.style.display = 'block';
-    statsRow.style.display = 'none';
+    if (noSched) noSched.style.display = 'block';
+    if (statsRow) statsRow.style.display = 'none';
     return;
   }
 
-  noSched.style.display = 'none';
-  statsRow.style.display = 'grid';
+  if (noSched) noSched.style.display = 'none';
+  if (statsRow) statsRow.style.display = 'grid';
 
   const days = scheduleData.days;
   const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
@@ -670,42 +730,98 @@ function renderCalendar() {
     cal.appendChild(el);
   }
 
-  document.getElementById('statWork').textContent = workCount;
-  document.getElementById('statOff').textContent = offCount;
-  document.getElementById('statClean').textContent = cleanCount;
+  const statWorkEl = document.getElementById('statWork');
+  const statOffEl = document.getElementById('statOff');
+  const statCleanEl = document.getElementById('statClean');
+  
+  if (statWorkEl) statWorkEl.textContent = workCount;
+  if (statOffEl) statOffEl.textContent = offCount;
+  if (statCleanEl) statCleanEl.textContent = cleanCount;
 }
 
 // Navigation
-document.getElementById('prevMonth').addEventListener('click', () => {
-  currentMonth--;
-  if (currentMonth < 1) { 
-    currentMonth = 12; 
-    currentYear--; 
+const prevBtn = document.getElementById('prevMonth');
+const nextBtn = document.getElementById('nextMonth');
+
+if (prevBtn) {
+  prevBtn.addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 1) { 
+      currentMonth = 12; 
+      currentYear--; 
+    }
+    updateMonthLabel();
+    loadSchedule();
+  });
+}
+
+if (nextBtn) {
+  nextBtn.addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 12) { 
+      currentMonth = 1; 
+      currentYear++; 
+    }
+    updateMonthLabel();
+    loadSchedule();
+  });
+}
+
+// Logout
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+    window.location.href = '/login';
+  });
+}
+
+// ROP Panel (администрирование)
+const ropBtn = document.getElementById('ropBtn');
+if (ropBtn) {
+  ropBtn.addEventListener('click', async () => {
+    // Функция openRopPanel из main.js
+    if (typeof window.openRopPanel === 'function') {
+      window.openRopPanel();
+    } else {
+      // Fallback - показываем уведомление
+      showToast('Функция администрирования загружается...', 'info');
+      // Пробуем загрузить main.js если еще не загружен
+      if (!document.querySelector('script[src*="main.js"]')) {
+        const script = document.createElement('script');
+        script.src = '/main.js?v=' + Date.now();
+        script.onload = () => {
+          if (typeof window.openRopPanel === 'function') {
+            window.openRopPanel();
+          }
+        };
+        document.head.appendChild(script);
+      }
+    }
+  });
+}
+
+// Запускаем проверку авторизации
+checkAuthAndLoad();
+
+// Добавляем стиль для анимации toast
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(100px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
-  updateMonthLabel();
-  loadSchedule();
-});
-
-document.getElementById('nextMonth').addEventListener('click', () => {
-  currentMonth++;
-  if (currentMonth > 12) { 
-    currentMonth = 1; 
-    currentYear++; 
-  }
-  updateMonthLabel();
-  loadSchedule();
-});
-
-// Wait for auth
-window.onAuthReady = function(isRop, user) {
-  initPage(user);
-};
-
-// Также обрабатываем событие от main.js
-window.addEventListener('authReady', function(e) {
-  const { isRop, user } = e.detail;
-  initPage(user);
-});
+`;
+document.head.appendChild(style);
 </script>
+
+<!-- Подключаем main.js для функций администрирования (но не переопределяем логику профиля) -->
+<script src="main.js?v=38"></script>
 </body>
 </html>
