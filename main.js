@@ -279,6 +279,7 @@ window.openRopPanel = async function() {
                 <button class="admin-tab" data-panel="quizzes">📋 Опросники</button>
                 <button class="admin-tab" data-panel="requests">📝 Заявки</button>
                 <button class="admin-tab" data-panel="substitutions">🔄 Подмены</button>
+                <button class="admin-tab" data-panel="roles">👥 Роли и должности</button>
             </div>
             <div style="flex: 1; overflow-y: auto; padding: 20px 24px;">
                 <div id="adminPanel-users" class="admin-panel"></div>
@@ -287,6 +288,7 @@ window.openRopPanel = async function() {
                 <div id="adminPanel-quizzes" class="admin-panel" style="display:none;"></div>
                 <div id="adminPanel-requests" class="admin-panel" style="display:none;"></div>
                 <div id="adminPanel-substitutions" class="admin-panel" style="display:none;"></div>
+                <div id="adminPanel-roles" class="admin-panel" style="display:none;"></div>
             </div>
         </div>
     `;
@@ -342,6 +344,9 @@ window.openRopPanel = async function() {
             }
             else if (tab.dataset.panel === 'substitutions') {
                 renderSubstitutionsPanel();
+            }
+            else if (tab.dataset.panel === 'roles') {
+                renderRolesPanel();
             }
         });
     });
@@ -1029,6 +1034,421 @@ window.processRequest = async function(id, action) {
         alert('Ошибка: ' + error.message);
     }
 };
+
+// ===================== РОЛИ И ДОЛЖНОСТИ (только для root) =====================
+async function renderRolesPanel() {
+    const panel = document.getElementById('adminPanel-roles');
+    if (!panel) return;
+    
+    // Проверяем, что пользователь - root
+    const me = await fetch('/api/check-auth', { credentials: 'include' }).then(r => r.json());
+    if (me.user?.role !== 'root') {
+        panel.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--accent2);">⛔ Доступ только для главного администратора</div>';
+        return;
+    }
+    
+    panel.innerHTML = `
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div class="admin-panel-label">📋 Управление ролями и должностями</div>
+            <button onclick="openCreateRoleModal()" class="btn-add">➕ Создать новую роль</button>
+        </div>
+        
+        <div class="admin-panel-label" style="margin-top: 20px;">📋 Список ролей</div>
+        <div id="rolesList"></div>
+        
+        <div class="admin-panel-label" style="margin-top: 30px;">👥 Пользователи и их роли</div>
+        <div id="usersWithRolesList"></div>
+    `;
+    
+    await loadRolesList();
+    await loadUsersWithRolesList();
+}
+
+async function loadRolesList() {
+    try {
+        const response = await fetch('/api/roles', { credentials: 'include' });
+        const roles = await response.json();
+        
+        const container = document.getElementById('rolesList');
+        if (!container) return;
+        
+        if (roles.length === 0) {
+            container.innerHTML = '<div style="color: var(--muted); padding: 20px;">Нет ролей</div>';
+            return;
+        }
+        
+        container.innerHTML = roles.map(role => `
+            <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <div style="font-weight: 600; font-size: 16px; color: var(--accent);">${escapeHtml(role.display_name)}</div>
+                        <div style="font-size: 12px; color: var(--muted);">${escapeHtml(role.name)}</div>
+                        <div style="font-size: 12px; margin-top: 4px;">${escapeHtml(role.description || 'Нет описания')}</div>
+                        <div style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+                            📊 Уровень: ${role.level} | 👥 Пользователей: ${role.users_count} | 
+                            ${role.is_active ? '🟢 Активна' : '🔴 Неактивна'}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="openEditRoleModal(${role.id})" class="btn-edit" style="padding: 5px 12px;">✏️ Редактировать</button>
+                        ${role.name !== 'root' && role.name !== 'user' ? 
+                            `<button onclick="deleteRole(${role.id})" class="btn-delete" style="padding: 5px 12px;">🗑 Удалить</button>` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load roles:', error);
+    }
+}
+
+async function loadUsersWithRolesList() {
+    try {
+        const response = await fetch('/api/users-with-roles', { credentials: 'include' });
+        const users = await response.json();
+        const rolesResponse = await fetch('/api/roles', { credentials: 'include' });
+        const roles = await rolesResponse.json();
+        
+        const container = document.getElementById('usersWithRolesList');
+        if (!container) return;
+        
+        if (users.length === 0) {
+            container.innerHTML = '<div style="color: var(--muted); padding: 20px;">Нет пользователей</div>';
+            return;
+        }
+        
+        container.innerHTML = users.map(user => `
+            <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <div style="font-weight: 600;">${escapeHtml(user.full_name)}</div>
+                        <div style="font-size: 12px; color: var(--muted);">${user.username}</div>
+                        <div style="font-size: 11px; margin-top: 4px;">
+                            Текущая роль: <strong>${user.role_display || user.custom_role || user.role || 'Сотрудник'}</strong>
+                            ${user.position ? ` | Должность: ${escapeHtml(user.position)}` : ''}
+                        </div>
+                    </div>
+                    <div>
+                        <select id="role-select-${user.id}" class="admin-panel-select" style="width: 200px;">
+                            <option value="">— Выберите роль —</option>
+                            ${roles.map(role => `
+                                <option value="${role.id}" ${user.role_id === role.id ? 'selected' : ''}>
+                                    ${escapeHtml(role.display_name)} (${escapeHtml(role.name)})
+                                </option>
+                            `).join('')}
+                            <option value="custom" ${!user.role_id && user.custom_role ? 'selected' : ''}>Своя роль</option>
+                        </select>
+                        <input type="text" id="custom-role-${user.id}" class="admin-panel-input" 
+                               placeholder="Своя роль" style="width: 150px; margin-top: 8px; display: ${!user.role_id && user.custom_role ? 'block' : 'none'};"
+                               value="${escapeHtml(user.custom_role || '')}">
+                        <button onclick="assignUserRole(${user.id})" class="btn-add" style="margin-top: 8px; width: 100%;">💾 Назначить</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Добавляем обработчики для показа/скрытия поля своей роли
+        users.forEach(user => {
+            const select = document.getElementById(`role-select-${user.id}`);
+            const customInput = document.getElementById(`custom-role-${user.id}`);
+            if (select && customInput) {
+                select.addEventListener('change', () => {
+                    customInput.style.display = select.value === 'custom' ? 'block' : 'none';
+                });
+            }
+        });
+    } catch (error) {
+        console.error('Failed to load users with roles:', error);
+    }
+}
+
+window.assignUserRole = async function(userId) {
+    const select = document.getElementById(`role-select-${userId}`);
+    const customInput = document.getElementById(`custom-role-${userId}`);
+    
+    let role_id = null;
+    let custom_role = null;
+    
+    if (select.value === 'custom') {
+        custom_role = customInput.value.trim();
+        if (!custom_role) {
+            alert('Введите название роли');
+            return;
+        }
+    } else if (select.value) {
+        role_id = parseInt(select.value);
+    }
+    
+    try {
+        const response = await fetch(`/api/users/${userId}/role`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ role_id, custom_role })
+        });
+        
+        if (response.ok) {
+            alert('Роль назначена');
+            loadUsersWithRolesList();
+        } else {
+            const error = await response.json();
+            alert(error.error || 'Ошибка');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+};
+
+window.openCreateRoleModal = function() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <span class="modal-title">➕ Создать новую роль</span>
+                <button class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="field">
+                    <label>Название (системное)</label>
+                    <input type="text" id="roleName" placeholder="например: supervisor, mentor, assistant">
+                    <div style="font-size: 11px; color: var(--muted);">Только латиница, без пробелов</div>
+                </div>
+                <div class="field">
+                    <label>Отображаемое имя</label>
+                    <input type="text" id="roleDisplayName" placeholder="например: Супервайзер, Наставник">
+                </div>
+                <div class="field">
+                    <label>Описание</label>
+                    <textarea id="roleDescription" rows="3" placeholder="Обязанности и права роли..."></textarea>
+                </div>
+                <div class="field">
+                    <label>Уровень доступа (число)</label>
+                    <input type="number" id="roleLevel" value="30" min="0" max="100">
+                    <div style="font-size: 11px; color: var(--muted);">Чем выше число, тем больше прав</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel">Отмена</button>
+                <button class="btn-save" id="createRoleBtn">💾 Создать</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    const closeModal = () => {
+        modal.classList.remove('open');
+        setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    modal.querySelector('#createRoleBtn').addEventListener('click', async () => {
+        const name = modal.querySelector('#roleName').value.trim().toLowerCase();
+        const display_name = modal.querySelector('#roleDisplayName').value.trim();
+        const description = modal.querySelector('#roleDescription').value.trim();
+        const level = parseInt(modal.querySelector('#roleLevel').value);
+        
+        if (!name || !display_name) {
+            alert('Заполните название и отображаемое имя');
+            return;
+        }
+        
+        if (!/^[a-z_]+$/.test(name)) {
+            alert('Название может содержать только латинские буквы и подчеркивания');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/roles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ name, display_name, description, level, permissions: [] })
+            });
+            
+            if (response.ok) {
+                alert('Роль создана');
+                closeModal();
+                loadRolesList();
+                loadUsersWithRolesList();
+            } else {
+                const error = await response.json();
+                alert(error.error || 'Ошибка');
+            }
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    });
+};
+
+window.openEditRoleModal = async function(roleId) {
+    try {
+        const response = await fetch(`/api/roles`, { credentials: 'include' });
+        const roles = await response.json();
+        const role = roles.find(r => r.id === roleId);
+        
+        if (!role) {
+            alert('Роль не найдена');
+            return;
+        }
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal" style="max-width: 500px;">
+                <div class="modal-header">
+                    <span class="modal-title">✏️ Редактировать: ${escapeHtml(role.display_name)}</span>
+                    <button class="modal-close">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="field">
+                        <label>Отображаемое имя</label>
+                        <input type="text" id="editRoleDisplayName" value="${escapeHtml(role.display_name)}">
+                    </div>
+                    <div class="field">
+                        <label>Описание</label>
+                        <textarea id="editRoleDescription" rows="3">${escapeHtml(role.description || '')}</textarea>
+                    </div>
+                    <div class="field">
+                        <label>Уровень доступа</label>
+                        <input type="number" id="editRoleLevel" value="${role.level}" min="0" max="100">
+                    </div>
+                    <div class="field">
+                        <label>Активна</label>
+                        <select id="editRoleActive">
+                            <option value="true" ${role.is_active ? 'selected' : ''}>Да</option>
+                            <option value="false" ${!role.is_active ? 'selected' : ''}>Нет</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel">Отмена</button>
+                    <button class="btn-save" id="saveRoleBtn">💾 Сохранить</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('open'), 10);
+        
+        const closeModal = () => {
+            modal.classList.remove('open');
+            setTimeout(() => modal.remove(), 300);
+        };
+        
+        modal.querySelector('.modal-close').addEventListener('click', closeModal);
+        modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+        
+        modal.querySelector('#saveRoleBtn').addEventListener('click', async () => {
+            const display_name = modal.querySelector('#editRoleDisplayName').value.trim();
+            const description = modal.querySelector('#editRoleDescription').value.trim();
+            const level = parseInt(modal.querySelector('#editRoleLevel').value);
+            const is_active = modal.querySelector('#editRoleActive').value === 'true';
+            
+            if (!display_name) {
+                alert('Введите отображаемое имя');
+                return;
+            }
+            
+            try {
+                const updateResponse = await fetch(`/api/roles/${roleId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ display_name, description, level, is_active })
+                });
+                
+                if (updateResponse.ok) {
+                    alert('Сохранено');
+                    closeModal();
+                    loadRolesList();
+                    loadUsersWithRolesList();
+                } else {
+                    const error = await updateResponse.json();
+                    alert(error.error || 'Ошибка');
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            }
+        });
+        
+    } catch (error) {
+        alert('Ошибка загрузки роли');
+    }
+};
+
+window.deleteRole = async function(roleId) {
+    if (!confirm('Удалить роль? Пользователи с этой ролью останутся, но роль будет сброшена.')) return;
+    
+    try {
+        const response = await fetch(`/api/roles/${roleId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            alert('Роль удалена');
+            loadRolesList();
+            loadUsersWithRolesList();
+        } else {
+            const error = await response.json();
+            alert(error.error || 'Ошибка');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+};
+3. Добавьте в стили для новой панели (style.css)
+css
+/* ========== РОЛИ И ДОЛЖНОСТИ ========== */
+.roles-list-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.role-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+}
+
+.role-card:hover {
+    border-color: var(--accent);
+}
+
+.role-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.role-badge.root { background: rgba(252,92,124,0.15); color: var(--accent2); }
+.role-badge.rop { background: rgba(252,184,48,0.15); color: var(--accent4); }
+.role-badge.manager { background: rgba(124,92,252,0.15); color: var(--accent); }
+.role-badge.user { background: rgba(60,255,160,0.1); color: var(--accent3); }
+
+.user-role-selector {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
 
 // Экспорт
 window.openRopPanel = openRopPanel;
