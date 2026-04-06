@@ -246,7 +246,7 @@ async function openRopPanel() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
-        <div class="modal" style="max-width: 740px; height: 88vh; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="modal" style="max-width: 1400px; width: 95%; height: 90vh; display: flex; flex-direction: column; overflow: hidden;">
             <div class="modal-header">
                 <span class="modal-title">⚙️ Администрирование</span>
                 <button class="modal-close">✕</button>
@@ -255,19 +255,25 @@ async function openRopPanel() {
                 <button class="admin-tab active" data-panel="users">👥 Пользователи</button>
                 <button class="admin-tab" data-panel="schedule">📅 Графики</button>
                 <button class="admin-tab" data-panel="points">📍 Точки</button>
+                <button class="admin-tab" data-panel="quizzes">📋 Опросники</button>
             </div>
             <div style="flex: 1; overflow-y: auto; padding: 20px 24px;">
                 <div id="adminPanel-users" class="admin-panel"></div>
                 <div id="adminPanel-schedule" class="admin-panel" style="display:none;"></div>
                 <div id="adminPanel-points" class="admin-panel" style="display:none;"></div>
+                <div id="adminPanel-quizzes" class="admin-panel" style="display:none;"></div>
             </div>
         </div>
     `;
     document.body.appendChild(modal);
     setTimeout(() => modal.classList.add('open'), 10);
 
-    const closeModal = () => { modal.classList.remove('open'); setTimeout(() => modal.remove(), 300); };
+    const closeModal = () => { 
+        modal.classList.remove('open'); 
+        setTimeout(() => modal.remove(), 300); 
+    };
     modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
     // Tab switching
     modal.querySelectorAll('.admin-tab').forEach(tab => {
@@ -275,13 +281,25 @@ async function openRopPanel() {
             modal.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
             modal.querySelectorAll('.admin-panel').forEach(p => p.style.display = 'none');
             tab.classList.add('active');
-            document.getElementById(`adminPanel-${tab.dataset.panel}`).style.display = 'block';
+            document.getElementById(`adminPanel-${tab.dataset.panel}`).style.display = 'block');
+            
+            // Перезагружаем данные при переключении вкладки
+            if (tab.dataset.panel === 'schedule') {
+                if (typeof initScheduleEditor === 'function') {
+                    initScheduleEditor();
+                }
+            } else if (tab.dataset.panel === 'quizzes') {
+                if (typeof loadQuizzesAdmin === 'function') {
+                    loadQuizzesAdmin();
+                }
+            }
         });
     });
 
     await renderUsersPanel();
     renderSchedulePanel();
     await renderPointsPanel();
+    renderQuizzesPanel();
 }
 
 // ===================== USERS PANEL =====================
