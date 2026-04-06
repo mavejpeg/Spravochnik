@@ -282,6 +282,24 @@ async function initDatabase() {
             )
         `);
 
+        // Таблица подмен
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS substitutions (
+                id SERIAL PRIMARY KEY,
+                original_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                substitute_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                substitute_point_id INTEGER REFERENCES points(id) ON DELETE SET NULL,
+                date DATE NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending', -- pending, approved, rejected, completed
+                requested_by INTEGER REFERENCES users(id),
+                approved_by INTEGER REFERENCES users(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                note TEXT,
+                UNIQUE(original_user_id, date)
+            )
+        `);
+
         // Add point_id column if not exists
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS point_id INTEGER`).catch(e => {});
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(255)`).catch(e => {});
@@ -2004,6 +2022,237 @@ app.post('/api/registration-requests/:id/:action', requireRop, async (req, res) 
     } catch (error) {
         console.error('Process request error:', error);
         res.status(500).json({ error: 'Failed to process request' });
+    }
+});
+
+// ========== РОП ИНФОРМАЦИЯ ==========
+app.get('/api/rop-info', requireAuth, async (req, res) => {
+    try {
+        // Получаем всех пользователей с ролью rop или root
+        const ropList = await pool.query(`
+            SELECT id, full_name, username, position, point_id
+            FROM users 
+            WHERE role IN ('rop', 'root')
+            ORDER BY role DESC
+        `);
+        
+        // Получаем график работы РОП (можно получить из schedules или задать стандартный)
+        const schedule = await pool.query(`
+            SELECT days FROM schedules 
+            WHERE user_id = $1 AND year = $2 AND month = $3
+            LIMIT 1
+        `, [ropList.rows[0]?.id, new Date().getFullYear(), new Date().getMonth() + 1]);
+        
+        res.json({
+            rop: ropList.rows[0] || null,
+            allRops: ropList.rows,
+            schedule: schedule.rows[0]?.days || null
+        });
+    } catch (error) {
+        console.error('Error fetching ROP info:', error);
+        res.status(500).json({ error: 'Failed to get ROP info' });
+    }
+});
+
+// ========== ПОДМЕНЫ ==========
+// Получить подмены для сотрудника
+app.get('/api/substitutions/:userId', requireAuth, async (req, res) => {
+    const { userId } = req.params;
+    const { year, month } = req.query;
+    
+    try {
+        let query = `
+            SELECT s.*, 
+                   u.full_name as original_name,
+                   sub.full_name as substitute_name,
+                   p.name as point_name,
+                   p.address as point_address
+            FROM substitutions s
+            LEFT JOIN users u ON s.original_user_id = u.id
+            LEFT JOIN users sub ON s.substitute_user_id = sub.id
+            LEFT JOIN points p ON s.substitute_point_id = p.id
+            WHERE (s.original_user_id = $1 OR s.substitute_user_id = $1)
+        `;
+        const params = [userId];
+        
+        if (year && month) {
+            query += ` AND EXTRACT(YEAR FROM s.date) = $2 AND EXTRACT(MONTH FROM s.date) = $3`;
+            params.push(year, month);
+        }
+        
+        query += ` ORDER BY s.date ASC`;
+        
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching substitutions:', error);
+        res.status(500).json({ error: 'Failed to get substitutions' });
+    }
+});
+
+// Создать подмену (только РОП)
+app.post('/api/substitutions', requireRop, async (req, res) => {
+    const { original_user_id, substitute_user_id, substitute_point_id, date, note } = req.body;
+    
+    // Проверка: нельзя подменить за час до смены
+    const subDate = new Date(date);
+    const now = new Date();
+    const hoursDiff = (subDate - now) / (1000 * 60 * 60);
+    
+    if (hoursDiff < 1) {
+        return res.status(400).json({ error: 'Нельзя создать подмену менее чем за час до начала смены' });
+    }
+    
+    try {
+        // Проверяем, нет ли уже подмены на эту дату
+        const existing = await pool.query(
+            'SELECT id FROM substitutions WHERE original_user_id = $1 AND date = $2',
+            [original_user_id, date]
+        );
+        
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ error: 'На эту дату уже есть подмена' });
+        }
+        
+        const result = await pool.query(`
+            INSERT INTO substitutions (original_user_id, substitute_user_id, substitute_point_id, date, status, requested_by, approved_by, note)
+            VALUES ($1, $2, $3, $4, 'approved', $5, $5, $6)
+            RETURNING *
+        `, [original_user_id, substitute_user_id, substitute_point_id, date, req.session.user.id, note]);
+        
+        // Обновляем график оригинального сотрудника (делаем его выходным)
+        const [year, month, day] = date.split('-');
+        const scheduleResult = await pool.query(
+            'SELECT days FROM schedules WHERE user_id = $1 AND year = $2 AND month = $3',
+            [original_user_id, year, month]
+        );
+        
+        if (scheduleResult.rows.length > 0) {
+            let days = scheduleResult.rows[0].days;
+            const dayIndex = parseInt(day) - 1;
+            if (days[dayIndex] === 'work') {
+                days[dayIndex] = 'off';
+                await pool.query(
+                    'UPDATE schedules SET days = $1 WHERE user_id = $2 AND year = $3 AND month = $4',
+                    [JSON.stringify(days), original_user_id, year, month]
+                );
+            }
+        }
+        
+        // Обновляем график подменяющего сотрудника (делаем его рабочим)
+        const subScheduleResult = await pool.query(
+            'SELECT days FROM schedules WHERE user_id = $1 AND year = $2 AND month = $3',
+            [substitute_user_id, year, month]
+        );
+        
+        if (subScheduleResult.rows.length > 0) {
+            let days = subScheduleResult.rows[0].days;
+            const dayIndex = parseInt(day) - 1;
+            if (days[dayIndex] !== 'work') {
+                days[dayIndex] = 'work';
+                await pool.query(
+                    'UPDATE schedules SET days = $1 WHERE user_id = $2 AND year = $3 AND month = $4',
+                    [JSON.stringify(days), substitute_user_id, year, month]
+                );
+            }
+        }
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error creating substitution:', error);
+        res.status(500).json({ error: 'Failed to create substitution' });
+    }
+});
+
+// Отменить подмену (только РОП)
+app.delete('/api/substitutions/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        // Получаем информацию о подмене перед удалением
+        const subResult = await pool.query('SELECT * FROM substitutions WHERE id = $1', [id]);
+        const substitution = subResult.rows[0];
+        
+        if (substitution) {
+            // Восстанавливаем оригинальный график
+            const [year, month, day] = substitution.date.split('-');
+            
+            // Возвращаем рабочий день оригинальному сотруднику
+            const origSchedule = await pool.query(
+                'SELECT days FROM schedules WHERE user_id = $1 AND year = $2 AND month = $3',
+                [substitution.original_user_id, year, month]
+            );
+            
+            if (origSchedule.rows.length > 0) {
+                let days = origSchedule.rows[0].days;
+                const dayIndex = parseInt(day) - 1;
+                days[dayIndex] = 'work';
+                await pool.query(
+                    'UPDATE schedules SET days = $1 WHERE user_id = $2 AND year = $3 AND month = $4',
+                    [JSON.stringify(days), substitution.original_user_id, year, month]
+                );
+            }
+            
+            // Убираем рабочий день у подменяющего
+            const subSchedule = await pool.query(
+                'SELECT days FROM schedules WHERE user_id = $1 AND year = $2 AND month = $3',
+                [substitution.substitute_user_id, year, month]
+            );
+            
+            if (subSchedule.rows.length > 0) {
+                let days = subSchedule.rows[0].days;
+                const dayIndex = parseInt(day) - 1;
+                days[dayIndex] = 'off';
+                await pool.query(
+                    'UPDATE schedules SET days = $1 WHERE user_id = $2 AND year = $3 AND month = $4',
+                    [JSON.stringify(days), substitution.substitute_user_id, year, month]
+                );
+            }
+        }
+        
+        await pool.query('DELETE FROM substitutions WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting substitution:', error);
+        res.status(500).json({ error: 'Failed to delete substitution' });
+    }
+});
+
+// Запросить подмену (от сотрудника)
+app.post('/api/substitutions/request', requireAuth, async (req, res) => {
+    const { date, reason } = req.body;
+    const userId = req.session.user.id;
+    
+    const subDate = new Date(date);
+    const now = new Date();
+    const hoursDiff = (subDate - now) / (1000 * 60 * 60);
+    
+    if (hoursDiff < 24) {
+        return res.status(400).json({ error: 'Запрос на подмену нужно отправлять минимум за 24 часа' });
+    }
+    
+    try {
+        // Проверяем, есть ли уже подмена
+        const existing = await pool.query(
+            'SELECT id FROM substitutions WHERE original_user_id = $1 AND date = $2',
+            [userId, date]
+        );
+        
+        if (existing.rows.length > 0) {
+            return res.status(400).json({ error: 'На эту дату уже есть подмена' });
+        }
+        
+        // Создаем запрос (без утвержденного подменяющего)
+        const result = await pool.query(`
+            INSERT INTO substitutions (original_user_id, date, status, requested_by, note)
+            VALUES ($1, $2, 'pending', $3, $4)
+            RETURNING *
+        `, [userId, date, userId, reason]);
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error requesting substitution:', error);
+        res.status(500).json({ error: 'Failed to request substitution' });
     }
 });
 
