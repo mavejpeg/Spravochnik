@@ -3626,14 +3626,80 @@ button,
   -webkit-user-select: none;
 }
 
-/* ========== ЭЛЕГАНТНЫЙ ГРАДИЕНТ С ДВИЖЕНИЕМ ========== */
-body {
+/* ========== ПОЛНОСТЬЮ РАБОТАЮЩИЙ ФОН (без черных полей) ========== */
+
+/* Основной фон на весь экран */
+html {
   background: linear-gradient(135deg, #0a0a0f 0%, #12121a 30%, #0d0d15 70%, #0a0a0f 100%);
   background-attachment: fixed;
-  position: relative;
+  min-height: 100%;
 }
 
-/* Основное свечение */
+body {
+  background: transparent !important;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Убираем фоны у всех основных элементов, делаем их прозрачными */
+.site-header,
+.tab-nav,
+main,
+.section,
+.section.active,
+.cards-grid,
+.product-card,
+.manufacturer-card,
+.info-card,
+.accordion,
+.details,
+.modal,
+.modal-content,
+.profile-card,
+.schedule-card,
+.partner-card,
+.learning-section,
+.hub-card,
+.quiz-block {
+  background: transparent !important;
+}
+
+/* Но добавляем легкую полупрозрачность для читаемости */
+.product-card,
+.manufacturer-card,
+.info-card,
+.accordion,
+.profile-card,
+.schedule-card,
+.partner-card,
+.learning-section,
+.hub-card,
+.quiz-block,
+.modal {
+  background: rgba(17, 17, 24, 0.85) !important;
+  backdrop-filter: blur(2px);
+}
+
+/* Поверхность 2 - тоже делаем полупрозрачной */
+.surface2,
+.search-wrap,
+.search-input,
+.field input,
+.field textarea,
+.field select,
+.admin-panel-input,
+.admin-panel-select {
+  background: rgba(24, 24, 31, 0.9) !important;
+}
+
+/* Заголовок и навигация */
+.site-header,
+.tab-nav {
+  background: rgba(9, 9, 14, 0.95) !important;
+  backdrop-filter: blur(12px);
+}
+
+/* Анимация фона */
 body::before {
   content: '';
   position: fixed;
@@ -3641,15 +3707,14 @@ body::before {
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at 30% 40%, rgba(124, 92, 252, 0.1), transparent 50%),
-              radial-gradient(circle at 80% 70%, rgba(60, 255, 160, 0.07), transparent 50%),
-              radial-gradient(circle at 50% 20%, rgba(252, 92, 124, 0.05), transparent 50%);
+  background: radial-gradient(circle at 30% 40%, rgba(124, 92, 252, 0.12), transparent 50%),
+              radial-gradient(circle at 80% 70%, rgba(60, 255, 160, 0.08), transparent 50%),
+              radial-gradient(circle at 50% 20%, rgba(252, 92, 124, 0.06), transparent 50%);
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
   animation: slowBreathing 12s ease-in-out infinite;
 }
 
-/* Дополнительное свечение снизу */
 body::after {
   content: '';
   position: fixed;
@@ -3657,9 +3722,9 @@ body::after {
   left: 0;
   width: 100%;
   height: 40%;
-  background: linear-gradient(0deg, rgba(124, 92, 252, 0.06), transparent);
+  background: linear-gradient(0deg, rgba(124, 92, 252, 0.08), transparent);
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
   filter: blur(30px);
   animation: bottomGlow 8s ease-in-out infinite;
 }
@@ -3682,14 +3747,4 @@ body::after {
   50% {
     opacity: 0.8;
   }
-}
-
-/* Контент поверх */
-.site-header,
-.tab-nav,
-main,
-.section,
-.modal-overlay {
-  position: relative;
-  z-index: 1;
 }
