@@ -1402,8 +1402,6 @@ window.deleteRole = async function(roleId) {
         alert('Ошибка: ' + error.message);
     }
 };
-3. Добавьте в стили для новой панели (style.css)
-css
 /* ========== РОЛИ И ДОЛЖНОСТИ ========== */
 .roles-list-container {
     max-height: 400px;
