@@ -3141,3 +3141,487 @@ body {
   z-index: -1;
   opacity: 0.95;
 }
+
+/* ========== КНОПКИ В АДМИН-ПАНЕЛИ ========== */
+.btn-edit, 
+.btn-delete,
+.btn-add,
+.btn-cancel,
+.btn-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Manrope', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .btn-edit, 
+  .btn-delete,
+  .btn-add,
+  .btn-cancel,
+  .btn-save {
+    padding: 10px 18px;
+    font-size: 13px;
+  }
+}
+
+/* Кнопка редактирования */
+.btn-edit {
+  background: rgba(124, 92, 252, 0.15);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.btn-edit:hover {
+  background: var(--accent);
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Кнопка удаления */
+.btn-delete {
+  background: rgba(252, 92, 124, 0.15);
+  border: 1px solid var(--accent2);
+  color: var(--accent2);
+}
+
+.btn-delete:hover {
+  background: var(--accent2);
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Кнопка добавления */
+.btn-add {
+  background: var(--accent);
+  border: none;
+  color: white;
+  box-shadow: 0 2px 8px rgba(124, 92, 252, 0.3);
+}
+
+.btn-add:hover {
+  background: #8e6ffe;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 92, 252, 0.4);
+}
+
+/* Кнопка отмены */
+.btn-cancel {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+
+.btn-cancel:hover {
+  background: var(--surface3);
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+/* Кнопка сохранения */
+.btn-save {
+  background: var(--accent);
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(124, 92, 252, 0.3);
+}
+
+.btn-save:hover {
+  background: #8e6ffe;
+  transform: translateY(-1px);
+}
+
+/* ========== МАЛЕНЬКИЕ КНОПКИ (для таблиц) ========== */
+.btn-edit-small,
+.btn-delete-small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+@media (min-width: 640px) {
+  .btn-edit-small,
+  .btn-delete-small {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+}
+
+.btn-edit-small {
+  background: rgba(124, 92, 252, 0.15);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.btn-edit-small:hover {
+  background: var(--accent);
+  color: white;
+  transform: scale(1.05);
+}
+
+.btn-delete-small {
+  background: rgba(252, 92, 124, 0.15);
+  border: 1px solid var(--accent2);
+  color: var(--accent2);
+}
+
+.btn-delete-small:hover {
+  background: var(--accent2);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* ========== КНОПКИ В КАРТОЧКАХ ТОВАРОВ ========== */
+.card-action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+@media (min-width: 640px) {
+  .card-action-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+  }
+}
+
+.card-action-btn.btn-edit {
+  background: rgba(124, 92, 252, 0.8);
+  color: white;
+  border: none;
+}
+
+.card-action-btn.btn-edit:hover {
+  background: var(--accent);
+  transform: scale(1.05);
+}
+
+.card-action-btn.btn-delete {
+  background: rgba(252, 92, 124, 0.8);
+  color: white;
+  border: none;
+}
+
+.card-action-btn.btn-delete:hover {
+  background: var(--accent2);
+  transform: scale(1.05);
+}
+
+/* ========== АДМИН-ПАНЕЛЬ - КНОПКИ В СПИСКЕ ПОЛЬЗОВАТЕЛЕЙ ========== */
+.admin-user-row .btn-edit,
+.admin-user-row .btn-delete,
+.admin-user-row .btn-add {
+  padding: 6px 12px;
+  font-size: 11px;
+  border-radius: 6px;
+}
+
+@media (min-width: 640px) {
+  .admin-user-row .btn-edit,
+  .admin-user-row .btn-delete,
+  .admin-user-row .btn-add {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+}
+
+/* Кнопка смены пароля */
+.admin-user-row .btn-edit {
+  background: rgba(60, 186, 252, 0.15);
+  border: 1px solid var(--accent5);
+  color: var(--accent5);
+}
+
+.admin-user-row .btn-edit:hover {
+  background: var(--accent5);
+  color: white;
+}
+
+/* Кнопка удаления пользователя */
+.admin-user-row .btn-delete {
+  background: rgba(252, 92, 124, 0.15);
+  border: 1px solid var(--accent2);
+  color: var(--accent2);
+}
+
+.admin-user-row .btn-delete:hover {
+  background: var(--accent2);
+  color: white;
+}
+
+/* ========== КНОПКИ В РЕДАКТОРЕ ========== */
+/* Кнопки в тулбаре редактора */
+.editor-toolbar .tool-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text);
+}
+
+@media (min-width: 640px) {
+  .editor-toolbar .tool-btn {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+}
+
+.editor-toolbar .tool-btn:hover {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* Кнопки в редакторе элементов */
+.remove-editor-item {
+  background: rgba(252, 92, 124, 0.15);
+  border: 1px solid rgba(252, 92, 124, 0.3);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  color: var(--accent2);
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.remove-editor-item:hover {
+  background: rgba(252, 92, 124, 0.3);
+  transform: scale(1.02);
+}
+
+/* Кнопка добавления в редакторе */
+.add-list-item,
+.add-step-btn,
+.add-table-row,
+.add-table-col,
+.add-quiz-question {
+  background: var(--accent-glow);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: var(--accent);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (min-width: 640px) {
+  .add-list-item,
+  .add-step-btn,
+  .add-table-row,
+  .add-table-col,
+  .add-quiz-question {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+}
+
+.add-list-item:hover,
+.add-step-btn:hover,
+.add-table-row:hover,
+.add-table-col:hover,
+.add-quiz-question:hover {
+  background: var(--accent);
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Кнопки формата в редакторе */
+.format-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+@media (min-width: 640px) {
+  .format-btn {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+}
+
+.format-btn:hover {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ========== КНОПКИ В ТАБЛИЦЕ РЕДАКТОРА ГРАФИКОВ ========== */
+.schedule-editor-table .btn-edit,
+.schedule-editor-table .btn-delete {
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+@media (min-width: 640px) {
+  .schedule-editor-table .btn-edit,
+  .schedule-editor-table .btn-delete {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}
+
+/* ========== КНОПКА ВЫХОДА ========== */
+.logout-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 6px 12px;
+  color: var(--text2);
+  font-size: 11px;
+  font-family: 'Manrope', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (min-width: 640px) {
+  .logout-btn {
+    padding: 7px 14px;
+    font-size: 12px;
+  }
+}
+
+.logout-btn:hover {
+  border-color: var(--accent2);
+  color: var(--accent2);
+  transform: translateY(-1px);
+}
+
+/* ========== КНОПКА РОП ========== */
+.rop-btn {
+  background: linear-gradient(135deg, var(--accent4), var(--accent2));
+  border: none;
+  border-radius: 20px;
+  padding: 6px 12px;
+  color: white;
+  font-size: 11px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (min-width: 640px) {
+  .rop-btn {
+    padding: 7px 14px;
+    font-size: 12px;
+  }
+}
+
+.rop-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 10px rgba(252, 184, 48, 0.3);
+}
+
+/* ========== КНОПКА "НА ГЛАВНУЮ" ========== */
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  color: var(--text2);
+  font-size: 11px;
+  font-family: 'Manrope', sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+@media (min-width: 640px) {
+  .home-btn {
+    gap: 6px;
+    padding: 7px 14px;
+    font-size: 12px;
+  }
+}
+
+.home-btn:hover {
+  background: var(--surface3);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* ========== ОБЩИЕ СТИЛИ ДЛЯ ВСЕХ КНОПОК ========== */
+button,
+.btn-edit,
+.btn-delete,
+.btn-add,
+.btn-cancel,
+.btn-save,
+.card-action-btn,
+.logout-btn,
+.rop-btn,
+.home-btn {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:active,
+.btn-edit:active,
+.btn-delete:active,
+.btn-add:active,
+.btn-cancel:active,
+.btn-save:active,
+.card-action-btn:active {
+  transform: scale(0.98);
+}
+
+/* Запрет на выделение текста на кнопках */
+button,
+.btn-edit,
+.btn-delete,
+.btn-add,
+.btn-cancel,
+.btn-save,
+.card-action-btn {
+  user-select: none;
+  -webkit-user-select: none;
+}
