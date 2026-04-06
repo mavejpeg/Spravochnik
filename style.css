@@ -3562,3 +3562,80 @@ mark {
         margin: 10px;
     }
 }
+
+/* Стили для редактора графиков */
+.schedule-editor-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.schedule-editor-table th,
+.schedule-editor-table td {
+    border: 1px solid var(--border);
+    padding: 8px;
+    text-align: center;
+}
+
+.schedule-editor-table th {
+    background: var(--surface2);
+    font-weight: 600;
+}
+
+.schedule-editor-table td:first-child {
+    text-align: left;
+    background: var(--surface2);
+    position: sticky;
+    left: 0;
+}
+
+.day-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.day-toggle.work {
+    background: rgba(60, 255, 160, 0.2);
+    color: var(--accent3);
+}
+
+.day-toggle.off {
+    background: var(--surface2);
+    color: var(--muted);
+}
+
+.day-toggle.work.sunday {
+    background: rgba(124, 92, 252, 0.2);
+    color: var(--accent);
+}
+
+.bulk-actions {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.bulk-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.save-all-btn {
+    background: var(--accent);
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 20px;
+}
