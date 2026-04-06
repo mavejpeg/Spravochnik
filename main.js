@@ -355,17 +355,202 @@ function renderSchedulePanel() {
     }
 }
 
-// Простая версия для опросников
-function renderQuizzesPanelSimple() {
+// ===================== QUIZZES PANEL (полноценный) =====================
+function renderQuizzesPanel() {
     const panel = document.getElementById('adminPanel-quizzes');
     if (!panel) return;
     
     panel.innerHTML = `
-        <div style="text-align: center; padding: 40px; color: var(--muted);">
-            📋 Управление опросниками в разработке<br>
-            <small>Используйте страницу обучения</small>
+        <div style="margin-bottom: 20px;">
+            <div class="admin-panel-label">📝 Управление опросниками</div>
+            <button onclick="window.openQuizEditorInAdmin()" class="btn-add" style="margin-bottom: 20px;">➕ Создать новый опросник</button>
+        </div>
+        <div class="admin-panel-label">📋 Список опросников</div>
+        <div id="quizzesAdminList"></div>
+    `;
+    
+    loadQuizzesAdmin();
+}
+
+async function loadQuizzesAdmin() {
+    try {
+        const response = await fetch('/api/quizzes', { credentials: 'include' });
+        const quizzes = await response.json();
+        
+        const container = document.getElementById('quizzesAdminList');
+        if (!container) return;
+        
+        if (quizzes.length === 0) {
+            container.innerHTML = '<div style="color: var(--muted); padding: 20px; text-align: center;">Нет опросников. Создайте первый.</div>';
+            return;
+        }
+        
+        container.innerHTML = quizzes.map(quiz => `
+            <div class="admin-quiz-row" style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--strong); font-size: 14px;">${escapeHtml(quiz.title)}</div>
+                        <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+                            ${quiz.description ? escapeHtml(quiz.description) : '—'}
+                            | Вопросов: ${quiz.questions?.length || 0}
+                            | Статус: ${quiz.is_active ? '🟢 Активен' : '🔴 Неактивен'}
+                            | Создан: ${new Date(quiz.created_at).toLocaleDateString('ru-RU')}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="window.openQuizEditorInAdmin(${quiz.id})" class="btn-edit" style="padding: 5px 12px;">✏️ Редактировать</button>
+                        <button onclick="window.deleteQuizInAdmin(${quiz.id})" class="btn-delete" style="padding: 5px 12px;">🗑 Удалить</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load quizzes:', error);
+        const container = document.getElementById('quizzesAdminList');
+        if (container) container.innerHTML = '<div style="color: var(--accent2); padding: 20px;">❌ Ошибка загрузки опросников</div>';
+    }
+}
+
+// Функции для админ-панели
+window.openQuizEditorInAdmin = async function(quizId = null) {
+    // Используем ту же функцию что и на странице обучения
+    if (typeof openQuizEditor === 'function') {
+        openQuizEditor(quizId);
+    } else {
+        // Если функция не определена, показываем простой редактор
+        showSimpleQuizEditor(quizId);
+    }
+};
+
+window.deleteQuizInAdmin = async function(quizId) {
+    if (!confirm('Удалить опросник? Все результаты будут потеряны.')) return;
+    
+    try {
+        const response = await fetch(`/api/quizzes/${quizId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            showToast('Опросник удален', 'success');
+            loadQuizzesAdmin();
+            if (typeof loadQuizzes === 'function') loadQuizzes();
+        } else {
+            showToast('Ошибка удаления', 'error');
+        }
+    } catch (error) {
+        showToast('Ошибка: ' + error.message, 'error');
+    }
+};
+
+// Простой редактор на случай если основная функция не загружена
+function showSimpleQuizEditor(quizId = null) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header">
+                <span class="modal-title">${quizId ? '✏️ Редактировать' : '📝 Создать'} опросник</span>
+                <button class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="field">
+                    <label>Название</label>
+                    <input type="text" id="simpleQuizTitle" placeholder="Название опросника">
+                </div>
+                <div class="field">
+                    <label>Описание</label>
+                    <textarea id="simpleQuizDesc" rows="2" placeholder="Описание..."></textarea>
+                </div>
+                <div class="field">
+                    <label>Вопросы (JSON формат)</label>
+                    <textarea id="simpleQuizQuestions" rows="10" placeholder='[
+  {
+    "text": "Пример вопроса?",
+    "options": ["Вариант 1", "Вариант 2", "Вариант 3"],
+    "correct": 0,
+    "explanation": "Пояснение"
+  }
+]'></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel">Отмена</button>
+                <button class="btn-save" id="saveSimpleQuizBtn">💾 Сохранить</button>
+            </div>
         </div>
     `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    const closeModal = () => {
+        modal.classList.remove('open');
+        setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    // Если редактируем, загружаем данные
+    if (quizId) {
+        fetch(`/api/quizzes/${quizId}`, { credentials: 'include' })
+            .then(res => res.json())
+            .then(quiz => {
+                document.getElementById('simpleQuizTitle').value = quiz.title;
+                document.getElementById('simpleQuizDesc').value = quiz.description || '';
+                document.getElementById('simpleQuizQuestions').value = JSON.stringify(quiz.questions, null, 2);
+            })
+            .catch(console.error);
+    }
+    
+    modal.querySelector('#saveSimpleQuizBtn').addEventListener('click', async () => {
+        const title = document.getElementById('simpleQuizTitle').value.trim();
+        const description = document.getElementById('simpleQuizDesc').value.trim();
+        let questions;
+        
+        try {
+            questions = JSON.parse(document.getElementById('simpleQuizQuestions').value);
+        } catch (e) {
+            showToast('Неверный формат JSON', 'error');
+            return;
+        }
+        
+        if (!title) {
+            showToast('Введите название', 'error');
+            return;
+        }
+        
+        try {
+            let response;
+            if (quizId) {
+                response = await fetch(`/api/quizzes/${quizId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title, description, questions, is_active: true })
+                });
+            } else {
+                response = await fetch('/api/quizzes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title, description, questions })
+                });
+            }
+            
+            if (response.ok) {
+                showToast('Сохранено', 'success');
+                closeModal();
+                loadQuizzesAdmin();
+                if (typeof loadQuizzes === 'function') loadQuizzes();
+            } else {
+                showToast('Ошибка', 'error');
+            }
+        } catch (error) {
+            showToast('Ошибка: ' + error.message, 'error');
+        }
+    });
 }
 
 // ===================== USERS PANEL =====================
