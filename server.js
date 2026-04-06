@@ -2295,6 +2295,130 @@ app.put('/api/rop-info/:id', requireRop, async (req, res) => {
         res.status(500).json({ error: 'Failed to update ROP info' });
     }
 });
+
+// ========== УПРАВЛЕНИЕ РОП (только для root) ==========
+// Получить список всех РОП и администраторов с полной информацией
+app.get('/api/rop-full-list', requireRop, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT id, full_name, username, role, position, 
+                   COALESCE(phone, '') as phone,
+                   COALESCE(description, '') as description,
+                   COALESCE(schedule_info, '') as schedule_info,
+                   point_id
+            FROM users 
+            WHERE role IN ('rop', 'root')
+            ORDER BY 
+                CASE role 
+                    WHEN 'root' THEN 1 
+                    WHEN 'rop' THEN 2 
+                    ELSE 3 
+                END,
+                full_name
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching ROP full list:', error);
+        res.status(500).json({ error: 'Failed to get ROP list' });
+    }
+});
+
+// Обновить информацию о РОП (только для root)
+app.put('/api/rop-info/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { phone, description, schedule_info } = req.body;
+    
+    // Только root может редактировать
+    if (req.session.user.role !== 'root') {
+        return res.status(403).json({ error: 'Только главный администратор может редактировать' });
+    }
+    
+    try {
+        await pool.query(`
+            UPDATE users 
+            SET phone = $1, description = $2, schedule_info = $3
+            WHERE id = $4 AND role IN ('rop', 'root')
+        `, [phone, description, schedule_info, id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating ROP info:', error);
+        res.status(500).json({ error: 'Failed to update ROP info' });
+    }
+});
+
+// Получить графики всех РОП и администраторов за месяц
+app.get('/api/rop-schedules/:year/:month', requireAuth, async (req, res) => {
+    const { year, month } = req.params;
+    
+    try {
+        const rops = await pool.query(`
+            SELECT id, full_name, role
+            FROM users 
+            WHERE role IN ('rop', 'root')
+            ORDER BY 
+                CASE role 
+                    WHEN 'root' THEN 1 
+                    WHEN 'rop' THEN 2 
+                    ELSE 3 
+                END,
+                full_name
+        `);
+        
+        const schedules = {};
+        for (const rop of rops.rows) {
+            const scheduleResult = await pool.query(`
+                SELECT days FROM schedules 
+                WHERE user_id = $1 AND year = $2 AND month = $3
+            `, [rop.id, year, month]);
+            
+            schedules[rop.id] = {
+                days: scheduleResult.rows[0]?.days || Array(new Date(year, month, 0).getDate()).fill('off'),
+                full_name: rop.full_name,
+                role: rop.role
+            };
+        }
+        
+        res.json({
+            schedules: schedules,
+            daysInMonth: new Date(year, month, 0).getDate()
+        });
+    } catch (error) {
+        console.error('Error fetching ROP schedules:', error);
+        res.status(500).json({ error: 'Failed to get ROP schedules' });
+    }
+});
+
+// Создать служебную точку для РОП (если нет)
+app.get('/api/ensure-rop-point', requireRop, async (req, res) => {
+    try {
+        // Проверяем, есть ли служебная точка
+        let point = await pool.query(`
+            SELECT id FROM points WHERE name = '🔧 Служебная точка РОП'
+        `);
+        
+        if (point.rows.length === 0) {
+            point = await pool.query(`
+                INSERT INTO points (name, address) 
+                VALUES ('🔧 Служебная точка РОП', 'Служебная точка для руководителей')
+                RETURNING id
+            `);
+        }
+        
+        const pointId = point.rows[0].id;
+        
+        // Назначаем всех РОП и root на эту точку
+        await pool.query(`
+            UPDATE users 
+            SET point_id = $1 
+            WHERE role IN ('rop', 'root') AND (point_id IS NULL OR point_id != $1)
+        `, [pointId]);
+        
+        res.json({ success: true, pointId: pointId });
+    } catch (error) {
+        console.error('Error ensuring ROP point:', error);
+        res.status(500).json({ error: 'Failed to ensure ROP point' });
+    }
+});
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
