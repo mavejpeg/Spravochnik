@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мой профиль — Справочник</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 24px;
+    margin-top: 32px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .profile-grid { grid-template-columns: 1fr; }
+  }
+
+  .profile-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .profile-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    flex-shrink: 0;
+  }
+
+  .profile-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--strong);
+    line-height: 1.3;
+  }
+
+  .profile-role {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .profile-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .profile-detail-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .profile-detail-value {
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Calendar */
+  .schedule-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+  }
+
+  .schedule-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .schedule-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--strong);
+  }
+
+  .month-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .month-nav button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .month-label {
+    font-size: 13px;
+    color: var(--text);
+    min-width: 120px;
+    text-align: center;
+  }
+
+  .calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+
+  .cal-head {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    padding: 4px 0;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .cal-day {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    position: relative;
+    min-height: 44px;
+    transition: all 0.15s;
+  }
+
+  .cal-day.empty { background: transparent; }
+
+  .cal-day.work {
+    background: linear-gradient(135deg, rgba(60,255,160,0.2), rgba(60,255,160,0.08));
+    border: 1px solid rgba(60,255,160,0.3);
+    color: var(--accent3);
+  }
+
+  .cal-day.day-off {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .cal-day.cleaning {
+    background: linear-gradient(135deg, rgba(124,92,252,0.2), rgba(124,92,252,0.08));
+    border: 1px solid rgba(124,92,252,0.3);
+    color: var(--accent);
+  }
+
+  .cal-day.work.cleaning {
+    background: linear-gradient(135deg, rgba(60,255,160,0.2), rgba(124,92,252,0.15));
+    border: 1px solid rgba(124,92,252,0.4);
+    color: var(--accent);
+  }
+
+  .cal-day.today {
+    outline: 2px solid var(--accent5);
+    outline-offset: 1px;
+  }
+
+  .cal-day .day-icon {
+    font-size: 9px;
+    margin-top: 1px;
+    opacity: 0.8;
+  }
+
+  .cal-legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+  }
+
+  .legend-dot.work { background: rgba(60,255,160,0.4); border: 1px solid rgba(60,255,160,0.5); }
+  .legend-dot.day-off { background: var(--surface2); border: 1px solid var(--border); }
+  .legend-dot.cleaning { background: rgba(124,92,252,0.3); border: 1px solid rgba(124,92,252,0.5); }
+
+  /* Partner block */
+  .partner-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px 28px;
+    margin-top: 24px;
+  }
+
+  .partner-inner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 12px;
+  }
+
+  .partner-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(60,186,252,0.2), rgba(60,186,252,0.08));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--strong);
+    margin-bottom: 4px;
+  }
+
+  .no-schedule {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 32px 0;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-box {
+    background: var(--surface2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--strong);
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .badge.rop { background: rgba(252,184,48,0.15); color: var(--accent4); }
+  .badge.root { background: rgba(252,92,124,0.15); color: var(--accent2); }
+  .badge.user { background: rgba(60,255,160,0.1); color: var(--accent3); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo" href="/">☁ СПРАВОЧНИК</a>
+  <div style="flex:1"></div>
+  <div id="userInfo" style="display: flex; align-items: center; gap: 12px;">
+    <span id="userName" style="font-size: 12px; color: var(--text);"></span>
+    <button id="ropBtn" class="rop-btn" style="display: none;">⚙️ Администрирование</button>
+    <button id="logoutBtn" class="logout-btn">🚪 Выйти</button>
+  </div>
+</header>
+
+<main>
+  <div style="max-width: 1100px; margin: 0 auto; padding: 0 20px 60px;">
+    <div style="padding: 32px 0 8px;">
+      <a href="/" style="font-size: 12px; color: var(--muted); text-decoration: none;">← Главная</a>
+      <h1 style="font-family: 'Unbounded', sans-serif; font-size: 24px; font-weight: 700; color: var(--strong); margin-top: 12px;">Мой профиль</h1>
+    </div>
+
+    <div class="profile-grid">
+      <!-- Left: profile info -->
+      <div>
+        <div class="profile-card" id="profileCard">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="profile-avatar">👤</div>
+            <div>
+              <div class="profile-name" id="profileName">Загрузка...</div>
+              <div class="profile-role" id="profileRoleBadge"></div>
+            </div>
+          </div>
+          <hr class="divider">
+          <div class="profile-detail">
+            <div class="profile-detail-label">Должность</div>
+            <div class="profile-detail-value" id="profilePosition">Не указана</div>
+          </div>
+          <div class="profile-detail">
+            <div class="profile-detail-label">Торговая точка</div>
+            <div class="profile-detail-value" id="profilePoint">Не назначена</div>
+          </div>
+          <div class="profile-detail">
+            <div class="profile-detail-label">Логин</div>
+            <div class="profile-detail-value" id="profileUsername" style="font-family: monospace; font-size: 13px;"></div>
+          </div>
+        </div>
+
+        <!-- Partner card -->
+        <div class="partner-card" id="partnerCard" style="display: none;">
+          <div class="section-title">👥 Сменщик</div>
+          <div class="partner-inner">
+            <div class="partner-avatar">👤</div>
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: var(--strong);" id="partnerName">—</div>
+              <div style="font-size: 12px; color: var(--muted);" id="partnerPosition"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: schedule -->
+      <div>
+        <div class="schedule-card">
+          <div class="schedule-header">
+            <div class="schedule-title">📅 Рабочий график</div>
+            <div class="month-nav">
+              <button id="prevMonth">‹</button>
+              <div class="month-label" id="monthLabel"></div>
+              <button id="nextMonth">›</button>
+            </div>
+          </div>
+
+          <div class="stats-row" id="statsRow" style="display: none;">
+            <div class="stat-box">
+              <div class="stat-num" id="statWork">0</div>
+              <div class="stat-label">Рабочих дней</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-num" id="statOff">0</div>
+              <div class="stat-label">Выходных</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-num" id="statClean">0</div>
+              <div class="stat-label">Уборок</div>
+            </div>
+          </div>
+
+          <div class="calendar" id="calendar">
+            <div class="cal-head">Пн</div>
+            <div class="cal-head">Вт</div>
+            <div class="cal-head">Ср</div>
+            <div class="cal-head">Чт</div>
+            <div class="cal-head">Пт</div>
+            <div class="cal-head">Сб</div>
+            <div class="cal-head">Вс</div>
+          </div>
+          <div id="noSchedule" class="no-schedule" style="display: none;">
+            График на этот месяц ещё не составлен
+          </div>
+          <div class="cal-legend">
+            <div class="legend-item"><div class="legend-dot work"></div>Рабочий день</div>
+            <div class="legend-item"><div class="legend-dot day-off"></div>Выходной</div>
+            <div class="legend-item"><div class="legend-dot cleaning"></div>Уборка (Вс)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="main.js"></script>
+<script>
+let currentYear, currentMonth, currentUserId, scheduleData = null;
+
+const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь',
+                     'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+function initPage(user) {
+  currentUserId = user.id;
+  const now = new Date();
+  currentYear = now.getFullYear();
+  currentMonth = now.getMonth() + 1;
+  updateMonthLabel();
+  loadProfile();
+  loadSchedule();
+}
+
+function updateMonthLabel() {
+  document.getElementById('monthLabel').textContent = `${MONTH_NAMES[currentMonth-1]} ${currentYear}`;
+}
+
+async function loadProfile() {
+  const res = await fetch('/api/profile', { credentials: 'include' });
+  const p = await res.json();
+
+  document.getElementById('profileName').textContent = p.full_name || '—';
+  document.getElementById('profileUsername').textContent = p.username || '';
+  document.getElementById('profilePosition').textContent = p.position || 'Не указана';
+  document.getElementById('profilePoint').textContent = p.point_name
+    ? `${p.point_name}${p.point_address ? ' · ' + p.point_address : ''}`
+    : 'Не назначена';
+
+  const roles = { root: ['ROOT', 'root'], rop: ['РОП', 'rop'], user: ['Сотрудник', 'user'] };
+  const [label, cls] = roles[p.role] || ['Сотрудник', 'user'];
+  document.getElementById('profileRoleBadge').innerHTML = `<span class="badge ${cls}">${label}</span>`;
+}
+
+async function loadSchedule() {
+  const res = await fetch(`/api/schedule/${currentUserId}/${currentYear}/${currentMonth}`, { credentials: 'include' });
+  scheduleData = await res.json();
+
+  // Update partner
+  const partnerCard = document.getElementById('partnerCard');
+  if (scheduleData && scheduleData.partner_name) {
+    partnerCard.style.display = 'block';
+    document.getElementById('partnerName').textContent = scheduleData.partner_name;
+    // Load partner profile for position
+    try {
+      const pr = await fetch(`/api/profile/${scheduleData.partner_id}`, { credentials: 'include' });
+      const partner = await pr.json();
+      document.getElementById('partnerPosition').textContent = partner.position || '';
+    } catch(e) {}
+  } else {
+    partnerCard.style.display = 'none';
+  }
+
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const cal = document.getElementById('calendar');
+  // Clear day cells (keep headers)
+  const heads = cal.querySelectorAll('.cal-head');
+  cal.innerHTML = '';
+  heads.forEach(h => cal.appendChild(h));
+
+  const noSched = document.getElementById('noSchedule');
+  const statsRow = document.getElementById('statsRow');
+
+  if (!scheduleData || !scheduleData.days || !scheduleData.days.length) {
+    noSched.style.display = 'block';
+    statsRow.style.display = 'none';
+    return;
+  }
+
+  noSched.style.display = 'none';
+  statsRow.style.display = 'grid';
+
+  const days = scheduleData.days; // array of 'work'|'off' per day 1..N
+  const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay(); // 0=Sun
+  const offset = firstDay === 0 ? 6 : firstDay - 1; // Mon=0
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const today = new Date();
+  const isThisMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth;
+
+  // Empty cells
+  for (let i = 0; i < offset; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    cal.appendChild(el);
+  }
+
+  let workCount = 0, offCount = 0, cleanCount = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dayType = days[d - 1] || 'off';
+    const weekday = new Date(currentYear, currentMonth - 1, d).getDay();
+    const isSunday = weekday === 0;
+    const isCleaning = isSunday && dayType === 'work';
+
+    const el = document.createElement('div');
+    let cls = 'cal-day';
+    if (dayType === 'work') { cls += ' work'; workCount++; }
+    else { cls += ' day-off'; offCount++; }
+    if (isCleaning) { cls += ' cleaning'; cleanCount++; }
+    if (isThisMonth && d === today.getDate()) cls += ' today';
+    el.className = cls;
+    el.innerHTML = `<span>${d}</span><span class="day-icon">${isCleaning ? '🧹' : (dayType === 'work' ? '✓' : '')}</span>`;
+    cal.appendChild(el);
+  }
+
+  document.getElementById('statWork').textContent = workCount;
+  document.getElementById('statOff').textContent = offCount;
+  document.getElementById('statClean').textContent = cleanCount;
+}
+
+document.getElementById('prevMonth').addEventListener('click', () => {
+  currentMonth--;
+  if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+  updateMonthLabel();
+  loadSchedule();
+});
+
+document.getElementById('nextMonth').addEventListener('click', () => {
+  currentMonth++;
+  if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+  updateMonthLabel();
+  loadSchedule();
+});
+
+// Wait for auth
+window.onAuthReady = function(isRop, user) {
+  initPage(user);
+};
+</script>
+</body>
+</html>
