@@ -3639,3 +3639,330 @@ mark {
     font-weight: 600;
     margin-top: 20px;
 }
+
+/* ========== SCHEDULE EDITOR STYLES ========== */
+.schedule-point-header {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+}
+
+.schedule-point-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.schedule-point-address {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.schedule-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-radius: 12px;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.toolbar-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text);
+}
+
+.toolbar-btn:hover {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.toolbar-btn.small {
+    padding: 4px 10px;
+    font-size: 11px;
+}
+
+.toolbar-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.schedule-table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.schedule-editor-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 800px;
+}
+
+.schedule-editor-table th {
+    background: var(--surface2);
+    padding: 10px 6px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+}
+
+.schedule-editor-table th.sunday {
+    background: rgba(124, 92, 252, 0.15);
+    color: var(--accent);
+}
+
+.schedule-editor-table td {
+    padding: 6px 4px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+}
+
+.schedule-editor-table tr:hover td {
+    background: var(--accent-glow);
+}
+
+.col-employee {
+    text-align: left !important;
+    background: var(--surface2);
+    position: sticky;
+    left: 0;
+    min-width: 180px;
+}
+
+.col-partner {
+    background: var(--surface2);
+    position: sticky;
+    left: 180px;
+    min-width: 140px;
+}
+
+.col-day {
+    min-width: 50px;
+}
+
+.employee-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.employee-info strong {
+    font-size: 13px;
+    color: var(--strong);
+}
+
+.employee-position {
+    font-size: 10px;
+    color: var(--muted);
+}
+
+.partner-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 11px;
+    color: var(--text);
+    cursor: pointer;
+    width: 100%;
+}
+
+.partner-select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.day-toggle {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s;
+    background: var(--surface);
+}
+
+.day-toggle.work {
+    background: rgba(60, 255, 160, 0.2);
+    color: var(--accent3);
+    border: 1px solid rgba(60, 255, 160, 0.4);
+}
+
+.day-toggle.off {
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+}
+
+.day-toggle.sunday {
+    background: rgba(124, 92, 252, 0.1);
+}
+
+.day-toggle.sunday.work {
+    background: rgba(124, 92, 252, 0.25);
+    border-color: rgba(124, 92, 252, 0.5);
+    color: var(--accent);
+}
+
+.day-toggle.saturday.work {
+    background: rgba(60, 186, 252, 0.2);
+    border-color: rgba(60, 186, 252, 0.4);
+    color: var(--accent5);
+}
+
+.day-toggle:hover {
+    transform: scale(1.05);
+}
+
+.schedule-legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text2);
+}
+
+.legend-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+}
+
+.legend-dot.work {
+    background: rgba(60, 255, 160, 0.2);
+    border: 1px solid rgba(60, 255, 160, 0.4);
+}
+
+.legend-dot.off {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+}
+
+.legend-dot.work-sunday {
+    background: rgba(124, 92, 252, 0.25);
+    border: 1px solid rgba(124, 92, 252, 0.5);
+}
+
+.legend-dot.saturday {
+    background: rgba(60, 186, 252, 0.2);
+    border: 1px solid rgba(60, 186, 252, 0.4);
+}
+
+.schedule-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.save-all-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    padding: 12px 28px;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.save-all-btn:hover {
+    background: #8e6ffe;
+    transform: translateY(-2px);
+}
+
+.schedule-nav-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.schedule-nav-btn:hover {
+    background: var(--surface3);
+    border-color: var(--accent);
+}
+
+.schedule-current-month {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 160px;
+    text-align: center;
+}
+
+.schedule-point-select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.schedule-point-select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.weekday {
+    font-size: 9px;
+    color: var(--muted);
+    display: block;
+    margin-top: 2px;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
