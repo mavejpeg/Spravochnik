@@ -1130,6 +1130,762 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', session: !!req.session });
 });
 
+// ========== MANUFACTURERS ROUTES (Tobacco) ==========
+app.get('/api/manufacturers', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM manufacturers ORDER BY name');
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Get manufacturers error:', error);
+        res.json([]);
+    }
+});
+
+app.get('/api/manufacturers/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const manufacturer = await pool.query('SELECT * FROM manufacturers WHERE id = $1', [id]);
+        if (manufacturer.rows.length === 0) {
+            return res.status(404).json({ error: 'Manufacturer not found' });
+        }
+        
+        const lines = await pool.query('SELECT * FROM lines WHERE manufacturer_id = $1 ORDER BY name', [id]);
+        
+        res.json({
+            ...manufacturer.rows[0],
+            lines: lines.rows
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get manufacturer' });
+    }
+});
+
+app.post('/api/manufacturers', requireRop, async (req, res) => {
+    const { name, description, logo, quality_class } = req.body;
+    if (!name) return res.status(400).json({ error: 'Name is required' });
+    try {
+        const result = await pool.query(
+            'INSERT INTO manufacturers (name, description, logo, quality_class) VALUES ($1, $2, $3, $4) RETURNING *',
+            [name, description, logo, quality_class || 'medium']
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create manufacturer' });
+    }
+});
+
+app.put('/api/manufacturers/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { name, description, logo, quality_class } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE manufacturers SET name = $1, description = $2, logo = $3, quality_class = $4 WHERE id = $5 RETURNING *',
+            [name, description, logo, quality_class || 'medium', id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update manufacturer' });
+    }
+});
+
+app.delete('/api/manufacturers/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM manufacturers WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete manufacturer' });
+    }
+});
+
+// ========== LINES ROUTES (Tobacco) ==========
+app.get('/api/lines/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM lines WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Line not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get line' });
+    }
+});
+
+app.post('/api/lines', requireRop, async (req, res) => {
+    const { manufacturer_id, name, description, strength_color } = req.body;
+    if (!manufacturer_id || !name) {
+        return res.status(400).json({ error: 'Manufacturer ID and name are required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO lines (manufacturer_id, name, description, strength_color) VALUES ($1, $2, $3, $4) RETURNING *',
+            [manufacturer_id, name, description || '', strength_color || 'medium']
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create line' });
+    }
+});
+
+app.put('/api/lines/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { name, description, strength_color } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE lines SET name = $1, description = $2, strength_color = $3 WHERE id = $4 RETURNING *',
+            [name, description || '', strength_color || 'medium', id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update line' });
+    }
+});
+
+app.delete('/api/lines/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM lines WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete line' });
+    }
+});
+
+// ========== LIQUID MANUFACTURERS ==========
+app.get('/api/liquid-manufacturers', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM liquid_manufacturers ORDER BY name');
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Get liquid manufacturers error:', error);
+        res.json([]);
+    }
+});
+
+app.get('/api/liquid-manufacturers/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const manufacturer = await pool.query('SELECT * FROM liquid_manufacturers WHERE id = $1', [id]);
+        if (manufacturer.rows.length === 0) {
+            return res.status(404).json({ error: 'Manufacturer not found' });
+        }
+        const lines = await pool.query('SELECT * FROM liquid_lines WHERE manufacturer_id = $1 ORDER BY name', [id]);
+        res.json({ ...manufacturer.rows[0], lines: lines.rows });
+    } catch (error) {
+        console.error('Get liquid manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to get manufacturer' });
+    }
+});
+
+app.post('/api/liquid-manufacturers', requireRop, async (req, res) => {
+    const { name, description, logo, quality_class } = req.body;
+    if (!name) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO liquid_manufacturers (name, description, logo, quality_class) VALUES ($1, $2, $3, $4) RETURNING *',
+            [name, description, logo, quality_class || 'medium']
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Create liquid manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to create manufacturer' });
+    }
+});
+
+app.put('/api/liquid-manufacturers/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { name, description, logo, quality_class } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE liquid_manufacturers SET name=$1, description=$2, logo=$3, quality_class=$4 WHERE id=$5 RETURNING *',
+            [name, description, logo, quality_class || 'medium', id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Update liquid manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to update manufacturer' });
+    }
+});
+
+app.delete('/api/liquid-manufacturers/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM liquid_manufacturers WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete liquid manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to delete manufacturer' });
+    }
+});
+
+// ========== LIQUID LINES ==========
+app.get('/api/liquid-lines/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM liquid_lines WHERE id = $1', [id]);
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Get liquid line error:', error);
+        res.status(500).json({ error: 'Failed to get line' });
+    }
+});
+
+app.post('/api/liquid-lines', requireRop, async (req, res) => {
+    const { manufacturer_id, name, description, strength_color } = req.body;
+    if (!manufacturer_id || !name) {
+        return res.status(400).json({ error: 'Manufacturer ID and name are required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO liquid_lines (manufacturer_id, name, description, strength_color) VALUES ($1, $2, $3, $4) RETURNING *',
+            [manufacturer_id, name, description || '', strength_color || 'medium']
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Create liquid line error:', error);
+        res.status(500).json({ error: 'Failed to create line' });
+    }
+});
+
+app.put('/api/liquid-lines/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { name, description, strength_color } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE liquid_lines SET name=$1, description=$2, strength_color=$3 WHERE id=$4 RETURNING *',
+            [name, description || '', strength_color || 'medium', id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Update liquid line error:', error);
+        res.status(500).json({ error: 'Failed to update line' });
+    }
+});
+
+app.delete('/api/liquid-lines/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM liquid_lines WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete liquid line error:', error);
+        res.status(500).json({ error: 'Failed to delete line' });
+    }
+});
+
+// ========== DISPOSABLES MANUFACTURERS ==========
+app.get('/api/disposables-manufacturers', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM disposables_manufacturers ORDER BY name');
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Get disposables manufacturers error:', error);
+        res.json([]);
+    }
+});
+
+app.get('/api/disposables-manufacturers/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const manufacturer = await pool.query('SELECT * FROM disposables_manufacturers WHERE id = $1', [id]);
+        if (manufacturer.rows.length === 0) {
+            return res.status(404).json({ error: 'Manufacturer not found' });
+        }
+        const lines = await pool.query('SELECT * FROM disposables_lines WHERE manufacturer_id = $1 ORDER BY name', [id]);
+        res.json({ ...manufacturer.rows[0], lines: lines.rows });
+    } catch (error) {
+        console.error('Get disposables manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to get manufacturer' });
+    }
+});
+
+app.post('/api/disposables-manufacturers', requireRop, async (req, res) => {
+    const { name, description, logo, quality_class } = req.body;
+    if (!name) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO disposables_manufacturers (name, description, logo, quality_class) VALUES ($1, $2, $3, $4) RETURNING *',
+            [name, description, logo, quality_class || 'medium']
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Create disposables manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to create manufacturer' });
+    }
+});
+
+app.put('/api/disposables-manufacturers/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { name, description, logo, quality_class } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE disposables_manufacturers SET name=$1, description=$2, logo=$3, quality_class=$4 WHERE id=$5 RETURNING *',
+            [name, description, logo, quality_class || 'medium', id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Update disposables manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to update manufacturer' });
+    }
+});
+
+app.delete('/api/disposables-manufacturers/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM disposables_manufacturers WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete disposables manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to delete manufacturer' });
+    }
+});
+
+// ========== DISPOSABLES LINES ==========
+app.get('/api/disposables-lines/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM disposables_lines WHERE id = $1', [id]);
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Get disposables line error:', error);
+        res.status(500).json({ error: 'Failed to get line' });
+    }
+});
+
+app.post('/api/disposables-lines', requireRop, async (req, res) => {
+    const { manufacturer_id, name, description, strength_color } = req.body;
+    if (!manufacturer_id || !name) {
+        return res.status(400).json({ error: 'Manufacturer ID and name are required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO disposables_lines (manufacturer_id, name, description, strength_color) VALUES ($1, $2, $3, $4) RETURNING *',
+            [manufacturer_id, name, description || '', strength_color || 'medium']
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Create disposables line error:', error);
+        res.status(500).json({ error: 'Failed to create line' });
+    }
+});
+
+app.put('/api/disposables-lines/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { name, description, strength_color } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE disposables_lines SET name=$1, description=$2, strength_color=$3 WHERE id=$4 RETURNING *',
+            [name, description || '', strength_color || 'medium', id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Update disposables line error:', error);
+        res.status(500).json({ error: 'Failed to update line' });
+    }
+});
+
+app.delete('/api/disposables-lines/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM disposables_lines WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete disposables line error:', error);
+        res.status(500).json({ error: 'Failed to delete line' });
+    }
+});
+
+// ========== SNUS MANUFACTURERS ==========
+app.get('/api/snus-manufacturers', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM snus_manufacturers ORDER BY name');
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Get snus manufacturers error:', error);
+        res.json([]);
+    }
+});
+
+app.get('/api/snus-manufacturers/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const manufacturer = await pool.query('SELECT * FROM snus_manufacturers WHERE id = $1', [id]);
+        if (manufacturer.rows.length === 0) {
+            return res.status(404).json({ error: 'Manufacturer not found' });
+        }
+        const lines = await pool.query('SELECT * FROM snus_lines WHERE manufacturer_id = $1 ORDER BY name', [id]);
+        res.json({ ...manufacturer.rows[0], lines: lines.rows });
+    } catch (error) {
+        console.error('Get snus manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to get manufacturer' });
+    }
+});
+
+app.post('/api/snus-manufacturers', requireRop, async (req, res) => {
+    const { name, description, logo, quality_class } = req.body;
+    if (!name) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO snus_manufacturers (name, description, logo, quality_class) VALUES ($1, $2, $3, $4) RETURNING *',
+            [name, description, logo, quality_class || 'medium']
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Create snus manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to create manufacturer' });
+    }
+});
+
+app.put('/api/snus-manufacturers/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { name, description, logo, quality_class } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE snus_manufacturers SET name=$1, description=$2, logo=$3, quality_class=$4 WHERE id=$5 RETURNING *',
+            [name, description, logo, quality_class || 'medium', id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Update snus manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to update manufacturer' });
+    }
+});
+
+app.delete('/api/snus-manufacturers/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM snus_manufacturers WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete snus manufacturer error:', error);
+        res.status(500).json({ error: 'Failed to delete manufacturer' });
+    }
+});
+
+// ========== SNUS LINES ==========
+app.get('/api/snus-lines/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM snus_lines WHERE id = $1', [id]);
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Get snus line error:', error);
+        res.status(500).json({ error: 'Failed to get line' });
+    }
+});
+
+app.post('/api/snus-lines', requireRop, async (req, res) => {
+    const { manufacturer_id, name, description, strength_color } = req.body;
+    if (!manufacturer_id || !name) {
+        return res.status(400).json({ error: 'Manufacturer ID and name are required' });
+    }
+    try {
+        const result = await pool.query(
+            'INSERT INTO snus_lines (manufacturer_id, name, description, strength_color) VALUES ($1, $2, $3, $4) RETURNING *',
+            [manufacturer_id, name, description || '', strength_color || 'medium']
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Create snus line error:', error);
+        res.status(500).json({ error: 'Failed to create line' });
+    }
+});
+
+app.put('/api/snus-lines/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { name, description, strength_color } = req.body;
+    try {
+        const result = await pool.query(
+            'UPDATE snus_lines SET name=$1, description=$2, strength_color=$3 WHERE id=$4 RETURNING *',
+            [name, description || '', strength_color || 'medium', id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Update snus line error:', error);
+        res.status(500).json({ error: 'Failed to update line' });
+    }
+});
+
+app.delete('/api/snus-lines/:id', requireRop, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM snus_lines WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete snus line error:', error);
+        res.status(500).json({ error: 'Failed to delete line' });
+    }
+});
+
+// ========== PRODUCT ROUTES ==========
+app.post('/api/upload', requireAuth, upload.single('photo'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file' });
+    
+    let photoUrl;
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+        const result = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                { folder: 'spravochnik' },
+                (err, result) => err ? reject(err) : resolve(result)
+            ).end(req.file.buffer);
+        });
+        photoUrl = result.secure_url;
+    } else {
+        photoUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    }
+    res.json({ photoUrl });
+});
+
+app.get('/api/products/:category', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM products WHERE category = $1 ORDER BY created_at DESC',
+            [req.params.category]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('GET products error:', error);
+        res.json([]);
+    }
+});
+
+app.post('/api/products/:category', requireRop, async (req, res) => {
+    const { category } = req.params;
+    const { id, name, strength, quality_class, origin, desc, photoUrl } = req.body;
+    
+    try {
+        const result = await pool.query(
+            `INSERT INTO products (category, product_id, name, strength, quality_class, origin, description, photo_url)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             ON CONFLICT (product_id) DO UPDATE SET
+               name = EXCLUDED.name, 
+               strength = EXCLUDED.strength,
+               quality_class = EXCLUDED.quality_class,
+               origin = EXCLUDED.origin, 
+               description = EXCLUDED.description,
+               photo_url = EXCLUDED.photo_url
+             RETURNING *`,
+            [category, id, name, strength || 5, quality_class || 'medium', origin, desc, photoUrl]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('POST product error:', error);
+        res.status(500).json({ error: 'Failed to save: ' + error.message });
+    }
+});
+
+app.put('/api/products/:category/:id', requireRop, async (req, res) => {
+    const { category, id } = req.params;
+    const { name, strength, quality_class, origin, desc, photoUrl } = req.body;
+    
+    try {
+        const result = await pool.query(
+            `UPDATE products 
+             SET name=$1, strength=$2, quality_class=$3, origin=$4, description=$5, photo_url=$6
+             WHERE category=$7 AND product_id=$8 RETURNING *`,
+            [name, strength || 5, quality_class || 'medium', origin, desc, photoUrl, category, id]
+        );
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('PUT product error:', error);
+        res.status(500).json({ error: 'Failed to update: ' + error.message });
+    }
+});
+
+app.delete('/api/products/:category/:id', requireRop, async (req, res) => {
+    const { category, id } = req.params;
+    try {
+        await pool.query('DELETE FROM products WHERE category=$1 AND product_id=$2', [category, id]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete' });
+    }
+});
+
+// ========== CONTENT MANAGEMENT ==========
+app.get('/api/content/:page/:section', async (req, res) => {
+    const { page, section } = req.params;
+    try {
+        const result = await pool.query(
+            'SELECT content FROM content WHERE page = $1 AND section = $2',
+            [page, section]
+        );
+        res.json({ content: result.rows[0]?.content || '' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get content' });
+    }
+});
+
+app.post('/api/content/:page/:section', requireRop, async (req, res) => {
+    const { page, section } = req.params;
+    const { content } = req.body;
+    
+    try {
+        await pool.query(
+            `INSERT INTO content (page, section, content, updated_at, updated_by) 
+             VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)
+             ON CONFLICT (page, section) 
+             DO UPDATE SET content = EXCLUDED.content, updated_at = CURRENT_TIMESTAMP, updated_by = EXCLUDED.updated_by`,
+            [page, section, content, req.session.user?.username]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Save content error:', error);
+        res.status(500).json({ error: 'Failed to save content' });
+    }
+});
+
+// ========== USER MANAGEMENT ==========
+app.get('/api/users', async (req, res) => {
+    if (!req.session || !req.session.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    try {
+        let result;
+        if (req.session.user.role === 'root') {
+            result = await pool.query('SELECT id, username, full_name, role FROM users');
+        } else if (req.session.user.role === 'rop') {
+            result = await pool.query('SELECT id, username, full_name, role FROM users WHERE role = $1', ['user']);
+        } else {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get users' });
+    }
+});
+
+app.get('/api/users-full', requireRop, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.username, u.full_name, u.role, u.position, u.point_id, p.name as point_name
+            FROM users u
+            LEFT JOIN points p ON u.point_id = p.id
+            ORDER BY u.full_name
+        `);
+        res.json(result.rows);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to get users' });
+    }
+});
+
+app.post('/api/users/:id/change-password', async (req, res) => {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+    
+    if (!req.session || !req.session.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    if (!/^\d{4}$/.test(newPassword)) {
+        return res.status(400).json({ error: 'Пароль должен быть 4 цифры' });
+    }
+    
+    try {
+        const targetUser = await pool.query('SELECT id, username, role FROM users WHERE id = $1', [id]);
+        if (targetUser.rows.length === 0) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+        
+        const target = targetUser.rows[0];
+        const currentUser = req.session.user;
+        
+        let canChange = false;
+        if (currentUser.role === 'root') canChange = true;
+        else if (currentUser.role === 'rop' && target.role === 'user') canChange = true;
+        
+        if (!canChange) {
+            return res.status(403).json({ error: 'Нет прав для смены пароля' });
+        }
+        
+        await pool.query('UPDATE users SET password = $1 WHERE id = $2', [newPassword, id]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Ошибка' });
+    }
+});
+
+app.post('/api/users', async (req, res) => {
+    const { username, password, full_name, role } = req.body;
+    
+    if (!req.session || !req.session.user || (req.session.user.role !== 'root' && req.session.user.role !== 'rop')) {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    if (!username || !password || !full_name) {
+        return res.status(400).json({ error: 'Все поля обязательны' });
+    }
+    
+    if (!/^\d{4}$/.test(password)) {
+        return res.status(400).json({ error: 'Пароль должен быть 4 цифры' });
+    }
+    
+    let finalRole = role || 'user';
+    if (req.session.user.role === 'rop' && finalRole !== 'user') {
+        finalRole = 'user';
+    }
+    
+    try {
+        await pool.query(
+            'INSERT INTO users (username, password, full_name, role) VALUES ($1, $2, $3, $4)',
+            [username.toLowerCase(), password, full_name, finalRole]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Пользователь уже существует' });
+    }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+    if (!req.session || !req.session.user || req.session.user.role !== 'root') {
+        return res.status(403).json({ error: 'Root only' });
+    }
+    
+    const { id } = req.params;
+    if (parseInt(id) === req.session.user.id) {
+        return res.status(400).json({ error: 'Нельзя удалить себя' });
+    }
+    
+    try {
+        await pool.query('DELETE FROM users WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Ошибка' });
+    }
+});
+
+app.put('/api/profile/:userId', requireRop, async (req, res) => {
+    const { position, point_id, role } = req.body;
+    const targetId = req.params.userId;
+    const currentUser = req.session.user;
+    
+    try {
+        const target = await pool.query('SELECT * FROM users WHERE id=$1', [targetId]);
+        if (!target.rows[0]) return res.status(404).json({ error: 'Пользователь не найден' });
+        
+        let newRole = target.rows[0].role;
+        if (currentUser.role === 'root' && role) {
+            newRole = role;
+        }
+        
+        await pool.query(
+            'UPDATE users SET position=$1, point_id=$2, role=$3 WHERE id=$4',
+            [position || null, point_id || null, newRole, targetId]
+        );
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
+
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
