@@ -3625,3 +3625,67 @@ button,
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* ========== НЕНАВЯЗЧИВЫЙ ДИНАМИЧНЫЙ ФОН ========== */
+body {
+  background: #09090e;
+  position: relative;
+}
+
+/* Мягкое свечение от центра */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(124, 92, 252, 0.02) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  animation: gentleBreath 8s ease-in-out infinite;
+}
+
+/* Легкие цветовые акценты по углам */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 10% 20%, rgba(60, 184, 252, 0.015), transparent 50%),
+              radial-gradient(circle at 95% 85%, rgba(252, 92, 124, 0.01), transparent 50%),
+              radial-gradient(circle at 50% 95%, rgba(60, 255, 160, 0.008), transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+  animation: slowShift 15s ease-in-out infinite;
+}
+
+@keyframes gentleBreath {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes slowShift {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* Контент поверх фона */
+.site-header,
+.tab-nav,
+main,
+.section,
+.modal-overlay {
+  position: relative;
+  z-index: 1;
+}
