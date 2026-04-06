@@ -731,6 +731,11 @@ function escapeHtml(str) {
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
 }
 
+if (typeof window.openRopPanel !== 'function') {
+    window.openRopPanel = openRopPanel;
+}
+console.log('main.js loaded, openRopPanel available:', typeof window.openRopPanel);
+
 window.openRopPanel = openRopPanel;
 window.initTabs = initTabs;
 window.initAccordions = initAccordions;
