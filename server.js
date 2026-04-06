@@ -2416,6 +2416,21 @@ app.get('/api/debug/point-users/:pointId', requireRop, async (req, res) => {
     }
 });
 
+// Показать всех пользователей и их точки
+app.get('/api/debug/all-users-with-points', requireRop, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.full_name, u.username, u.role, u.point_id, p.name as point_name
+            FROM users u
+            LEFT JOIN points p ON u.point_id = p.id
+            ORDER BY u.id
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
