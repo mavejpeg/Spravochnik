@@ -1870,6 +1870,143 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', session: !!req.session });
 });
 
+// ========== ПУБЛИЧНЫЕ ЭНДПОИНТЫ (без авторизации) ==========
+app.get('/api/points-public', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, name, address FROM points ORDER BY name');
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get points' });
+    }
+});
+
+// ========== РЕГИСТРАЦИЯ (ЗАЯВКИ) ==========
+app.post('/api/register-request', async (req, res) => {
+    const { full_name, username, password, point_id } = req.body;
+    
+    if (!full_name || !username || !password || !point_id) {
+        return res.status(400).json({ error: 'Все поля обязательны' });
+    }
+    
+    // Проверка сложности пароля
+    const passwordStrength = checkPasswordStrength(password);
+    if (passwordStrength.level === 'weak') {
+        return res.status(400).json({ error: 'Пароль слишком простой. Используйте минимум 8 символов, буквы и цифры.' });
+    }
+    
+    if (username.length < 3) {
+        return res.status(400).json({ error: 'Логин должен быть не менее 3 символов' });
+    }
+    
+    try {
+        // Проверяем, не существует ли уже такой пользователь
+        const existingUser = await pool.query(
+            'SELECT id FROM users WHERE username = $1',
+            [username.toLowerCase()]
+        );
+        
+        if (existingUser.rows.length > 0) {
+            return res.status(400).json({ error: 'Пользователь с таким логином уже существует' });
+        }
+        
+        // Проверяем, нет ли уже pending заявки
+        const existingRequest = await pool.query(
+            'SELECT id FROM registration_requests WHERE username = $1 AND status = $2',
+            [username.toLowerCase(), 'pending']
+        );
+        
+        if (existingRequest.rows.length > 0) {
+            return res.status(400).json({ error: 'Заявка на этот логин уже отправлена' });
+        }
+        
+        // Создаем заявку
+        await pool.query(
+            `INSERT INTO registration_requests (full_name, username, password, point_id, status)
+             VALUES ($1, $2, $3, $4, 'pending')`,
+            [full_name, username.toLowerCase(), password, point_id]
+        );
+        
+        res.json({ success: true, message: 'Заявка отправлена' });
+    } catch (error) {
+        console.error('Registration request error:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Вспомогательная функция для проверки пароля
+function checkPasswordStrength(password) {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^a-zA-Z0-9]/.test(password)) strength++;
+    
+    if (strength <= 2) return { level: 'weak', text: 'Слабый пароль' };
+    if (strength <= 4) return { level: 'medium', text: 'Средний пароль' };
+    return { level: 'strong', text: 'Сложный пароль' };
+}
+
+// ========== ЗАЯВКИ НА РЕГИСТРАЦИЮ (ДЛЯ РОП) ==========
+app.get('/api/registration-requests', requireRop, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT r.*, p.name as point_name
+            FROM registration_requests r
+            LEFT JOIN points p ON r.point_id = p.id
+            WHERE r.status = 'pending'
+            ORDER BY r.created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get requests' });
+    }
+});
+
+app.post('/api/registration-requests/:id/:action', requireRop, async (req, res) => {
+    const { id, action } = req.params;
+    const userId = req.session.user.id;
+    
+    if (action !== 'approve' && action !== 'reject') {
+        return res.status(400).json({ error: 'Invalid action' });
+    }
+    
+    try {
+        const requestResult = await pool.query(
+            'SELECT * FROM registration_requests WHERE id = $1',
+            [id]
+        );
+        
+        if (requestResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        
+        const request = requestResult.rows[0];
+        
+        if (action === 'approve') {
+            // Создаем пользователя
+            await pool.query(
+                `INSERT INTO users (username, password, full_name, role, point_id)
+                 VALUES ($1, $2, $3, 'user', $4)`,
+                [request.username, request.password, request.full_name, request.point_id]
+            );
+        }
+        
+        // Обновляем статус заявки
+        await pool.query(
+            `UPDATE registration_requests 
+             SET status = $1, reviewed_by = $2, reviewed_at = CURRENT_TIMESTAMP
+             WHERE id = $3`,
+            [action === 'approve' ? 'approved' : 'rejected', userId, id]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Process request error:', error);
+        res.status(500).json({ error: 'Failed to process request' });
+    }
+});
+
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
