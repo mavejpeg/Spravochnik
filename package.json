@@ -1,6 +1,7 @@
 {
   "name": "spravochnik",
   "version": "1.0.0",
+  "type": "commonjs",
   "description": "Employee reference system",
   "main": "server.js",
   "scripts": {
