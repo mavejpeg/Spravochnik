@@ -2299,6 +2299,31 @@ setTimeout(() => {
     rebuildSearchIndex().catch(console.error);
 }, 5000);
 
+// Отладочный эндпоинт - проверить сотрудников точки
+app.get('/api/debug/point-users/:pointId', requireRop, async (req, res) => {
+    const { pointId } = req.params;
+    try {
+        const users = await pool.query(`
+            SELECT id, full_name, position, point_id 
+            FROM users 
+            WHERE role = 'user'
+        `);
+        const pointUsers = await pool.query(`
+            SELECT id, full_name, position 
+            FROM users 
+            WHERE point_id = $1 AND role = 'user'
+        `, [pointId]);
+        
+        res.json({
+            allUsers: users.rows,
+            pointUsers: pointUsers.rows,
+            pointId: pointId
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
