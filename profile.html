@@ -6,362 +6,159 @@
 <title>Мой профиль — Справочник</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .profile-grid {
-    display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: 24px;
-    margin-top: 32px;
-    align-items: start;
-  }
-  @media (max-width: 900px) {
-    .profile-grid { grid-template-columns: 1fr; }
-  }
-
-  .profile-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
+  /* Стили для РОП карточки */
+  .rop-card {
+    background: linear-gradient(135deg, rgba(124,92,252,0.15), rgba(252,92,124,0.08));
+    border: 1px solid var(--accent);
     border-radius: 20px;
-    padding: 32px 28px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .profile-avatar {
-    width: 72px;
-    height: 72px;
-    border-radius: 20px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    flex-shrink: 0;
-  }
-
-  .profile-name {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--strong);
-    line-height: 1.3;
-  }
-
-  .profile-role {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  .profile-detail {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .profile-detail-label {
-    font-size: 11px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
-  .profile-detail-value {
-    font-size: 14px;
-    color: var(--text);
-  }
-
-  .divider {
-    border: none;
-    border-top: 1px solid var(--border);
-  }
-
-  /* Calendar */
-  .schedule-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 28px;
-  }
-
-  .schedule-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .schedule-title {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--strong);
-  }
-
-  .month-nav {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .month-nav button {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 10px;
-    width: 32px;
-    height: 32px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: all 0.2s;
-  }
-
-  .month-nav button:hover {
-    background: var(--surface3);
-    border-color: var(--accent);
-  }
-
-  .month-label {
-    font-size: 13px;
-    color: var(--text);
-    min-width: 120px;
-    text-align: center;
-  }
-
-  .calendar {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-  }
-
-  .cal-head {
-    font-size: 10px;
-    color: var(--muted);
-    text-align: center;
-    padding: 4px 0;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .cal-day {
-    aspect-ratio: 1;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 600;
+    padding: 20px;
+    margin-bottom: 24px;
     position: relative;
-    min-height: 44px;
-    transition: all 0.15s;
+    overflow: hidden;
   }
-
-  .cal-day.empty { background: transparent; }
-
-  .cal-day.work {
-    background: linear-gradient(135deg, rgba(60,255,160,0.2), rgba(60,255,160,0.08));
-    border: 1px solid rgba(60,255,160,0.3);
-    color: var(--accent3);
-  }
-
-  .cal-day.day-off {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--muted);
-  }
-
-  .cal-day.cleaning {
-    background: linear-gradient(135deg, rgba(124,92,252,0.2), rgba(124,92,252,0.08));
-    border: 1px solid rgba(124,92,252,0.3);
-    color: var(--accent);
-  }
-
-  .cal-day.work.cleaning {
-    background: linear-gradient(135deg, rgba(60,255,160,0.2), rgba(124,92,252,0.15));
-    border: 1px solid rgba(124,92,252,0.4);
-    color: var(--accent);
-  }
-
-  .cal-day.today {
-    outline: 2px solid var(--accent5);
-    outline-offset: 1px;
-  }
-
-  .cal-day.partner-work::after {
-    content: '●';
+  
+  .rop-card::before {
+    content: '👑';
     position: absolute;
-    bottom: 3px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 8px;
-    color: var(--accent5);
-    opacity: 0.8;
+    right: 20px;
+    top: 20px;
+    font-size: 40px;
+    opacity: 0.15;
   }
-
-  .cal-day .day-icon {
-    font-size: 9px;
-    margin-top: 1px;
-    opacity: 0.8;
+  
+  .rop-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 8px;
   }
-
-  .cal-legend {
+  
+  .rop-contact {
     display: flex;
-    gap: 16px;
+    align-items: center;
+    gap: 12px;
     flex-wrap: wrap;
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
+    margin-top: 12px;
+    font-size: 13px;
   }
-
-  .legend-item {
-    display: flex;
+  
+  .rop-contact span {
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
-    color: var(--muted);
+    color: var(--text2);
   }
-
-  .legend-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 4px;
-  }
-
-  .legend-dot.work { background: rgba(60,255,160,0.4); border: 1px solid rgba(60,255,160,0.5); }
-  .legend-dot.day-off { background: var(--surface2); border: 1px solid var(--border); }
-  .legend-dot.cleaning { background: rgba(124,92,252,0.3); border: 1px solid rgba(124,92,252,0.5); }
-  .legend-dot.partner { background: transparent; border: 1px solid var(--accent5); position: relative; }
-  .legend-dot.partner::after { content: '●'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8px; color: var(--accent5); }
-
-  .partner-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 24px 28px;
-    margin-top: 24px;
-  }
-
-  .partner-inner {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-top: 12px;
-  }
-
-  .partner-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, rgba(60,186,252,0.2), rgba(60,186,252,0.08));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    flex-shrink: 0;
-  }
-
-  .section-title {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--strong);
-    margin-bottom: 4px;
-  }
-
-  .no-schedule {
-    text-align: center;
-    color: var(--muted);
-    font-size: 13px;
-    padding: 32px 0;
-  }
-
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .stat-box {
-    background: var(--surface2);
-    border-radius: 14px;
-    padding: 14px 16px;
-    text-align: center;
-  }
-
-  .stat-num {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--strong);
-  }
-
-  .stat-label {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  .badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .badge.rop { background: rgba(252,184,48,0.15); color: var(--accent4); }
-  .badge.root { background: rgba(252,92,124,0.15); color: var(--accent2); }
-  .badge.user { background: rgba(60,255,160,0.1); color: var(--accent3); }
-
-  .learning-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 24px 28px;
-    margin-top: 24px;
-  }
-
-  .learning-progress-bar-container {
-    background: var(--border);
-    border-radius: 20px;
-    height: 8px;
-    overflow: hidden;
-    margin: 12px 0;
-  }
-
-  .learning-progress-fill {
-    background: linear-gradient(90deg, var(--accent3), var(--accent));
-    height: 100%;
-    width: 0%;
-    transition: width 0.3s;
-    border-radius: 20px;
-  }
-
-  .learning-stats {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 8px;
-  }
-
-  .retake-warning {
+  
+  .warning-banner {
     background: rgba(252, 184, 48, 0.15);
-    border-left: 3px solid var(--accent4);
+    border-left: 4px solid var(--accent4);
     padding: 12px 16px;
     border-radius: 12px;
-    margin-top: 16px;
-    font-size: 12px;
+    margin-bottom: 20px;
+    font-size: 13px;
     color: var(--accent4);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .warning-banner .icon {
+    font-size: 20px;
+  }
+  
+  /* Tooltip для подмен */
+  .cal-day {
+    position: relative;
+    cursor: help;
+  }
+  
+  .cal-day.has-substitution {
+    box-shadow: 0 0 0 2px var(--accent4);
+  }
+  
+  .cal-day .tooltip {
+    visibility: hidden;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    margin-bottom: 8px;
+    color: var(--text);
+    font-weight: normal;
+  }
+  
+  .cal-day.has-substitution:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  .substitution-badge {
+    font-size: 8px;
+    margin-top: 2px;
+    color: var(--accent4);
+  }
+  
+  /* Кнопка запроса подмены */
+  .request-substitution-btn {
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 8px 16px;
+    color: var(--accent);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .request-substitution-btn:hover {
+    background: var(--accent);
+    color: white;
+  }
+  
+  .substitution-modal {
+    max-width: 500px;
+  }
+  
+  .substitution-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .substitution-item {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .substitution-date {
+    font-weight: 600;
+    color: var(--accent);
+  }
+  
+  .substitution-info {
+    font-size: 12px;
+    color: var(--text2);
   }
 </style>
 </head>
@@ -382,6 +179,26 @@
     <div style="padding: 32px 0 8px;">
       <a href="/" style="font-size: 12px; color: var(--muted); text-decoration: none;">← Главная</a>
       <h1 style="font-family: 'Unbounded', sans-serif; font-size: 24px; font-weight: 700; color: var(--strong); margin-top: 12px;">Мой профиль</h1>
+    </div>
+
+    <!-- Плашка-предупреждение -->
+    <div class="warning-banner">
+      <span class="icon">⚠️</span>
+      <span>Внимание, график ориентировочный. Будут изменения, не забывайте его проверять!</span>
+    </div>
+
+    <!-- РОП карточка -->
+    <div class="rop-card" id="ropCard">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <div>
+          <div class="rop-name" id="ropName">Загрузка...</div>
+          <div id="ropPosition" style="font-size: 12px; color: var(--muted);">Руководитель отдела продаж</div>
+          <div class="rop-contact" id="ropContact"></div>
+        </div>
+        <div id="ropSchedule" style="font-size: 12px; color: var(--text2); background: var(--surface2); padding: 8px 12px; border-radius: 10px;">
+          График работы: загрузка...
+        </div>
+      </div>
     </div>
 
     <div class="profile-grid">
@@ -432,6 +249,9 @@
           <div id="profileRetakeWarning" class="retake-warning" style="display: none;">
             ⚠️ Внимание! Требуется повторная аттестация. Пройдите опросники в разделе "Обучение".
           </div>
+          <button class="request-substitution-btn" onclick="openRequestSubstitutionModal()" style="margin-top: 16px; width: 100%; justify-content: center;">
+            📅 Запросить подмену
+          </button>
         </div>
       </div>
 
@@ -478,6 +298,7 @@
             <div class="legend-item"><div class="legend-dot day-off"></div>Выходной</div>
             <div class="legend-item"><div class="legend-dot cleaning"></div>Уборка (Вс)</div>
             <div class="legend-item"><div class="legend-dot partner"></div>Сменщик работает</div>
+            <div class="legend-item"><div class="legend-dot substitution"></div>Подмена</div>
           </div>
         </div>
       </div>
@@ -486,38 +307,13 @@
 </main>
 
 <script>
-// ========== ВСЯ ЛОГИКА ПРОФИЛЯ ЗДЕСЬ, НЕ ЗАВИСИТ ОТ main.js ==========
-
+// ========== ВСЯ ЛОГИКА ПРОФИЛЯ ==========
 let currentYear, currentMonth, currentUserId, scheduleData = null;
 let partnerDays = [];
+let substitutions = [];
 
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь',
                      'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
-}
-
-function showToast(message, type = 'info') {
-  const toast = document.createElement('div');
-  toast.className = `toast-notification ${type}`;
-  toast.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: var(--surface2);
-    border-left: 3px solid ${type === 'success' ? 'var(--accent3)' : type === 'error' ? 'var(--accent2)' : 'var(--accent)'};
-    padding: 12px 20px;
-    border-radius: 8px;
-    z-index: 10001;
-    animation: slideInRight 0.3s ease;
-    font-size: 13px;
-  `;
-  toast.innerHTML = message;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
-}
 
 async function checkAuthAndLoad() {
   try {
@@ -529,17 +325,14 @@ async function checkAuthAndLoad() {
       return;
     }
     
-    // Показываем кнопку администрирования если нужно
     const ropBtn = document.getElementById('ropBtn');
     if (ropBtn && (data.user.role === 'rop' || data.user.role === 'root')) {
       ropBtn.style.display = 'block';
     }
     
-    // Показываем имя пользователя
     const userNameSpan = document.getElementById('userName');
     if (userNameSpan) userNameSpan.textContent = data.user.full_name;
     
-    // Инициализируем страницу
     initPage(data.user);
     
   } catch (error) {
@@ -555,9 +348,11 @@ function initPage(user) {
   currentMonth = now.getMonth() + 1;
   updateMonthLabel();
   loadProfile();
+  loadRopInfo();
   loadSchedule();
   loadLearningProgress();
   checkRetakeStatus();
+  loadSubstitutions();
 }
 
 function updateMonthLabel() {
@@ -591,37 +386,44 @@ async function loadProfile() {
   }
 }
 
-async function loadLearningProgress() {
+async function loadRopInfo() {
   try {
-    const response = await fetch('/api/learning/progress', { credentials: 'include' });
+    const response = await fetch('/api/rop-info', { credentials: 'include' });
     const data = await response.json();
     
-    const bar = document.getElementById('profileLearningBar');
-    const text = document.getElementById('profileLearningText');
-    const pages = document.getElementById('profileLearningPages');
-    
-    if (bar) bar.style.width = `${data.progress}%`;
-    if (text) text.textContent = `${data.progress}% завершено`;
-    if (pages) pages.textContent = `${data.completedPages}/${data.totalPages} страниц`;
+    if (data.rop) {
+      document.getElementById('ropName').textContent = data.rop.full_name;
+      document.getElementById('ropPosition').textContent = data.rop.position || 'Руководитель отдела продаж';
+      
+      // Контактная информация (можно добавить телефон, если есть в БД)
+      const contactHtml = `
+        <span>📧 ${data.rop.username}@company.ru</span>
+        <span>📞 +7 (XXX) XXX-XX-XX</span>
+      `;
+      document.getElementById('ropContact').innerHTML = contactHtml;
+      
+      // График работы РОП
+      if (data.schedule) {
+        const workDays = data.schedule.filter(d => d === 'work').length;
+        document.getElementById('ropSchedule').innerHTML = `График работы: ~${workDays} дней в месяце`;
+      } else {
+        document.getElementById('ropSchedule').innerHTML = 'График работы: уточняйте';
+      }
+    }
   } catch (error) {
-    console.error('Failed to load learning progress:', error);
+    console.error('Failed to load ROP info:', error);
   }
 }
 
-async function checkRetakeStatus() {
+async function loadSubstitutions() {
   try {
-    const response = await fetch('/api/quizzes/retake-status', { credentials: 'include' });
-    if (!response.ok) return;
-    
-    const status = await response.json();
-    const needsRetake = Object.values(status).some(s => s && s.needsRetake);
-    const warningDiv = document.getElementById('profileRetakeWarning');
-    
-    if (warningDiv) {
-      warningDiv.style.display = needsRetake ? 'block' : 'none';
-    }
+    const response = await fetch(`/api/substitutions/${currentUserId}?year=${currentYear}&month=${currentMonth}`, {
+      credentials: 'include'
+    });
+    substitutions = await response.json();
+    renderCalendar(); // Перерисовываем календарь с подменами
   } catch (error) {
-    console.error('Failed to check retake status:', error);
+    console.error('Failed to load substitutions:', error);
   }
 }
 
@@ -630,14 +432,12 @@ async function loadSchedule() {
     const res = await fetch(`/api/schedule/${currentUserId}/${currentYear}/${currentMonth}`, { credentials: 'include' });
     scheduleData = await res.json();
 
-    // Update partner card
     const partnerCard = document.getElementById('partnerCard');
     if (scheduleData && scheduleData.partner_name) {
       partnerCard.style.display = 'block';
       const partnerNameEl = document.getElementById('partnerName');
       if (partnerNameEl) partnerNameEl.textContent = scheduleData.partner_name;
       
-      // Load partner profile for position
       try {
         const pr = await fetch(`/api/profile/${scheduleData.partner_id}`, { credentials: 'include' });
         const partner = await pr.json();
@@ -645,7 +445,6 @@ async function loadSchedule() {
         if (partnerPositionEl) partnerPositionEl.textContent = partner.position || '';
       } catch(e) {}
       
-      // Load partner schedule for display
       try {
         const partnerRes = await fetch(`/api/schedule/${scheduleData.partner_id}/${currentYear}/${currentMonth}`, { credentials: 'include' });
         const partnerSchedule = await partnerRes.json();
@@ -669,7 +468,6 @@ function renderCalendar() {
   const cal = document.getElementById('calendar');
   if (!cal) return;
   
-  // Clear day cells (keep headers)
   const heads = cal.querySelectorAll('.cal-head');
   cal.innerHTML = '';
   heads.forEach(h => cal.appendChild(h));
@@ -693,7 +491,6 @@ function renderCalendar() {
   const today = new Date();
   const isThisMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth;
 
-  // Empty cells
   for (let i = 0; i < offset; i++) {
     const el = document.createElement('div');
     el.className = 'cal-day empty';
@@ -708,6 +505,14 @@ function renderCalendar() {
     const isSunday = weekday === 0;
     const isCleaning = isSunday && dayType === 'work';
     const partnerWorking = partnerDays && partnerDays[d - 1] === 'work';
+    
+    // Проверяем, есть ли подмена на эту дату
+    const substitution = substitutions.find(s => {
+      const subDate = new Date(s.date);
+      return subDate.getDate() === d && 
+             subDate.getMonth() + 1 === currentMonth && 
+             subDate.getFullYear() === currentYear;
+    });
 
     const el = document.createElement('div');
     let cls = 'cal-day';
@@ -724,9 +529,27 @@ function renderCalendar() {
     }
     if (isThisMonth && d === today.getDate()) cls += ' today';
     if (partnerWorking) cls += ' partner-work';
+    if (substitution) cls += ' has-substitution';
+    
+    let tooltipHtml = '';
+    if (substitution) {
+      tooltipHtml = `
+        <div class="tooltip">
+          🔄 <strong>Подмена</strong><br>
+          👤 ${substitution.substitute_name || 'Ищется подмена'}<br>
+          📍 ${substitution.point_name || 'Другая точка'}<br>
+          ${substitution.note ? `📝 ${substitution.note}` : ''}
+        </div>
+      `;
+    }
     
     el.className = cls;
-    el.innerHTML = `<span>${d}</span><span class="day-icon">${isCleaning ? '🧹' : (dayType === 'work' ? '✓' : '')}</span>`;
+    el.innerHTML = `
+      <span>${d}</span>
+      <span class="day-icon">${isCleaning ? '🧹' : (dayType === 'work' ? '✓' : '')}</span>
+      ${substitution ? '<span class="substitution-badge">🔄</span>' : ''}
+      ${tooltipHtml}
+    `;
     cal.appendChild(el);
   }
 
@@ -739,7 +562,107 @@ function renderCalendar() {
   if (statCleanEl) statCleanEl.textContent = cleanCount;
 }
 
-// Navigation
+async function loadLearningProgress() {
+  try {
+    const response = await fetch('/api/learning/progress', { credentials: 'include' });
+    const data = await response.json();
+    
+    const bar = document.getElementById('profileLearningBar');
+    const text = document.getElementById('profileLearningText');
+    const pages = document.getElementById('profileLearningPages');
+    
+    if (bar) bar.style.width = `${data.progress}%`;
+    if (text) text.textContent = `${data.progress}% завершено`;
+    if (pages) pages.textContent = `${data.completedPages}/${data.totalPages} страниц`;
+  } catch (error) {
+    console.error('Failed to load learning progress:', error);
+  }
+}
+
+async function checkRetakeStatus() {
+  try {
+    const response = await fetch('/api/quizzes/retake-status', { credentials: 'include' });
+    if (!response.ok) return;
+    const status = await response.json();
+    const needsRetake = Object.values(status).some(s => s && s.needsRetake);
+    const warningDiv = document.getElementById('profileRetakeWarning');
+    if (warningDiv) warningDiv.style.display = needsRetake ? 'block' : 'none';
+  } catch (error) {
+    console.error('Failed to check retake status:', error);
+  }
+}
+
+function openRequestSubstitutionModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal substitution-modal">
+      <div class="modal-header">
+        <span class="modal-title">📅 Запрос на подмену</span>
+        <button class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>Дата подмены</label>
+          <input type="date" id="subDate" min="${new Date().toISOString().split('T')[0]}">
+        </div>
+        <div class="field">
+          <label>Причина</label>
+          <textarea id="subReason" rows="3" placeholder="Укажите причину..."></textarea>
+        </div>
+        <div class="hl info">
+          💡 Запрос будет отправлен руководителю. Он рассмотрит его и найдет замену.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel">Отмена</button>
+        <button class="btn-save" id="submitRequestBtn">📤 Отправить запрос</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  setTimeout(() => modal.classList.add('open'), 10);
+  
+  const closeModal = () => {
+    modal.classList.remove('open');
+    setTimeout(() => modal.remove(), 300);
+  };
+  
+  modal.querySelector('.modal-close').addEventListener('click', closeModal);
+  modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+  
+  modal.querySelector('#submitRequestBtn').addEventListener('click', async () => {
+    const date = modal.querySelector('#subDate').value;
+    const reason = modal.querySelector('#subReason').value;
+    
+    if (!date) {
+      alert('Выберите дату');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/substitutions/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ date, reason })
+      });
+      
+      if (response.ok) {
+        alert('Запрос отправлен руководителю');
+        closeModal();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Ошибка');
+      }
+    } catch (error) {
+      alert('Ошибка: ' + error.message);
+    }
+  });
+}
+
+// Навигация
 const prevBtn = document.getElementById('prevMonth');
 const nextBtn = document.getElementById('nextMonth');
 
@@ -752,6 +675,7 @@ if (prevBtn) {
     }
     updateMonthLabel();
     loadSchedule();
+    loadSubstitutions();
   });
 }
 
@@ -764,6 +688,7 @@ if (nextBtn) {
     }
     updateMonthLabel();
     loadSchedule();
+    loadSubstitutions();
   });
 }
 
@@ -776,52 +701,17 @@ if (logoutBtn) {
   });
 }
 
-// ROP Panel (администрирование)
+// ROP Panel
 const ropBtn = document.getElementById('ropBtn');
 if (ropBtn) {
   ropBtn.addEventListener('click', async () => {
-    // Функция openRopPanel из main.js
     if (typeof window.openRopPanel === 'function') {
       window.openRopPanel();
-    } else {
-      // Fallback - показываем уведомление
-      showToast('Функция администрирования загружается...', 'info');
-      // Пробуем загрузить main.js если еще не загружен
-      if (!document.querySelector('script[src*="main.js"]')) {
-        const script = document.createElement('script');
-        script.src = '/main.js?v=' + Date.now();
-        script.onload = () => {
-          if (typeof window.openRopPanel === 'function') {
-            window.openRopPanel();
-          }
-        };
-        document.head.appendChild(script);
-      }
     }
   });
 }
 
-// Запускаем проверку авторизации
 checkAuthAndLoad();
-
-// Добавляем стиль для анимации toast
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideInRight {
-    from {
-      opacity: 0;
-      transform: translateX(100px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-`;
-document.head.appendChild(style);
 </script>
-
-<!-- Подключаем main.js для функций администрирования (но не переопределяем логику профиля) -->
-<script src="main.js?v=38"></script>
 </body>
 </html>
