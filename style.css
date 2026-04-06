@@ -1017,9 +1017,9 @@ main {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.9); /* Увеличиваем затемнение */
   backdrop-filter: blur(8px);
-  z-index: 1000;
+  z-index: 2000; /* Увеличиваем */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1028,7 +1028,6 @@ main {
   pointer-events: none;
   transition: opacity 0.25s;
 }
-
 .modal-overlay.open {
   opacity: 1;
   pointer-events: all;
@@ -2377,11 +2376,10 @@ input[type="range"]::-webkit-slider-thumb {
   border-bottom: 1px solid var(--border);
   padding: 6px 16px;
   position: sticky;
-  top: 56px;
-  z-index: 199;
+  top: 56px; /* Высота header */
+  z-index: 998; /* Чуть ниже tab-nav */
   backdrop-filter: blur(10px);
 }
-
 @media (min-width: 640px) {
   .learning-progress-container {
     top: 60px;
@@ -2647,6 +2645,9 @@ mark {
   padding: 32px 0 16px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
+  background: var(--bg);
 }
 
 @media (min-width: 640px) {
@@ -3097,4 +3098,46 @@ body {
   position: relative;
   z-index: 1;
   background: var(--bg);
+}
+
+/* Защита от просвечивания контента под шапкой */
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Убеждаемся, что все секции имеют фон */
+.section {
+  display: none;
+  width: 100%;
+  overflow-x: hidden;
+  background: var(--bg);
+  position: relative;
+  z-index: 1;
+}
+
+.section.active {
+  display: block;
+  animation: fadeIn 0.25s ease;
+}
+
+/* Для всех sticky элементов */
+.sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: inherit;
+}
+
+/* Псевдо-элемент для затемнения фона под шапкой */
+.site-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg);
+  z-index: -1;
+  opacity: 0.95;
 }
