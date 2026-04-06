@@ -3626,66 +3626,36 @@ button,
   -webkit-user-select: none;
 }
 
-/* ========== НЕНАВЯЗЧИВЫЙ ДИНАМИЧНЫЙ ФОН ========== */
+/* ========== МЯГКИЙ ГРАДИЕНТ ========== */
 body {
-  background: #09090e;
+  background: linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%);
+  background-attachment: fixed;
   position: relative;
 }
 
-/* Мягкое свечение от центра */
 body::before {
   content: '';
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(ellipse at 50% 50%, rgba(124, 92, 252, 0.02) 0%, transparent 70%);
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 40%, rgba(124, 92, 252, 0.12), transparent 40%),
+              radial-gradient(circle at 80% 70%, rgba(60, 255, 160, 0.08), transparent 40%);
   pointer-events: none;
   z-index: 0;
-  animation: gentleBreath 8s ease-in-out infinite;
+  animation: slowRotate 20s ease-in-out infinite;
 }
 
-/* Легкие цветовые акценты по углам */
-body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at 10% 20%, rgba(60, 184, 252, 0.015), transparent 50%),
-              radial-gradient(circle at 95% 85%, rgba(252, 92, 124, 0.01), transparent 50%),
-              radial-gradient(circle at 50% 95%, rgba(60, 255, 160, 0.008), transparent 50%);
-  pointer-events: none;
-  z-index: 0;
-  animation: slowShift 15s ease-in-out infinite;
+@keyframes slowRotate {
+  0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.6; }
+  50% { transform: rotate(5deg) scale(1.05); opacity: 1; }
 }
 
-@keyframes gentleBreath {
-  0%, 100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@keyframes slowShift {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.02);
-  }
-}
-
-/* Контент поверх фона */
 .site-header,
 .tab-nav,
 main,
-.section,
-.modal-overlay {
+.section {
   position: relative;
   z-index: 1;
 }
