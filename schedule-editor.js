@@ -1,4 +1,4 @@
-// schedule-editor.js - Исправленная версия
+// schedule-editor.js - Исправленная версия со стилями
 (function() {
     'use strict';
     
@@ -127,6 +127,7 @@
                 <div class="toolbar-group">
                     <button type="button" class="toolbar-btn" onclick="window.bulkSetDays('work')">✓ Все рабочие</button>
                     <button type="button" class="toolbar-btn" onclick="window.bulkSetDays('off')">✗ Все выходные</button>
+                    <button type="button" class="toolbar-btn" onclick="window.bulkAlternate()">🔄 Чередование 3/3</button>
                 </div>
             </div>
             
@@ -136,7 +137,12 @@
                         <tr>
                             <th class="col-employee">Сотрудник</th>
                             <th class="col-partner">Сменщик</th>
-                            ${Array(daysInMonth).fill().map((_, i) => `<th class="col-day">${i + 1}</th>`).join('')}
+                            ${Array(daysInMonth).fill().map((_, i) => {
+                                const date = new Date(currentYear, currentMonth - 1, i + 1);
+                                const weekday = date.toLocaleDateString('ru-RU', { weekday: 'short' });
+                                const isSunday = date.getDay() === 0;
+                                return `<th class="col-day ${isSunday ? 'sunday' : ''}">${i + 1}<br><span class="weekday">${weekday}</span></th>`;
+                            }).join('')}
                         </tr>
                     </thead>
                     <tbody>
@@ -168,10 +174,11 @@
                 const dayType = days[d] || 'off';
                 const date = new Date(currentYear, currentMonth - 1, d + 1);
                 const isSunday = date.getDay() === 0;
+                const isSaturday = date.getDay() === 6;
                 
                 html += `
                     <td class="col-day">
-                        <button type="button" class="day-toggle ${dayType} ${isSunday ? 'sunday' : ''}" 
+                        <button type="button" class="day-toggle ${dayType} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''}" 
                                 data-user="${user.id}" 
                                 data-day="${d}"
                                 onclick="window.toggleDay(${user.id}, ${d})">
@@ -193,6 +200,7 @@
                 <div class="legend-item"><span class="legend-dot work"></span> Рабочий день</div>
                 <div class="legend-item"><span class="legend-dot off"></span> Выходной</div>
                 <div class="legend-item"><span class="legend-dot work-sunday"></span> Рабочий + уборка (воскресенье)</div>
+                <div class="legend-item"><span class="legend-dot saturday"></span> Суббота</div>
             </div>
             
             <div class="schedule-actions">
@@ -216,7 +224,8 @@
             const newValue = currentSchedules[userId].days[dayIndex];
             const date = new Date(currentYear, currentMonth - 1, dayIndex + 1);
             const isSunday = date.getDay() === 0;
-            btn.className = `day-toggle ${newValue} ${isSunday ? 'sunday' : ''}`;
+            const isSaturday = date.getDay() === 6;
+            btn.className = `day-toggle ${newValue} ${isSunday ? 'sunday' : ''} ${isSaturday ? 'saturday' : ''}`;
             btn.innerHTML = newValue === 'work' ? (isSunday ? '🧹' : '✓') : '✗';
         }
     };
@@ -241,6 +250,45 @@
         
         renderScheduleEditor();
         showToast(`Все дни установлены как ${value === 'work' ? 'рабочие' : 'выходные'}`, 'success');
+    };
+
+    window.bulkAlternate = function() {
+        const startDay = parseInt(prompt('С какого дня начать чередование? (1-31)', '1'));
+        if (isNaN(startDay) || startDay < 1 || startDay > daysInMonth) {
+            showToast('Некорректный день', 'error');
+            return;
+        }
+        
+        const pattern = prompt('Введите паттерн чередования (например: 3/3 или 2/2):', '3/3');
+        if (!pattern) return;
+        
+        const [workDays, offDays] = pattern.split('/').map(Number);
+        if (isNaN(workDays) || isNaN(offDays)) {
+            showToast('Неверный формат. Используйте например: 3/3', 'error');
+            return;
+        }
+        
+        for (const user of currentUsers) {
+            if (!currentSchedules[user.id]) {
+                currentSchedules[user.id] = { days: Array(daysInMonth).fill('off') };
+            }
+            
+            const days = currentSchedules[user.id].days;
+            let isWork = true;
+            let counter = 0;
+            
+            for (let i = startDay - 1; i < daysInMonth; i++) {
+                days[i] = isWork ? 'work' : 'off';
+                counter++;
+                if ((isWork && counter === workDays) || (!isWork && counter === offDays)) {
+                    isWork = !isWork;
+                    counter = 0;
+                }
+            }
+        }
+        
+        renderScheduleEditor();
+        showToast(`Чередование ${pattern} применено`, 'success');
     };
 
     window.saveAllSchedules = async function() {
