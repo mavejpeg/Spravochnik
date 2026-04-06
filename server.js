@@ -2256,6 +2256,27 @@ app.post('/api/substitutions/request', requireAuth, async (req, res) => {
     }
 });
 
+// Получить информацию о РОП
+app.get('/api/rop-info', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT id, full_name, username, position 
+            FROM users 
+            WHERE role IN ('rop', 'root')
+            ORDER BY role DESC
+            LIMIT 1
+        `);
+        
+        res.json({
+            rop: result.rows[0] || null,
+            allRops: result.rows
+        });
+    } catch (error) {
+        console.error('Error fetching ROP info:', error);
+        res.status(500).json({ error: 'Failed to get ROP info' });
+    }
+});
+
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
