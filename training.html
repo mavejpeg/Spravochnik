@@ -1209,14 +1209,299 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-// Глобальные функции
+// Функция открытия редактора опросников
+window.openQuizEditor = function(quizId = null, category = null) {
+    const isEdit = quizId !== null;
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.zIndex = '2000';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 800px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <span class="modal-title">${isEdit ? '✏️ Редактировать опросник' : '📝 Создать опросник'}</span>
+                <button class="modal-close">✕</button>
+            </div>
+            <div class="modal-body" style="overflow-y: auto; flex: 1;">
+                <div class="field">
+                    <label>Название опросника *</label>
+                    <input type="text" id="quizTitle" placeholder="Например: Проверка знаний - День 1">
+                </div>
+                <div class="field">
+                    <label>Описание (необязательно)</label>
+                    <textarea id="quizDesc" rows="2" placeholder="Краткое описание..."></textarea>
+                </div>
+                <div class="field">
+                    <label>Активен</label>
+                    <select id="quizActive">
+                        <option value="true">Да</option>
+                        <option value="false">Нет</option>
+                    </select>
+                </div>
+                
+                <div class="field">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>📋 Вопросы</span>
+                        <button type="button" onclick="window.addQuestionToEditor()" class="add-question-btn" style="font-size: 11px; padding: 4px 10px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; cursor: pointer;">➕ Добавить вопрос</button>
+                    </label>
+                    <div id="questionsEditor" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--surface2);">
+                        <div class="no-questions-placeholder" style="text-align: center; color: var(--muted); padding: 40px;">
+                            Нажмите "Добавить вопрос" чтобы создать первый вопрос
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel">Отмена</button>
+                <button class="btn-save" id="saveQuizBtn">${isEdit ? '💾 Сохранить' : '➕ Создать'}</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('open'), 10);
+    
+    let questionsData = [];
+    
+    // Функция добавления вопроса
+    window.addQuestionToEditor = function(questionData = null) {
+        const container = document.getElementById('questionsEditor');
+        const placeholder = container.querySelector('.no-questions-placeholder');
+        if (placeholder) placeholder.remove();
+        
+        const index = container.querySelectorAll('.question-editor').length;
+        const uniqueId = Date.now() + index;
+        
+        const qDiv = document.createElement('div');
+        qDiv.className = 'question-editor';
+        qDiv.style.cssText = 'background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px;';
+        qDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <strong style="color: var(--accent);">Вопрос ${index + 1}</strong>
+                <button type="button" class="remove-question-btn" onclick="this.closest('.question-editor').remove(); window.updateQuestionNumbers();" style="background: rgba(252,92,124,0.15); border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; color: var(--accent2);">🗑 Удалить</button>
+            </div>
+            <div class="field" style="margin-bottom: 12px;">
+                <label>Текст вопроса</label>
+                <input type="text" class="question-text" value="${escapeHtml(questionData?.text || '')}" placeholder="Введите текст вопроса" style="width: 100%;">
+            </div>
+            <div class="field" style="margin-bottom: 12px;">
+                <label>Варианты ответов</label>
+                <div class="options-editor">
+                    ${(questionData?.options || ['', '']).map((opt, optIdx) => `
+                        <div class="option-item" style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                            <input type="text" class="option-text" value="${escapeHtml(opt)}" placeholder="Вариант ${optIdx + 1}" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface);">
+                            <input type="radio" name="correct_${uniqueId}" class="correct-option" value="${optIdx}" ${questionData?.correct === optIdx ? 'checked' : ''}>
+                            <label style="font-size: 11px; color: var(--muted);">✓ верный</label>
+                            <button type="button" class="remove-option-btn" onclick="this.closest('.option-item').remove()" style="background: rgba(252,92,124,0.15); border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer;">🗑</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button type="button" class="add-option-btn" onclick="window.addOptionToQuestion(this)" style="margin-top: 8px; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 11px;">➕ Добавить вариант</button>
+            </div>
+            <div class="field">
+                <label>Пояснение (почему этот ответ правильный)</label>
+                <textarea class="question-explanation" rows="2" placeholder="Объясните почему этот ответ правильный..." style="width: 100%;">${escapeHtml(questionData?.explanation || '')}</textarea>
+            </div>
+        `;
+        container.appendChild(qDiv);
+        window.updateQuestionNumbers();
+    };
+    
+    // Функция добавления варианта ответа
+    window.addOptionToQuestion = function(btn) {
+        const optionsDiv = btn.closest('.field').querySelector('.options-editor');
+        const optionCount = optionsDiv.querySelectorAll('.option-item').length;
+        const uniqueId = Date.now();
+        const newOption = document.createElement('div');
+        newOption.className = 'option-item';
+        newOption.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
+        newOption.innerHTML = `
+            <input type="text" class="option-text" placeholder="Вариант ${optionCount + 1}" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface);">
+            <input type="radio" name="correct_${uniqueId}" class="correct-option" value="${optionCount}">
+            <label style="font-size: 11px; color: var(--muted);">✓ верный</label>
+            <button type="button" class="remove-option-btn" onclick="this.closest('.option-item').remove()" style="background: rgba(252,92,124,0.15); border: none; border-radius: 6px; padding: 4px 8px; cursor: pointer;">🗑</button>
+        `;
+        optionsDiv.appendChild(newOption);
+    };
+    
+    // Обновление номеров вопросов
+    window.updateQuestionNumbers = function() {
+        const container = document.getElementById('questionsEditor');
+        container.querySelectorAll('.question-editor').forEach((q, idx) => {
+            const strong = q.querySelector('strong');
+            if (strong) strong.textContent = `Вопрос ${idx + 1}`;
+        });
+    };
+    
+    // Если редактируем, загружаем данные
+    if (isEdit) {
+        try {
+            const response = await fetch(`/api/quizzes/${quizId}`, { credentials: 'include' });
+            const quiz = await response.json();
+            
+            document.getElementById('quizTitle').value = quiz.title;
+            document.getElementById('quizDesc').value = quiz.description || '';
+            document.getElementById('quizActive').value = quiz.is_active ? 'true' : 'false';
+            questionsData = quiz.questions || [];
+            
+            // Загружаем вопросы в редактор
+            if (questionsData.length > 0) {
+                const container = document.getElementById('questionsEditor');
+                container.innerHTML = '';
+                questionsData.forEach(q => {
+                    window.addQuestionToEditor(q);
+                });
+            } else {
+                window.addQuestionToEditor();
+            }
+        } catch (error) {
+            showToast('Ошибка загрузки опросника', 'error');
+            window.addQuestionToEditor();
+        }
+    } else {
+        // Добавляем пустой вопрос для нового опросника
+        window.addQuestionToEditor();
+    }
+    
+    const closeModal = () => {
+        modal.classList.remove('open');
+        setTimeout(() => modal.remove(), 300);
+    };
+    
+    modal.querySelector('.modal-close').addEventListener('click', closeModal);
+    modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+    
+    modal.querySelector('#saveQuizBtn').addEventListener('click', async () => {
+        const title = document.getElementById('quizTitle').value.trim();
+        const description = document.getElementById('quizDesc').value.trim();
+        const is_active = document.getElementById('quizActive').value === 'true';
+        
+        if (!title) {
+            showToast('Введите название опросника', 'error');
+            return;
+        }
+        
+        // Собираем вопросы из редактора
+        const collectedQuestions = [];
+        const questionEditors = document.querySelectorAll('#questionsEditor .question-editor');
+        
+        for (const editor of questionEditors) {
+            const text = editor.querySelector('.question-text')?.value.trim();
+            if (!text) continue;
+            
+            const options = [];
+            const optionInputs = editor.querySelectorAll('.option-text');
+            optionInputs.forEach(input => {
+                if (input.value.trim()) options.push(input.value.trim());
+            });
+            
+            if (options.length < 2) {
+                showToast('У каждого вопроса должно быть минимум 2 варианта ответа', 'error');
+                return;
+            }
+            
+            let correct = 0;
+            const radio = editor.querySelector('.correct-option:checked');
+            if (radio) correct = parseInt(radio.value);
+            
+            const explanation = editor.querySelector('.question-explanation')?.value.trim() || '';
+            
+            collectedQuestions.push({ text, options, correct, explanation });
+        }
+        
+        if (collectedQuestions.length === 0) {
+            showToast('Добавьте хотя бы один вопрос', 'error');
+            return;
+        }
+        
+        try {
+            let response;
+            if (isEdit) {
+                response = await fetch(`/api/quizzes/${quizId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title, description, questions: collectedQuestions, is_active })
+                });
+            } else {
+                response = await fetch('/api/quizzes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ title, description, questions: collectedQuestions })
+                });
+            }
+            
+            if (response.ok) {
+                showToast(isEdit ? 'Опросник сохранен' : 'Опросник создан', 'success');
+                closeModal();
+                // Перезагружаем опросники
+                if (typeof loadQuizzes === 'function') loadQuizzes();
+                if (typeof loadQuizzesAdmin === 'function') loadQuizzesAdmin();
+            } else {
+                const error = await response.json();
+                showToast(error.error || 'Ошибка', 'error');
+            }
+        } catch (error) {
+            showToast('Ошибка: ' + error.message, 'error');
+        }
+    });
+};
+
+// Удаление опросника
+window.deleteQuiz = async function(quizId) {
+    if (!confirm('Удалить опросник? Все результаты будут потеряны.')) return;
+    
+    try {
+        const response = await fetch(`/api/quizzes/${quizId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            showToast('Опросник удален', 'success');
+            if (typeof loadQuizzes === 'function') loadQuizzes();
+            if (typeof loadQuizzesAdmin === 'function') loadQuizzesAdmin();
+        } else {
+            showToast('Ошибка удаления', 'error');
+        }
+    } catch (error) {
+        showToast('Ошибка: ' + error.message, 'error');
+    }
+};
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--surface2);
+        border-left: 3px solid ${type === 'success' ? 'var(--accent3)' : 'var(--accent2)'};
+        padding: 12px 20px;
+        border-radius: 8px;
+        z-index: 10000;
+        animation: slideInRight 0.3s ease;
+        font-size: 13px;
+    `;
+    toast.innerHTML = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m] || m));
+}
+
+// Экспорт
 window.openQuizEditor = openQuizEditor;
-window.deleteQuiz = deleteQuiz;
-window.submitQuiz = submitQuiz;
-window.resetQuiz = resetQuiz;
 window.addQuestionToEditor = addQuestionToEditor;
 window.addOptionToQuestion = addOptionToQuestion;
 window.updateQuestionNumbers = updateQuestionNumbers;
+window.deleteQuiz = deleteQuiz;
+
+console.log('Quiz editor loaded');
 </script>
 
 </body>
