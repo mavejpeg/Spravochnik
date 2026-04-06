@@ -6,7 +6,6 @@
 <title>Мой профиль — Справочник</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  /* Стили для РОП карточки */
   .rop-card {
     background: linear-gradient(135deg, rgba(124,92,252,0.15), rgba(252,92,124,0.08));
     border: 1px solid var(--accent);
@@ -68,7 +67,6 @@
     font-size: 20px;
   }
   
-  /* Tooltip для подмен */
   .cal-day {
     position: relative;
     cursor: help;
@@ -110,7 +108,6 @@
     color: var(--accent4);
   }
   
-  /* Кнопка запроса подмены */
   .request-substitution-btn {
     background: var(--accent-glow);
     border: 1px solid var(--accent);
@@ -130,35 +127,9 @@
     color: white;
   }
   
-  .substitution-modal {
-    max-width: 500px;
-  }
-  
-  .substitution-list {
-    max-height: 300px;
-    overflow-y: auto;
-  }
-  
-  .substitution-item {
-    background: var(--surface2);
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .substitution-date {
-    font-weight: 600;
-    color: var(--accent);
-  }
-  
-  .substitution-info {
-    font-size: 12px;
-    color: var(--text2);
+  .legend-dot.substitution {
+    background: rgba(252, 184, 48, 0.3);
+    border: 1px solid var(--accent4);
   }
 </style>
 </head>
@@ -249,7 +220,7 @@
           <div id="profileRetakeWarning" class="retake-warning" style="display: none;">
             ⚠️ Внимание! Требуется повторная аттестация. Пройдите опросники в разделе "Обучение".
           </div>
-          <button class="request-substitution-btn" onclick="openRequestSubstitutionModal()" style="margin-top: 16px; width: 100%; justify-content: center;">
+          <button class="request-substitution-btn" onclick="alert('Функция в разработке')" style="margin-top: 16px; width: 100%; justify-content: center;">
             📅 Запросить подмену
           </button>
         </div>
@@ -310,7 +281,6 @@
 // ========== ВСЯ ЛОГИКА ПРОФИЛЯ ==========
 let currentYear, currentMonth, currentUserId, scheduleData = null;
 let partnerDays = [];
-let substitutions = [];
 
 const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь',
                      'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
@@ -352,7 +322,6 @@ function initPage(user) {
   loadSchedule();
   loadLearningProgress();
   checkRetakeStatus();
-  loadSubstitutions();
 }
 
 function updateMonthLabel() {
@@ -395,14 +364,12 @@ async function loadRopInfo() {
       document.getElementById('ropName').textContent = data.rop.full_name;
       document.getElementById('ropPosition').textContent = data.rop.position || 'Руководитель отдела продаж';
       
-      // Контактная информация (можно добавить телефон, если есть в БД)
       const contactHtml = `
         <span>📧 ${data.rop.username}@company.ru</span>
         <span>📞 +7 (XXX) XXX-XX-XX</span>
       `;
       document.getElementById('ropContact').innerHTML = contactHtml;
       
-      // График работы РОП
       if (data.schedule) {
         const workDays = data.schedule.filter(d => d === 'work').length;
         document.getElementById('ropSchedule').innerHTML = `График работы: ~${workDays} дней в месяце`;
@@ -412,18 +379,6 @@ async function loadRopInfo() {
     }
   } catch (error) {
     console.error('Failed to load ROP info:', error);
-  }
-}
-
-async function loadSubstitutions() {
-  try {
-    const response = await fetch(`/api/substitutions/${currentUserId}?year=${currentYear}&month=${currentMonth}`, {
-      credentials: 'include'
-    });
-    substitutions = await response.json();
-    renderCalendar(); // Перерисовываем календарь с подменами
-  } catch (error) {
-    console.error('Failed to load substitutions:', error);
   }
 }
 
@@ -505,14 +460,6 @@ function renderCalendar() {
     const isSunday = weekday === 0;
     const isCleaning = isSunday && dayType === 'work';
     const partnerWorking = partnerDays && partnerDays[d - 1] === 'work';
-    
-    // Проверяем, есть ли подмена на эту дату
-    const substitution = substitutions.find(s => {
-      const subDate = new Date(s.date);
-      return subDate.getDate() === d && 
-             subDate.getMonth() + 1 === currentMonth && 
-             subDate.getFullYear() === currentYear;
-    });
 
     const el = document.createElement('div');
     let cls = 'cal-day';
@@ -529,27 +476,9 @@ function renderCalendar() {
     }
     if (isThisMonth && d === today.getDate()) cls += ' today';
     if (partnerWorking) cls += ' partner-work';
-    if (substitution) cls += ' has-substitution';
-    
-    let tooltipHtml = '';
-    if (substitution) {
-      tooltipHtml = `
-        <div class="tooltip">
-          🔄 <strong>Подмена</strong><br>
-          👤 ${substitution.substitute_name || 'Ищется подмена'}<br>
-          📍 ${substitution.point_name || 'Другая точка'}<br>
-          ${substitution.note ? `📝 ${substitution.note}` : ''}
-        </div>
-      `;
-    }
     
     el.className = cls;
-    el.innerHTML = `
-      <span>${d}</span>
-      <span class="day-icon">${isCleaning ? '🧹' : (dayType === 'work' ? '✓' : '')}</span>
-      ${substitution ? '<span class="substitution-badge">🔄</span>' : ''}
-      ${tooltipHtml}
-    `;
+    el.innerHTML = `<span>${d}</span><span class="day-icon">${isCleaning ? '🧹' : (dayType === 'work' ? '✓' : '')}</span>`;
     cal.appendChild(el);
   }
 
@@ -592,76 +521,6 @@ async function checkRetakeStatus() {
   }
 }
 
-function openRequestSubstitutionModal() {
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.innerHTML = `
-    <div class="modal substitution-modal">
-      <div class="modal-header">
-        <span class="modal-title">📅 Запрос на подмену</span>
-        <button class="modal-close">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="field">
-          <label>Дата подмены</label>
-          <input type="date" id="subDate" min="${new Date().toISOString().split('T')[0]}">
-        </div>
-        <div class="field">
-          <label>Причина</label>
-          <textarea id="subReason" rows="3" placeholder="Укажите причину..."></textarea>
-        </div>
-        <div class="hl info">
-          💡 Запрос будет отправлен руководителю. Он рассмотрит его и найдет замену.
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-cancel">Отмена</button>
-        <button class="btn-save" id="submitRequestBtn">📤 Отправить запрос</button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  setTimeout(() => modal.classList.add('open'), 10);
-  
-  const closeModal = () => {
-    modal.classList.remove('open');
-    setTimeout(() => modal.remove(), 300);
-  };
-  
-  modal.querySelector('.modal-close').addEventListener('click', closeModal);
-  modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-  
-  modal.querySelector('#submitRequestBtn').addEventListener('click', async () => {
-    const date = modal.querySelector('#subDate').value;
-    const reason = modal.querySelector('#subReason').value;
-    
-    if (!date) {
-      alert('Выберите дату');
-      return;
-    }
-    
-    try {
-      const response = await fetch('/api/substitutions/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ date, reason })
-      });
-      
-      if (response.ok) {
-        alert('Запрос отправлен руководителю');
-        closeModal();
-      } else {
-        const error = await response.json();
-        alert(error.error || 'Ошибка');
-      }
-    } catch (error) {
-      alert('Ошибка: ' + error.message);
-    }
-  });
-}
-
 // Навигация
 const prevBtn = document.getElementById('prevMonth');
 const nextBtn = document.getElementById('nextMonth');
@@ -675,7 +534,6 @@ if (prevBtn) {
     }
     updateMonthLabel();
     loadSchedule();
-    loadSubstitutions();
   });
 }
 
@@ -688,7 +546,6 @@ if (nextBtn) {
     }
     updateMonthLabel();
     loadSchedule();
-    loadSubstitutions();
   });
 }
 
@@ -707,6 +564,8 @@ if (ropBtn) {
   ropBtn.addEventListener('click', async () => {
     if (typeof window.openRopPanel === 'function') {
       window.openRopPanel();
+    } else {
+      alert('Функция администрирования загружается...');
     }
   });
 }
