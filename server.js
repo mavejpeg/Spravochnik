@@ -268,6 +268,20 @@ async function initDatabase() {
             )
         `);
 
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS registration_requests (
+                id SERIAL PRIMARY KEY,
+                full_name VARCHAR(255) NOT NULL,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                point_id INTEGER REFERENCES points(id),
+                status VARCHAR(20) DEFAULT 'pending', -- pending, approved, rejected
+                reviewed_by INTEGER REFERENCES users(id),
+                reviewed_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         // Add point_id column if not exists
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS point_id INTEGER`).catch(e => {});
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(255)`).catch(e => {});
