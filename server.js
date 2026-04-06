@@ -2260,10 +2260,7 @@ app.post('/api/substitutions/request', requireAuth, async (req, res) => {
 app.get('/api/rop-list', requireAuth, async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT id, full_name, username, role, position, 
-                   COALESCE(phone, '') as phone,
-                   COALESCE(description, '') as description,
-                   COALESCE(schedule_info, 'График уточняйте') as schedule_info
+            SELECT id, full_name, username, role, position
             FROM users 
             WHERE role IN ('rop', 'root')
             ORDER BY 
