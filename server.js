@@ -1886,6 +1886,599 @@ app.put('/api/profile/:userId', requireRop, async (req, res) => {
     }
 });
 
+// ---------- ROP Management (для profile.html) ----------
+app.get('/api/rop-full-list', requireRop, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.username, u.full_name, u.role, u.position, 
+                   u.point_id, p.name as point_name, p.address as point_address
+            FROM users u
+            LEFT JOIN points p ON u.point_id = p.id
+            WHERE u.role IN ('rop', 'root')
+            ORDER BY u.full_name
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Failed to get ROP list:', error);
+        res.status(500).json({ error: 'Failed to get ROP list' });
+    }
+});
+
+app.get('/api/ensure-rop-point', requireRop, async (req, res) => {
+    try {
+        // Получаем РОПов без точки
+        const ropsWithoutPoint = await pool.query(`
+            SELECT u.id, u.full_name
+            FROM users u
+            WHERE u.role IN ('rop', 'root') AND (u.point_id IS NULL OR u.point_id = 0)
+        `);
+        
+        // Получаем все точки
+        const points = await pool.query('SELECT * FROM points ORDER BY name');
+        
+        res.json({
+            ropsWithoutPoint: ropsWithoutPoint.rows,
+            points: points.rows
+        });
+    } catch (error) {
+        console.error('Failed to ensure ROP point:', error);
+        res.status(500).json({ error: 'Failed to get data' });
+    }
+});
+
+app.post('/api/assign-rop-point', requireRop, async (req, res) => {
+    const { ropId, pointId } = req.body;
+    
+    if (!ropId || !pointId) {
+        return res.status(400).json({ error: 'ROP ID and Point ID are required' });
+    }
+    
+    try {
+        await pool.query(
+            'UPDATE users SET point_id = $1 WHERE id = $2',
+            [pointId, ropId]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Failed to assign ROP point:', error);
+        res.status(500).json({ error: 'Failed to assign point' });
+    }
+});
+
+// ---------- Requests (заявки на подмену) ----------
+app.get('/api/requests', requireAuth, async (req, res) => {
+    const userId = req.session.user.id;
+    const userRole = req.session.user.role;
+    
+    try {
+        let query;
+        let params;
+        
+        if (userRole === 'root' || userRole === 'rop') {
+            // РОП и root видят все заявки
+            query = `
+                SELECT r.*, 
+                       u.full_name as user_name, u.position as user_position,
+                       p.full_name as partner_name,
+                       rp.full_name as resolver_name
+                FROM shift_requests r
+                LEFT JOIN users u ON r.user_id = u.id
+                LEFT JOIN users p ON r.partner_id = p.id
+                LEFT JOIN users rp ON r.resolved_by = rp.id
+                ORDER BY r.created_at DESC
+            `;
+            params = [];
+        } else {
+            // Обычный пользователь видит только свои заявки
+            query = `
+                SELECT r.*, 
+                       u.full_name as user_name,
+                       p.full_name as partner_name,
+                       rp.full_name as resolver_name
+                FROM shift_requests r
+                LEFT JOIN users u ON r.user_id = u.id
+                LEFT JOIN users p ON r.partner_id = p.id
+                LEFT JOIN users rp ON r.resolved_by = rp.id
+                WHERE r.user_id = $1
+                ORDER BY r.created_at DESC
+            `;
+            params = [userId];
+        }
+        
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Failed to get requests:', error);
+        res.status(500).json({ error: 'Failed to get requests' });
+    }
+});
+
+app.post('/api/requests', requireAuth, async (req, res) => {
+    const { partner_id, date_from, date_to, reason } = req.body;
+    const userId = req.session.user.id;
+    
+    if (!partner_id || !date_from) {
+        return res.status(400).json({ error: 'Partner and date are required' });
+    }
+    
+    try {
+        const result = await pool.query(`
+            INSERT INTO shift_requests (user_id, partner_id, date_from, date_to, reason, status, created_at)
+            VALUES ($1, $2, $3, $4, $5, 'pending', CURRENT_TIMESTAMP)
+            RETURNING *
+        `, [userId, partner_id, date_from, date_to, reason || '']);
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Failed to create request:', error);
+        res.status(500).json({ error: 'Failed to create request' });
+    }
+});
+
+app.put('/api/requests/:id/approve', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const userId = req.session.user.id;
+    
+    try {
+        const result = await pool.query(`
+            UPDATE shift_requests 
+            SET status = 'approved', resolved_by = $1, resolved_at = CURRENT_TIMESTAMP
+            WHERE id = $2 AND status = 'pending'
+            RETURNING *
+        `, [userId, id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Request not found or already processed' });
+        }
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Failed to approve request:', error);
+        res.status(500).json({ error: 'Failed to approve request' });
+    }
+});
+
+app.put('/api/requests/:id/reject', requireRop, async (req, res) => {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.session.user.id;
+    
+    try {
+        const result = await pool.query(`
+            UPDATE shift_requests 
+            SET status = 'rejected', resolved_by = $1, resolved_at = CURRENT_TIMESTAMP,
+                resolution_comment = $2
+            WHERE id = $3 AND status = 'pending'
+            RETURNING *
+        `, [userId, reason || '', id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Request not found or already processed' });
+        }
+        
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Failed to reject request:', error);
+        res.status(500).json({ error: 'Failed to reject request' });
+    }
+});
+
+// ---------- Search endpoint (ИСПРАВЛЕННЫЙ) ----------
+app.get('/api/search', requireAuth, async (req, res) => {
+    const { q, category, limit = 50 } = req.query;
+    
+    if (!q || q.length < 2) {
+        return res.json({ results: [], suggestion: null });
+    }
+    
+    try {
+        // Простой поиск через LIKE (пока без full-text)
+        let results = [];
+        
+        // Поиск по производителям табака
+        const tobaccoMfg = await pool.query(`
+            SELECT 'tobacco_manufacturer' as type, id, name as title, description, 'tobacco' as category
+            FROM manufacturers
+            WHERE name ILIKE $1 OR description ILIKE $1
+            LIMIT $2
+        `, [`%${q}%`, limit]);
+        results.push(...tobaccoMfg.rows);
+        
+        // Поиск по линейкам табака
+        const tobaccoLines = await pool.query(`
+            SELECT 'tobacco_line' as type, l.id, l.name as title, l.description, 'tobacco' as category
+            FROM lines l
+            WHERE l.name ILIKE $1 OR l.description ILIKE $1
+            LIMIT $2
+        `, [`%${q}%`, limit]);
+        results.push(...tobaccoLines.rows);
+        
+        // Поиск по производителям жидкостей
+        const liquidMfg = await pool.query(`
+            SELECT 'liquid_manufacturer' as type, id, name as title, description, 'liquids' as category
+            FROM liquid_manufacturers
+            WHERE name ILIKE $1 OR description ILIKE $1
+            LIMIT $2
+        `, [`%${q}%`, limit]);
+        results.push(...liquidMfg.rows);
+        
+        // Поиск по линейкам жидкостей
+        const liquidLines = await pool.query(`
+            SELECT 'liquid_line' as type, l.id, l.name as title, l.description, 'liquids' as category
+            FROM liquid_lines l
+            WHERE l.name ILIKE $1 OR l.description ILIKE $1
+            LIMIT $2
+        `, [`%${q}%`, limit]);
+        results.push(...liquidLines.rows);
+        
+        // Поиск по производителям одноразок
+        const dispMfg = await pool.query(`
+            SELECT 'disposables_manufacturer' as type, id, name as title, description, 'disposables' as category
+            FROM disposables_manufacturers
+            WHERE name ILIKE $1 OR description ILIKE $1
+            LIMIT $2
+        `, [`%${q}%`, limit]);
+        results.push(...dispMfg.rows);
+        
+        // Поиск по линейкам одноразок
+        const dispLines = await pool.query(`
+            SELECT 'disposables_line' as type, l.id, l.name as title, l.description, 'disposables' as category
+            FROM disposables_lines l
+            WHERE l.name ILIKE $1 OR l.description ILIKE $1
+            LIMIT $2
+        `, [`%${q}%`, limit]);
+        results.push(...dispLines.rows);
+        
+        // Поиск по производителям снюса
+        const snusMfg = await pool.query(`
+            SELECT 'snus_manufacturer' as type, id, name as title, description, 'snus' as category
+            FROM snus_manufacturers
+            WHERE name ILIKE $1 OR description ILIKE $1
+            LIMIT $2
+        `, [`%${q}%`, limit]);
+        results.push(...snusMfg.rows);
+        
+        // Поиск по линейкам снюса
+        const snusLines = await pool.query(`
+            SELECT 'snus_line' as type, l.id, l.name as title, l.description, 'snus' as category
+            FROM snus_lines l
+            WHERE l.name ILIKE $1 OR l.description ILIKE $1
+            LIMIT $2
+        `, [`%${q}%`, limit]);
+        results.push(...snusLines.rows);
+        
+        // Группируем результаты
+        const grouped = {
+            manufacturers: results.filter(r => r.type.includes('manufacturer')),
+            lines: results.filter(r => r.type.includes('line')),
+            content: [],
+            other: []
+        };
+        
+        // Формируем URL для каждого результата
+        for (const item of grouped.manufacturers) {
+            item.url = getUrlForEntity(item.type, item.id, item.category);
+        }
+        for (const item of grouped.lines) {
+            item.url = getUrlForEntity(item.type, item.id, item.category);
+        }
+        
+        res.json({
+            results: grouped,
+            suggestion: null,
+            query: q
+        });
+        
+    } catch (error) {
+        console.error('Search error:', error);
+        res.status(500).json({ error: 'Search failed: ' + error.message });
+    }
+});
+
+app.get('/api/search/autocomplete', requireAuth, async (req, res) => {
+    const { q, limit = 10 } = req.query;
+    
+    if (!q || q.length < 1) {
+        return res.json([]);
+    }
+    
+    try {
+        // Собираем названия из всех таблиц
+        const queries = [
+            `SELECT name as title FROM manufacturers WHERE name ILIKE $1 LIMIT $2`,
+            `SELECT name as title FROM liquid_manufacturers WHERE name ILIKE $1 LIMIT $2`,
+            `SELECT name as title FROM disposables_manufacturers WHERE name ILIKE $1 LIMIT $2`,
+            `SELECT name as title FROM snus_manufacturers WHERE name ILIKE $1 LIMIT $2`,
+            `SELECT name as title FROM lines WHERE name ILIKE $1 LIMIT $2`,
+            `SELECT name as title FROM liquid_lines WHERE name ILIKE $1 LIMIT $2`,
+            `SELECT name as title FROM disposables_lines WHERE name ILIKE $1 LIMIT $2`,
+            `SELECT name as title FROM snus_lines WHERE name ILIKE $1 LIMIT $2`
+        ];
+        
+        let allTitles = [];
+        for (const query of queries) {
+            const result = await pool.query(query, [`%${q}%`, limit]);
+            allTitles.push(...result.rows.map(r => r.title));
+        }
+        
+        // Уникальные значения
+        allTitles = [...new Set(allTitles)].slice(0, limit);
+        
+        res.json({
+            suggestions: allTitles,
+            correction: null
+        });
+        
+    } catch (error) {
+        console.error('Autocomplete error:', error);
+        res.status(500).json([]);
+    }
+});
+
+// Вспомогательная функция для URL
+function getUrlForEntity(entityType, entityId, category) {
+    const urls = {
+        'tobacco_manufacturer': `/tobacco`,
+        'tobacco_line': `/tobacco`,
+        'liquid_manufacturer': `/liquids`,
+        'liquid_line': `/liquids`,
+        'disposables_manufacturer': `/disposables`,
+        'disposables_line': `/disposables`,
+        'snus_manufacturer': `/snus`,
+        'snus_line': `/snus`
+    };
+    return urls[entityType] || '#';
+}
+
+// ---------- Quizzes endpoints (ИСПРАВЛЕННЫЕ) ----------
+app.get('/api/quizzes', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT q.*, 
+                   COALESCE((SELECT COUNT(*) FROM quiz_results WHERE quiz_id = q.id AND user_id = $1), 0) as attempts_count
+            FROM quizzes q 
+            WHERE q.is_active = TRUE 
+            ORDER BY q.created_at DESC
+        `, [req.session.user.id]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Get quizzes error:', error);
+        res.json([]);
+    }
+});
+
+app.get('/api/quizzes/:id', requireAuth, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM quizzes WHERE id = $1', [req.params.id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Quiz not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Get quiz error:', error);
+        res.status(500).json({ error: 'Failed to get quiz' });
+    }
+});
+
+app.post('/api/quizzes/:id/submit', requireAuth, async (req, res) => {
+    const { answers } = req.body;
+    const userId = req.session.user.id;
+    const quizId = parseInt(req.params.id);
+    
+    if (!answers || !Array.isArray(answers)) {
+        return res.status(400).json({ error: 'Answers are required' });
+    }
+    
+    try {
+        const quizResult = await pool.query('SELECT * FROM quizzes WHERE id = $1', [quizId]);
+        if (quizResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Quiz not found' });
+        }
+        
+        const quiz = quizResult.rows[0];
+        const questions = quiz.questions;
+        
+        let correctCount = 0;
+        const answerDetails = [];
+        
+        for (const answer of answers) {
+            const question = questions[answer.questionIndex];
+            if (!question) continue;
+            
+            const isCorrect = question.correct === answer.selectedOption;
+            if (isCorrect) correctCount++;
+            answerDetails.push({
+                questionIndex: answer.questionIndex,
+                selected: answer.selectedOption,
+                isCorrect,
+                correctAnswer: question.correct,
+                explanation: question.explanation || ''
+            });
+        }
+        
+        const score = Math.round((correctCount / questions.length) * 100);
+        
+        await pool.query(`
+            INSERT INTO quiz_results (user_id, quiz_id, score, total_questions, answers, completed_at)
+            VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+        `, [userId, quizId, score, questions.length, JSON.stringify(answerDetails)]);
+        
+        // Удаляем старые результаты (старше 30 дней)
+        await pool.query(`DELETE FROM quiz_results WHERE completed_at < NOW() - INTERVAL '30 days'`);
+        
+        res.json({
+            success: true,
+            score,
+            total: questions.length,
+            correct: correctCount,
+            needsRetake: score < 70,
+            details: answerDetails
+        });
+        
+    } catch (error) {
+        console.error('Submit quiz error:', error);
+        res.status(500).json({ error: 'Failed to submit quiz: ' + error.message });
+    }
+});
+
+app.get('/api/quizzes/:id/results', requireAuth, async (req, res) => {
+    const userId = req.session.user.id;
+    const quizId = parseInt(req.params.id);
+    
+    try {
+        const result = await pool.query(`
+            SELECT * FROM quiz_results 
+            WHERE user_id = $1 AND quiz_id = $2 
+            ORDER BY completed_at DESC 
+            LIMIT 10
+        `, [userId, quizId]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Get quiz results error:', error);
+        res.json([]);
+    }
+});
+
+app.get('/api/quizzes/retake-status', requireAuth, async (req, res) => {
+    const userId = req.session.user.id;
+    
+    try {
+        const quizzesResult = await pool.query(`SELECT id, title FROM quizzes WHERE is_active = TRUE`);
+        
+        const status = {};
+        for (const quiz of quizzesResult.rows) {
+            const lastResult = await pool.query(`
+                SELECT score, completed_at FROM quiz_results 
+                WHERE user_id = $1 AND quiz_id = $2 
+                AND completed_at > NOW() - INTERVAL '90 days'
+                ORDER BY completed_at DESC LIMIT 1
+            `, [userId, quiz.id]);
+            
+            if (lastResult.rows.length === 0) {
+                status[quiz.id] = { needsRetake: true, lastScore: null, lastDate: null };
+            } else {
+                status[quiz.id] = {
+                    needsRetake: lastResult.rows[0].score < 70,
+                    lastScore: lastResult.rows[0].score,
+                    lastDate: lastResult.rows[0].completed_at
+                };
+            }
+        }
+        
+        res.json(status);
+    } catch (error) {
+        console.error('Get retake status error:', error);
+        res.json({});
+    }
+});
+
+// ---------- Learning Progress ----------
+app.post('/api/learning/track', requireAuth, async (req, res) => {
+    const { page } = req.body;
+    const userId = req.session.user.id;
+    
+    if (!page) {
+        return res.status(400).json({ error: 'Page is required' });
+    }
+    
+    try {
+        await pool.query(`
+            INSERT INTO learning_progress (user_id, page, completed, completed_at, last_viewed)
+            VALUES ($1, $2, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (user_id, page) 
+            DO UPDATE SET completed = TRUE, completed_at = CURRENT_TIMESTAMP, last_viewed = CURRENT_TIMESTAMP
+        `, [userId, page]);
+        
+        const result = await pool.query(`
+            SELECT page, completed FROM learning_progress WHERE user_id = $1
+        `, [userId]);
+        
+        const totalPages = 6;
+        const completedPages = result.rows.filter(r => r.completed).length;
+        const progress = Math.round((completedPages / totalPages) * 100);
+        
+        res.json({ success: true, progress, completedPages, totalPages });
+    } catch (error) {
+        console.error('Track learning error:', error);
+        res.status(500).json({ error: 'Failed to track progress' });
+    }
+});
+
+app.get('/api/learning/progress', requireAuth, async (req, res) => {
+    const userId = req.session.user.id;
+    
+    try {
+        const result = await pool.query(`
+            SELECT page, completed, completed_at, last_viewed 
+            FROM learning_progress WHERE user_id = $1
+        `, [userId]);
+        
+        const totalPages = 6;
+        const completedPages = result.rows.filter(r => r.completed).length;
+        const progress = Math.round((completedPages / totalPages) * 100);
+        
+        res.json({ progress, completedPages, totalPages, details: result.rows });
+    } catch (error) {
+        console.error('Get learning progress error:', error);
+        res.json({ progress: 0, completedPages: 0, totalPages: 6, details: [] });
+    }
+});
+
+// ---------- User Notes ----------
+app.get('/api/notes/:productType/:productId', requireAuth, async (req, res) => {
+    const { productType, productId } = req.params;
+    const userId = req.session.user.id;
+    
+    try {
+        const result = await pool.query(`
+            SELECT * FROM user_notes 
+            WHERE user_id = $1 AND product_type = $2 AND product_id = $3
+        `, [userId, productType, productId]);
+        res.json({ note: result.rows[0]?.note || '' });
+    } catch (error) {
+        console.error('Get note error:', error);
+        res.json({ note: '' });
+    }
+});
+
+app.post('/api/notes', requireAuth, async (req, res) => {
+    const { product_type, product_id, note } = req.body;
+    const userId = req.session.user.id;
+    
+    if (!product_type || !product_id) {
+        return res.status(400).json({ error: 'Product type and ID are required' });
+    }
+    
+    try {
+        const result = await pool.query(`
+            INSERT INTO user_notes (user_id, product_type, product_id, note, updated_at)
+            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+            ON CONFLICT (user_id, product_type, product_id)
+            DO UPDATE SET note = EXCLUDED.note, updated_at = CURRENT_TIMESTAMP
+            RETURNING *
+        `, [userId, product_type, product_id, note || '']);
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Save note error:', error);
+        res.status(500).json({ error: 'Failed to save note' });
+    }
+});
+
+app.delete('/api/notes/:productType/:productId', requireAuth, async (req, res) => {
+    const { productType, productId } = req.params;
+    const userId = req.session.user.id;
+    
+    try {
+        await pool.query(`
+            DELETE FROM user_notes WHERE user_id = $1 AND product_type = $2 AND product_id = $3
+        `, [userId, productType, productId]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete note error:', error);
+        res.status(500).json({ error: 'Failed to delete note' });
+    }
+});
+
 // ========== START SERVER ==========
 async function startServer() {
     console.log('\n🚀 Starting server...\n');
