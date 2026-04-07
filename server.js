@@ -303,6 +303,22 @@ async function initDatabase() {
             )
         `);
 
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS shift_requests (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                partner_id INTEGER REFERENCES users(id),
+                date_from DATE NOT NULL,
+                date_to DATE,
+                reason TEXT,
+                status VARCHAR(20) DEFAULT 'pending',
+                resolved_by INTEGER REFERENCES users(id),
+                resolved_at TIMESTAMP,
+                resolution_comment TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         // Add role_id to users
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role_id INTEGER REFERENCES roles(id)`).catch(e => {});
         await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_role VARCHAR(50)`).catch(e => {});
@@ -323,6 +339,8 @@ async function initDatabase() {
                     level = EXCLUDED.level
             `, [role.name, role.display_name, role.description, role.level]);
         }
+
+        
 
         // Служебная точка для РОП
         const ropPoint = await client.query(`
